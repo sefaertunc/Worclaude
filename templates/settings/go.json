@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Go --",
+      "Bash(go:*)", "Bash(gofmt:*)", "Bash(golangci-lint:*)",
+      "Edit(*.go)", "Edit(go.mod)", "Edit(go.sum)"
+    ]
+  },
+  "formatter": "gofmt -w . || true"
+}

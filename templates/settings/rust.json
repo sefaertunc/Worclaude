@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Rust --",
+      "Bash(cargo:*)", "Bash(rustc:*)", "Bash(rustup:*)",
+      "Bash(clippy:*)",
+      "Edit(*.rs)", "Edit(Cargo.toml)", "Edit(Cargo.lock)"
+    ]
+  },
+  "formatter": "cargo fmt || true"
+}

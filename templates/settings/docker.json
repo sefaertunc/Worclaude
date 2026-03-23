@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Docker --",
+      "Bash(docker:*)", "Bash(docker-compose:*)", "Bash(docker compose:*)",
+      "Edit(Dockerfile*)", "Edit(docker-compose*)", "Edit(.dockerignore)"
+    ]
+  }
+}

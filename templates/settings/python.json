@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Python --",
+      "Bash(python:*)", "Bash(python3:*)",
+      "Bash(pip:*)", "Bash(pip3:*)",
+      "Bash(uv:*)", "Bash(uvx:*)",
+      "Bash(pytest:*)", "Bash(ruff:*)", "Bash(mypy:*)",
+      "Bash(black:*)", "Bash(isort:*)", "Bash(flake8:*)",
+      "Bash(poetry:*)", "Bash(pdm:*)",
+      "Edit(*.py)", "Edit(pyproject.toml)",
+      "Edit(requirements*.txt)", "Edit(setup.py)", "Edit(setup.cfg)"
+    ]
+  },
+  "formatter": "ruff format . || true"
+}

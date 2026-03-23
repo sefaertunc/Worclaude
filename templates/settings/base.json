@@ -1,0 +1,65 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Read-only / Exploration --",
+      "Bash(find:*)", "Bash(grep:*)", "Bash(cat:*)", "Bash(ls:*)",
+      "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)", "Bash(which:*)",
+      "Bash(tree:*)", "Bash(diff:*)", "Bash(sort:*)", "Bash(uniq:*)",
+      "Bash(awk:*)", "Bash(sed:*)", "Bash(cut:*)", "Bash(jq:*)",
+      "Bash(xargs:*)",
+      "Bash(ps:*)", "Bash(du:*)", "Bash(df:*)",
+      "Bash(env:*)", "Bash(printenv:*)",
+
+      "// -- Git --",
+      "Bash(git status:*)", "Bash(git log:*)", "Bash(git diff:*)",
+      "Bash(git branch:*)", "Bash(git checkout:*)",
+      "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push:*)",
+      "Bash(git pull:*)", "Bash(git fetch:*)", "Bash(git merge:*)",
+      "Bash(git stash:*)", "Bash(git worktree:*)",
+      "Bash(git rebase:*)", "Bash(git cherry-pick:*)", "Bash(git tag:*)",
+      "Bash(gh:*)",
+
+      "// -- Common Dev Tools --",
+      "Bash(echo:*)", "Bash(mkdir:*)", "Bash(touch:*)",
+      "Bash(cp:*)", "Bash(mv:*)",
+      "Bash(curl:*)", "Bash(wget:*)",
+      "Bash(tar:*)", "Bash(zip:*)", "Bash(unzip:*)",
+      "Bash(make:*)",
+
+      "// -- Edit Permissions --",
+      "Edit(.claude/**)", "Edit(docs/**)",
+      "Edit(src/**)", "Edit(tests/**)", "Edit(test/**)",
+      "Edit(README*)", "Edit(*.md)",
+      "Edit(package.json)", "Edit(pyproject.toml)",
+      "Edit(Dockerfile*)", "Edit(docker-compose*)",
+      "Edit(.github/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "{formatter_command} || true"
+        }]
+      },
+      {
+        "matcher": "Stop",
+        "hooks": [{
+          "type": "command",
+          "command": "{notification_command}"
+        }]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true"
+        }]
+      }
+    ]
+  }
+}

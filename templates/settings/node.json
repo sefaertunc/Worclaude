@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Node.js / TypeScript --",
+      "Bash(npm:*)", "Bash(npx:*)", "Bash(node:*)",
+      "Bash(tsc:*)", "Bash(tsx:*)",
+      "Bash(jest:*)", "Bash(vitest:*)",
+      "Bash(eslint:*)", "Bash(prettier:*)",
+      "Bash(pnpm:*)", "Bash(yarn:*)", "Bash(bun:*)",
+      "Edit(*.ts)", "Edit(*.tsx)", "Edit(*.js)", "Edit(*.jsx)",
+      "Edit(*.json)", "Edit(*.css)", "Edit(*.scss)",
+      "Edit(tsconfig*.json)", "Edit(.eslintrc*)",
+      "Edit(vite.config.*)", "Edit(next.config.*)", "Edit(webpack.config.*)"
+    ]
+  },
+  "formatter": "npx prettier --write . || true"
+}

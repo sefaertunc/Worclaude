@@ -1,0 +1,36 @@
+{
+  "name": "claude-workflow",
+  "version": "1.0.0",
+  "description": "CLI tool that scaffolds a comprehensive Claude Code workflow into any project",
+  "type": "module",
+  "bin": {
+    "claude-workflow": "./src/index.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ tests/",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "workflow",
+    "scaffolding",
+    "cli"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.5.0",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
+    "vitest": "^3.0.9"
+  }
+}

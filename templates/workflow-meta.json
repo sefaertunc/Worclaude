@@ -1,0 +1,10 @@
+{
+  "version": "{version}",
+  "installedAt": "{timestamp}",
+  "lastUpdated": "{timestamp}",
+  "projectTypes": [],
+  "techStack": "",
+  "universalAgents": [],
+  "optionalAgents": [],
+  "fileHashes": {}
+}
