@@ -9,8 +9,9 @@ export async function detectScenario(projectRoot) {
 
   const hasClaudeDir = await dirExists(path.join(projectRoot, '.claude'));
   const hasClaudeMd = await fileExists(path.join(projectRoot, 'CLAUDE.md'));
+  const hasMcpJson = await fileExists(path.join(projectRoot, '.mcp.json'));
 
-  if (hasClaudeDir || hasClaudeMd) {
+  if (hasClaudeDir || hasClaudeMd || hasMcpJson) {
     return 'existing';
   }
 
