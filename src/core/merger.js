@@ -23,6 +23,7 @@ import {
   NOTIFICATION_COMMANDS,
   SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
+import * as display from '../utils/display.js';
 
 // --- Settings builder (shared with Scenario A) ---
 
@@ -339,6 +340,9 @@ async function handleClaudeMd(projectRoot, existingScan, variables, report) {
   const missingSections = detectMissingSections(existingContent);
 
   if (missingSections.length === 0) {
+    display.newline();
+    display.info(`Your CLAUDE.md (${existingContent.split(/\r?\n/).length} lines) was detected.`);
+    display.success('Your CLAUDE.md already has all recommended sections!');
     report.claudeMdHandling = 'kept';
     return;
   }
