@@ -31,7 +31,6 @@
       "Edit(src/**)", "Edit(tests/**)", "Edit(test/**)",
       "Edit(README*)", "Edit(*.md)",
       "Edit(package.json)", "Edit(pyproject.toml)",
-      "Edit(Dockerfile*)", "Edit(docker-compose*)",
       "Edit(.github/**)"
     ]
   },
