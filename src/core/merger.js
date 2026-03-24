@@ -83,6 +83,20 @@ function replaceHookCommands(settings, variables) {
   }
 }
 
+function parseUserJson(raw, filename) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // Try stripping shell-escaped braces (common zsh heredoc artifact)
+    const cleaned = raw.replace(/\\([{}])/g, '$1');
+    try {
+      return JSON.parse(cleaned);
+    } catch (err) {
+      throw new Error(`existing ${filename} contains invalid JSON: ${err.message}`);
+    }
+  }
+}
+
 // --- Sub-merge operations ---
 
 async function mergeSkills(projectRoot, existingScan, variables, report) {
@@ -185,12 +199,7 @@ async function mergeCommands(projectRoot, existingScan, report) {
 
 export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, report) {
   const existingRaw = await readFile(path.join(projectRoot, '.claude', 'settings.json'));
-  let existing;
-  try {
-    existing = JSON.parse(existingRaw);
-  } catch (err) {
-    throw new Error(`existing .claude/settings.json contains invalid JSON: ${err.message}`);
-  }
+  const existing = parseUserJson(existingRaw, '.claude/settings.json');
 
   // Merge permissions (Tier 1)
   const existingAllow = existing.permissions?.allow || [];
@@ -286,12 +295,7 @@ async function mergeMcpJson(projectRoot, existingScan) {
 
   // Merge mcpServers — user's servers take priority
   const existingRaw = await readFile(path.join(projectRoot, '.mcp.json'));
-  let existing;
-  try {
-    existing = JSON.parse(existingRaw);
-  } catch (err) {
-    throw new Error(`existing .mcp.json contains invalid JSON: ${err.message}`);
-  }
+  const existing = parseUserJson(existingRaw, '.mcp.json');
   const workflowRaw = await readTemplate('mcp-json.json');
   const workflow = JSON.parse(workflowRaw);
 
