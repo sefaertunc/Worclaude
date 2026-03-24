@@ -51,7 +51,7 @@ export async function buildSettingsJson(languages, useDocker) {
   }
 
   const formatter =
-    formatters.length > 0 ? formatters.join(' && ') : 'echo "No formatter configured"';
+    formatters.length > 0 ? formatters.join(' && ') : "echo 'No formatter configured'";
 
   const mergedSettings = mergeSettings(baseSettings, ...settingsToMerge);
 
