@@ -13,6 +13,10 @@ IMPORTANT RULES:
   moving on.
 - Be conversational, not robotic. Adapt follow-up questions based
   on answers.
+- Do NOT use information from previous conversations, memory, or
+  other projects. This setup is for THIS project only. Only use
+  information the user provides during this interview. Ask every
+  question fresh — do not pre-fill answers from memory.
 
 ## Interview Flow
 
