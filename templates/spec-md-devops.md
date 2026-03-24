@@ -6,7 +6,7 @@
 ## Infrastructure Stack
 | Layer            | Technology                        |
 |------------------|-----------------------------------|
-| Cloud Provider   | {tech_stack_table}                |{docker_row}
+| Language         | {tech_stack_table}                |{docker_row}
 | IaC              | [e.g. Terraform, Pulumi, CDK]    |
 | Container Runtime| [e.g. Docker, Podman]            |
 | Orchestration    | [e.g. Kubernetes, ECS, Nomad]    |

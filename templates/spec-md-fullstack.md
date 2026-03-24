@@ -6,7 +6,7 @@
 ## Tech Stack
 | Layer       | Technology                        |
 |-------------|-----------------------------------|
-| Frontend    | {tech_stack_table}                |{docker_row}
+| Language    | {tech_stack_table}                |{docker_row}
 | Backend     | [Framework, e.g. Express, Django] |
 | Database    | [e.g. PostgreSQL, MongoDB]        |
 | Auth        | [e.g. JWT, OAuth2, session-based] |

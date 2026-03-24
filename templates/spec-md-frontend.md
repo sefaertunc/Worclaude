@@ -6,7 +6,7 @@
 ## Tech Stack
 | Layer            | Technology                        |
 |------------------|-----------------------------------|
-| Framework        | {tech_stack_table}                |{docker_row}
+| Language         | {tech_stack_table}                |{docker_row}
 | State Management | [e.g. Zustand, Redux, Pinia]     |
 | Styling          | [e.g. Tailwind, CSS Modules]     |
 | Build Tool       | [e.g. Vite, Webpack, Turbopack]  |
