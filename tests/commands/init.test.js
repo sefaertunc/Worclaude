@@ -158,9 +158,14 @@ describe('init command', () => {
     expect(content).toContain('test-project');
   });
 
-  it('exits early if .claude/ already exists', async () => {
+  it('detects Scenario C and shows upgrade message', async () => {
     await fs.ensureDir(path.join(tmpDir, '.claude'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify({ version: '1.0.0' })
+    );
     await initCommand();
+    // Should NOT scaffold anything — just print upgrade message
     expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md'))).toBe(false);
   });
 
@@ -262,5 +267,102 @@ describe('init command', () => {
     // Docker should be in Containers row, not Language row
     expect(content).toContain('| Containers');
     expect(content).toContain('Docker');
+  });
+
+  describe('Scenario B — existing project', () => {
+    it('merges workflow into project with existing .claude/', async () => {
+      // Set up existing project with some files
+      await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'skills', 'context-management.md'),
+        '# My custom context rules'
+      );
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# My Project');
+
+      // Scenario B mock sequence:
+      // 1: proceed confirmation, 2-9: same as Scenario A, + CLAUDE.md merge
+      const responses = [
+        { proceed: true },                                              // confirm proceed
+        { projectName: 'existing-project', description: 'Existing' },   // project info
+        { projectTypes: ['CLI tool'] },                                  // project type
+        { languages: ['node'] },                                         // tech stack
+        { useDocker: false },                                            // docker
+        { selectedCategories: ['Quality'] },                             // categories
+        { selectedAgents: ['bug-fixer'] },                               // fine-tune
+        { additionalCategories: [] },                                    // extra categories
+        { confirmation: 'yes' },                                         // confirm
+        { choice: 'keep' },                                              // CLAUDE.md handling
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+
+      // Backup should be created
+      const entries = await fs.readdir(tmpDir);
+      const backups = entries.filter((e) => e.startsWith('.claude-backup-'));
+      expect(backups.length).toBe(1);
+
+      // Original skill file untouched
+      const original = await fs.readFile(
+        path.join(tmpDir, '.claude', 'skills', 'context-management.md'),
+        'utf-8'
+      );
+      expect(original).toBe('# My custom context rules');
+
+      // .workflow-ref.md created for conflicting skill
+      expect(
+        await fs.pathExists(
+          path.join(tmpDir, '.claude', 'skills', 'context-management.workflow-ref.md')
+        )
+      ).toBe(true);
+
+      // Non-conflicting skills added
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'verification.md'))
+      ).toBe(true);
+
+      // Agents added
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'))
+      ).toBe(true);
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'bug-fixer.md'))
+      ).toBe(true);
+
+      // Commands added
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'commands', 'setup.md'))
+      ).toBe(true);
+
+      // workflow-meta.json created
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-meta.json'))
+      ).toBe(true);
+
+      // CLAUDE.md.workflow-suggestions created
+      expect(
+        await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-suggestions'))
+      ).toBe(true);
+
+      // Original CLAUDE.md preserved
+      const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+      expect(claudeMd).toBe('# My Project');
+    });
+
+    it('cancels when user declines to proceed', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+
+      const responses = [{ proceed: false }];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+
+      // Nothing should be scaffolded
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-meta.json'))
+      ).toBe(false);
+    });
   });
 });

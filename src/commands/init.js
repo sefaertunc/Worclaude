@@ -1,20 +1,22 @@
 import path from 'node:path';
-import os from 'node:os';
 import inquirer from 'inquirer';
 import ora from 'ora';
+import { scaffoldFile } from '../core/scaffolder.js';
 import {
-  readTemplate,
-  substituteVariables,
-  scaffoldFile,
-  mergeSettings,
-} from '../core/scaffolder.js';
-import { createWorkflowMeta, getPackageVersion, writeWorkflowMeta } from '../core/config.js';
-import { dirExists, writeFile, listFilesRecursive } from '../utils/file.js';
+  createWorkflowMeta,
+  getPackageVersion,
+  readWorkflowMeta,
+  writeWorkflowMeta,
+} from '../core/config.js';
+import { writeFile, listFilesRecursive } from '../utils/file.js';
 import { hashFile } from '../utils/hash.js';
 import * as display from '../utils/display.js';
 import { promptProjectType } from '../prompts/project-type.js';
 import { promptTechStack } from '../prompts/tech-stack.js';
 import { promptAgentSelection } from '../prompts/agent-selection.js';
+import { detectScenario, scanExistingSetup } from '../core/detector.js';
+import { createBackup } from '../core/backup.js';
+import { performMerge, buildSettingsJson } from '../core/merger.js';
 import {
   UNIVERSAL_AGENTS,
   AGENT_CATALOG,
@@ -22,7 +24,6 @@ import {
   UNIVERSAL_SKILLS,
   TEMPLATE_SKILLS,
   TECH_STACKS,
-  NOTIFICATION_COMMANDS,
   CONFIRMATION_STEPS,
   SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
@@ -155,25 +156,9 @@ async function showConfirmation(selections) {
   return confirmation;
 }
 
-// --- Main command ---
+// --- Shared functions ---
 
-export async function initCommand() {
-  const projectRoot = process.cwd();
-  const claudeDir = path.join(projectRoot, '.claude');
-
-  // Step 1: Check for existing setup
-  if (await dirExists(claudeDir)) {
-    display.warn('Existing .claude/ directory detected.');
-    display.info('Scenario B/C handling coming in Phase 3.');
-    return;
-  }
-
-  // Step 2: Welcome
-  const version = await getPackageVersion();
-  display.header(`Claude Workflow v${version}`);
-  display.newline();
-
-  // Step 3: Interactive prompts with confirmation loop
+async function runInteractivePrompts(projectRoot) {
   let selections = {
     projectName: path.basename(projectRoot),
     description: '',
@@ -228,49 +213,12 @@ export async function initCommand() {
     }
   }
 
-  // Step 4: Build settings.json (multi-language support)
-  const { projectName, description, projectTypes, languages, useDocker, selectedAgents } =
-    selections;
+  return selections;
+}
 
-  const baseSettings = JSON.parse(await readTemplate('settings/base.json'));
-  const formatters = [];
-  const settingsToMerge = [];
+function buildTemplateVariables(selections) {
+  const { projectName, description, languages, useDocker } = selections;
 
-  for (const lang of languages) {
-    if (lang !== 'other') {
-      const stackRaw = await readTemplate(`settings/${lang}.json`);
-      const stackSettings = JSON.parse(stackRaw);
-      if (stackSettings.formatter) {
-        formatters.push(stackSettings.formatter);
-      }
-      delete stackSettings.formatter;
-      settingsToMerge.push(stackSettings);
-    }
-  }
-
-  if (useDocker) {
-    const dockerRaw = await readTemplate('settings/docker.json');
-    const dockerSettings = JSON.parse(dockerRaw);
-    delete dockerSettings.formatter;
-    settingsToMerge.push(dockerSettings);
-  }
-
-  const formatter =
-    formatters.length > 0 ? formatters.join(' && ') : 'echo "No formatter configured"';
-
-  const mergedSettings = mergeSettings(baseSettings, ...settingsToMerge);
-
-  // Determine notification command based on OS
-  const platform = os.platform();
-  const notification = NOTIFICATION_COMMANDS[platform] || NOTIFICATION_COMMANDS.linux;
-
-  // Substitute hook placeholders
-  const settingsStr = substituteVariables(JSON.stringify(mergedSettings, null, 2), {
-    formatter_command: formatter,
-    notification_command: notification,
-  });
-
-  // Step 5: Build template variables
   const techStackLines = languages
     .filter((l) => l !== 'other')
     .map((l) => {
@@ -283,7 +231,6 @@ export async function initCommand() {
   if (useDocker) techStackLines.push('- Docker');
   const techStackText = techStackLines.join('\n');
 
-  // Comma-separated format for SPEC.md table cells (no Docker — it gets its own row)
   const techStackTableItems = languages
     .filter((l) => l !== 'other')
     .map((l) => {
@@ -305,7 +252,7 @@ export async function initCommand() {
   );
   const skillsText = skillsLines.join('\n');
 
-  const variables = {
+  return {
     project_name: projectName,
     description: description || 'A project scaffolded with Claude Workflow',
     tech_stack_filled_during_init: techStackText,
@@ -316,20 +263,42 @@ export async function initCommand() {
     project_specific_skills: skillsText,
     timestamp: new Date().toISOString(),
   };
+}
 
-  // Step 6: Scaffold files
+async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
+  const fileHashes = {};
+  const claudeFiles = await listFilesRecursive(path.join(projectRoot, '.claude'));
+  for (const filePath of claudeFiles) {
+    const relativePath = path.relative(path.join(projectRoot, '.claude'), filePath);
+    if (relativePath !== 'workflow-meta.json' && relativePath !== 'settings.json') {
+      fileHashes[relativePath] = await hashFile(filePath);
+    }
+  }
+
+  const meta = createWorkflowMeta({
+    version,
+    projectTypes: selections.projectTypes,
+    techStack: selections.languages,
+    universalAgents: UNIVERSAL_AGENTS,
+    optionalAgents: selections.selectedAgents,
+    fileHashes,
+  });
+  await writeWorkflowMeta(projectRoot, meta);
+}
+
+// --- Scenario A: Fresh scaffolding ---
+
+async function scaffoldFresh(projectRoot, selections, variables, settingsStr, version) {
+  const { selectedAgents, projectTypes } = selections;
   const spinner = ora('Creating workflow structure...').start();
 
   try {
-    // CLAUDE.md
     await scaffoldFile('claude-md.md', 'CLAUDE.md', variables, projectRoot);
     spinner.text = 'Created CLAUDE.md';
 
-    // .claude/settings.json
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
     spinner.text = 'Created .claude/settings.json';
 
-    // Universal agents
     for (const agent of UNIVERSAL_AGENTS) {
       await scaffoldFile(
         `agents/universal/${agent}.md`,
@@ -340,7 +309,6 @@ export async function initCommand() {
     }
     spinner.text = `Created ${UNIVERSAL_AGENTS.length} universal agents`;
 
-    // Selected optional agents
     for (const agent of selectedAgents) {
       const category = AGENT_CATALOG[agent].category;
       await scaffoldFile(
@@ -352,7 +320,6 @@ export async function initCommand() {
     }
     spinner.text = `Created ${selectedAgents.length} optional agents`;
 
-    // Commands
     for (const cmd of COMMAND_FILES) {
       await scaffoldFile(
         `commands/${cmd}.md`,
@@ -363,7 +330,6 @@ export async function initCommand() {
     }
     spinner.text = `Created ${COMMAND_FILES.length} commands`;
 
-    // Universal skills
     for (const skill of UNIVERSAL_SKILLS) {
       await scaffoldFile(
         `skills/universal/${skill}.md`,
@@ -374,7 +340,6 @@ export async function initCommand() {
     }
     spinner.text = `Created ${UNIVERSAL_SKILLS.length} universal skills`;
 
-    // Template skills
     for (const skill of TEMPLATE_SKILLS) {
       await scaffoldFile(
         `skills/templates/${skill}.md`,
@@ -385,11 +350,9 @@ export async function initCommand() {
     }
     spinner.text = `Created ${TEMPLATE_SKILLS.length} template skills`;
 
-    // .mcp.json
     await scaffoldFile('mcp-json.json', '.mcp.json', {}, projectRoot);
     spinner.text = 'Created .mcp.json';
 
-    // docs/spec/ — use project-type-specific SPEC.md variant
     await scaffoldFile(
       'progress-md.md',
       path.join('docs', 'spec', 'PROGRESS.md'),
@@ -401,26 +364,7 @@ export async function initCommand() {
     await scaffoldFile(specTemplate, path.join('docs', 'spec', 'SPEC.md'), variables, projectRoot);
     spinner.text = 'Created docs/spec/';
 
-    // Compute file hashes for all .claude/ files
-    const fileHashes = {};
-    const claudeFiles = await listFilesRecursive(path.join(projectRoot, '.claude'));
-    for (const filePath of claudeFiles) {
-      const relativePath = path.relative(path.join(projectRoot, '.claude'), filePath);
-      if (relativePath !== 'workflow-meta.json' && relativePath !== 'settings.json') {
-        fileHashes[relativePath] = await hashFile(filePath);
-      }
-    }
-
-    // workflow-meta.json
-    const meta = createWorkflowMeta({
-      version,
-      projectTypes,
-      techStack: languages,
-      universalAgents: UNIVERSAL_AGENTS,
-      optionalAgents: selectedAgents,
-      fileHashes,
-    });
-    await writeWorkflowMeta(projectRoot, meta);
+    await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
     spinner.succeed('Workflow installed successfully!');
@@ -429,14 +373,15 @@ export async function initCommand() {
     display.error(err.message);
     process.exit(1);
   }
+}
 
-  // Step 7: Success message
+function displayFreshSuccess(selections) {
   display.newline();
   display.success('CLAUDE.md');
   display.success('.claude/settings.json');
   display.success('.claude/workflow-meta.json');
   display.success(
-    `.claude/agents/ (${UNIVERSAL_AGENTS.length} universal + ${selectedAgents.length} optional)`
+    `.claude/agents/ (${UNIVERSAL_AGENTS.length} universal + ${selections.selectedAgents.length} optional)`
   );
   display.success(`.claude/commands/ (${COMMAND_FILES.length})`);
   display.success(
@@ -457,4 +402,202 @@ export async function initCommand() {
   display.info('Tip: The /setup command is the fastest way to configure');
   display.dim('  your project. It takes about 5 minutes.');
   display.newline();
+}
+
+// --- Scenario B: Detection report and merge report ---
+
+function displayDetectionReport(scan) {
+  display.info('Detected existing Claude Code setup:');
+  display.newline();
+
+  const dot = (label, width = 26) => label + ' ' + '.'.repeat(width - label.length) + ' ';
+
+  display.dim(
+    `  ${dot('CLAUDE.md')}${scan.hasClaudeMd ? `exists (${scan.claudeMdLineCount} lines)` : 'not found'}`
+  );
+  display.dim(
+    `  ${dot('.claude/settings.json')}${scan.hasSettingsJson ? 'exists' : 'not found'}`
+  );
+  display.dim(
+    `  ${dot('.claude/skills/')}${scan.existingSkills.length > 0 ? `${scan.existingSkills.length} files found` : 'not found'}`
+  );
+  display.dim(
+    `  ${dot('.claude/agents/')}${scan.existingAgents.length > 0 ? `${scan.existingAgents.length} files found` : 'not found'}`
+  );
+  display.dim(
+    `  ${dot('.claude/commands/')}${scan.existingCommands.length > 0 ? `${scan.existingCommands.length} files found` : 'not found'}`
+  );
+  display.dim(
+    `  ${dot('.mcp.json')}${scan.hasMcpJson ? 'exists' : 'not found'}`
+  );
+  display.newline();
+  display.info('A backup will be created before any changes.');
+  display.newline();
+}
+
+function displayMergeReport(report, backupPath) {
+  display.newline();
+
+  // Tier 1 — Added
+  if (
+    report.added.agents.length > 0 ||
+    report.added.commands.length > 0 ||
+    report.added.skills.length > 0
+  ) {
+    display.info('Added automatically:');
+    if (report.added.agents.length > 0) {
+      display.success(`${report.added.agents.length} agents added`);
+    }
+    if (report.added.commands.length > 0) {
+      display.success(`${report.added.commands.length} commands added`);
+    }
+    if (report.added.skills.length > 0) {
+      display.success(
+        `${report.added.skills.length} skills added${report.conflicts.skills.length > 0 ? ` (${report.conflicts.skills.length} conflicts saved as .workflow-ref.md)` : ''}`
+      );
+    }
+    if (report.added.permissions > 0) {
+      display.success(`${report.added.permissions} permission rules appended to settings.json`);
+    }
+    if (report.added.hooks > 0) {
+      display.success(`${report.added.hooks} hooks added to settings.json`);
+    }
+    display.newline();
+  }
+
+  // Tier 2 — Conflicts
+  const allConflicts = [
+    ...report.conflicts.skills,
+    ...report.conflicts.agents,
+    ...report.conflicts.commands,
+  ];
+  if (allConflicts.length > 0) {
+    display.info('Conflicts (saved alongside for review):');
+    for (const file of allConflicts) {
+      const refName = file.replace('.md', '.workflow-ref.md');
+      display.warn(`${file} → ${refName}`);
+    }
+    display.newline();
+  }
+
+  // Tier 3 — Hook conflicts
+  if (report.hookConflicts.length > 0) {
+    display.info('Hook conflicts resolved:');
+    for (const desc of report.hookConflicts) {
+      display.dim(`  ${desc}`);
+    }
+    display.newline();
+  }
+
+  // CLAUDE.md handling
+  if (report.claudeMdHandling === 'suggestions-generated') {
+    display.success('Suggestions saved to CLAUDE.md.workflow-suggestions');
+  } else if (report.claudeMdHandling === 'merged-sections') {
+    display.success('CLAUDE.md updated with selected sections');
+  } else if (report.claudeMdHandling === 'created') {
+    display.success('CLAUDE.md created');
+  }
+
+  // Skipped
+  if (report.skipped.progressMd) {
+    display.dim('  docs/spec/PROGRESS.md — already exists, skipped');
+  }
+  if (report.skipped.specMd) {
+    display.dim('  docs/spec/SPEC.md — already exists, skipped');
+  }
+
+  // Summary
+  display.newline();
+  if (backupPath) {
+    display.dim(`  Backup: ${path.basename(backupPath)}/`);
+  }
+  display.newline();
+  display.info('What to do next:');
+  display.newline();
+  if (allConflicts.length > 0) {
+    display.dim('  1. Review .workflow-ref.md files and merge what\'s useful');
+  }
+  if (report.claudeMdHandling === 'suggestions-generated') {
+    display.dim('  2. Review CLAUDE.md.workflow-suggestions');
+    display.dim('  3. Delete .workflow-ref.md and .workflow-suggestions files when done');
+  }
+  display.dim('  Run /setup in Claude Code for project-specific configuration');
+  display.newline();
+}
+
+// --- Main command ---
+
+export async function initCommand() {
+  const projectRoot = process.cwd();
+
+  // Step 1: Detect scenario
+  const scenario = await detectScenario(projectRoot);
+
+  if (scenario === 'upgrade') {
+    const meta = await readWorkflowMeta(projectRoot);
+    display.info(
+      `This project was initialized with Claude Workflow v${meta?.version || 'unknown'}.`
+    );
+    display.info('Use `claude-workflow upgrade` to update.');
+    return;
+  }
+
+  // Step 2: Welcome
+  const version = await getPackageVersion();
+  display.header(`Claude Workflow v${version}`);
+  display.newline();
+
+  // Step 3: If existing project, show detection report and confirm
+  let existingScan = null;
+  let backupPath = null;
+
+  if (scenario === 'existing') {
+    existingScan = await scanExistingSetup(projectRoot);
+    displayDetectionReport(existingScan);
+
+    const { proceed } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'proceed',
+        message: 'Proceed with workflow installation?',
+        default: true,
+      },
+    ]);
+
+    if (!proceed) {
+      display.info('Installation cancelled.');
+      return;
+    }
+
+    const spinner = ora('Creating backup...').start();
+    backupPath = await createBackup(projectRoot);
+    spinner.succeed(`Backed up to ${path.basename(backupPath)}/`);
+    display.newline();
+  }
+
+  // Step 4: Interactive prompts (shared between A and B)
+  const selections = await runInteractivePrompts(projectRoot);
+
+  // Step 5: Build template variables
+  const variables = buildTemplateVariables(selections);
+
+  // Step 6: Branch by scenario
+  if (scenario === 'fresh') {
+    const { settingsStr } = await buildSettingsJson(selections.languages, selections.useDocker);
+    await scaffoldFresh(projectRoot, selections, variables, settingsStr, version);
+    displayFreshSuccess(selections);
+  } else {
+    // Scenario B: merge
+    const spinner = ora('Merging workflow...').start();
+    try {
+      const report = await performMerge(projectRoot, existingScan, selections, variables);
+      await computeAndWriteWorkflowMeta(projectRoot, selections, version);
+      spinner.succeed('Workflow merged successfully!');
+      displayMergeReport(report, backupPath);
+    } catch (err) {
+      spinner.fail('Failed to merge workflow');
+      display.error(err.message);
+      process.exit(1);
+    }
+  }
 }

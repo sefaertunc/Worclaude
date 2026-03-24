@@ -40,6 +40,14 @@ export async function listFiles(dirPath) {
   }
 }
 
+export async function copyDirectory(src, dest) {
+  await fs.copy(src, dest);
+}
+
+export async function removeDirectory(dirPath) {
+  await fs.remove(dirPath);
+}
+
 export async function listFilesRecursive(dirPath) {
   const results = [];
   async function walk(dir) {
