@@ -1,7 +1,7 @@
 # PROGRESS.md
 
 ## Current Status
-**Phase:** Phase 4 complete (Upgrade & Utility Commands)
+**Phase:** All phases complete — ready for npm publish
 **Last Updated:** 2026-03-24
 
 ## Completed
@@ -58,17 +58,24 @@
   - [x] relativeTime() utility for backup listing display
   - [x] All placeholder commands in index.js replaced with real implementations
 
-## In Progress
-None
+- [x] Phase 5: Polish & Publish
+  - [x] Comprehensive README.md (~300 lines)
+  - [x] package.json npm publish fields (files, repository, author, engines, keywords)
+  - [x] .gitignore cleanup (replaced Python template with Node.js-focused)
+  - [x] .npmignore created (excludes tests, docs, config from package)
+  - [x] Cross-platform hardening: CRLF line ending normalization in hashing
+  - [x] Cross-platform hardening: path separator normalization in init.js
+  - [x] Cross-platform hardening: CRLF-safe split() in claude-md-merge.js and detector.js
 
-## Next Steps
-All 6 commands are now functional — no more placeholder messages.
-
-## Blockers
-None
+## Stats
+- 6 CLI commands: init, upgrade, status, backup, restore, diff
+- 5 universal agents + 18 optional agents (6 categories)
+- 10 slash commands
+- 9 universal skills + 3 template skills
+- 7 SPEC.md template variants
+- 135 tests across 16 test files
+- 3 scenarios: fresh, existing, upgrade
 
 ## Notes
-- The project should use its own workflow patterns where possible
-- Reference docs/spec/SPEC.md for all design decisions
-- Reference docs/reference/workflow-reference.docx for the full workflow guide
-- 134 tests passing (16 test files), lint clean as of Phase 4 completion
+- Derived from 53 tips by Boris Cherny (howborisusesclaudecode.com)
+- Ready for: npm publish

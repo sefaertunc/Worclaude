@@ -35,7 +35,7 @@ export function detectMissingSections(existingContent) {
 }
 
 function extractSection(content, heading) {
-  const lines = content.split('\n');
+  const lines = content.split(/\r?\n/);
   const startIdx = lines.findIndex((l) => l.startsWith(heading));
   if (startIdx === -1) return null;
 
@@ -84,7 +84,7 @@ export function generateWorkflowSuggestions(existingContent, renderedTemplate) {
 }
 
 export async function promptClaudeMdMerge(existingContent, missingSections) {
-  const lineCount = existingContent.split('\n').length;
+  const lineCount = existingContent.split(/\r?\n/).length;
 
   display.newline();
   display.info(`Your CLAUDE.md (${lineCount} lines) was detected.`);
@@ -127,8 +127,8 @@ export async function interactiveSectionMerge(existingContent, renderedTemplate,
 
     display.newline();
     display.info(`Section: ${sectionName}`);
-    display.dim(sectionContent.split('\n').slice(0, 5).join('\n'));
-    if (sectionContent.split('\n').length > 5) {
+    display.dim(sectionContent.split(/\r?\n/).slice(0, 5).join('\n'));
+    if (sectionContent.split(/\r?\n/).length > 5) {
       display.dim('  ...');
     }
 

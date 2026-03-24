@@ -25,6 +25,12 @@ describe('hash utils', () => {
     expect(h1).not.toBe(h2);
   });
 
+  it('normalizes CRLF to LF before hashing', () => {
+    const lfHash = hashContent('line1\nline2\n');
+    const crlfHash = hashContent('line1\r\nline2\r\n');
+    expect(crlfHash).toBe(lfHash);
+  });
+
   it('hashFile returns hash of file content', async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-hash-'));
     const filePath = path.join(tmpDir, 'test.txt');

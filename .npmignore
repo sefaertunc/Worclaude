@@ -1,0 +1,22 @@
+# Development
+tests/
+docs/
+.claude/
+.github/
+
+# Config
+.eslintrc*
+eslint.config.*
+.prettierrc
+.prettierignore
+.gitignore
+vitest.config.*
+
+# Project files
+CLAUDE.md
+IMPLEMENTATION-PROMPT*.md
+.claude-backup-*/
+
+# Build/CI
+coverage/
+*.tgz

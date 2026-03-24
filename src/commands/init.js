@@ -269,7 +269,7 @@ async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
   const fileHashes = {};
   const claudeFiles = await listFilesRecursive(path.join(projectRoot, '.claude'));
   for (const filePath of claudeFiles) {
-    const relativePath = path.relative(path.join(projectRoot, '.claude'), filePath);
+    const relativePath = path.relative(path.join(projectRoot, '.claude'), filePath).split(path.sep).join('/');
     if (relativePath !== 'workflow-meta.json' && relativePath !== 'settings.json') {
       fileHashes[relativePath] = await hashFile(filePath);
     }

@@ -24,7 +24,7 @@ export async function scanExistingSetup(projectRoot) {
   let claudeMdLineCount = 0;
   if (hasClaudeMd) {
     const content = await readFile(path.join(projectRoot, 'CLAUDE.md'));
-    claudeMdLineCount = content.split('\n').length;
+    claudeMdLineCount = content.split(/\r?\n/).length;
   }
 
   return {

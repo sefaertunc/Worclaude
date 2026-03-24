@@ -7,18 +7,44 @@
     "claude-workflow": "./src/index.js"
   },
   "main": "src/index.js",
+  "files": [
+    "src/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sefaertunc/Claude-Workflow.git"
+  },
+  "homepage": "https://github.com/sefaertunc/Claude-Workflow#readme",
+  "bugs": {
+    "url": "https://github.com/sefaertunc/Claude-Workflow/issues"
+  },
+  "author": "Sefa Ertunç",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ tests/",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepublishOnly": "npm test && npm run lint"
   },
   "keywords": [
     "claude",
     "claude-code",
     "workflow",
     "scaffolding",
-    "cli"
+    "cli",
+    "developer-tools",
+    "productivity",
+    "ai",
+    "anthropic",
+    "agents",
+    "automation"
   ],
   "license": "MIT",
   "dependencies": {
