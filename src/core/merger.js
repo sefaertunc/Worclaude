@@ -58,12 +58,29 @@ export async function buildSettingsJson(languages, useDocker) {
   const platform = os.platform();
   const notification = NOTIFICATION_COMMANDS[platform] || NOTIFICATION_COMMANDS.linux;
 
-  const settingsStr = substituteVariables(JSON.stringify(mergedSettings, null, 2), {
+  replaceHookCommands(mergedSettings, {
     formatter_command: formatter,
     notification_command: notification,
   });
 
-  return { settingsStr, settingsObject: JSON.parse(settingsStr) };
+  const settingsStr = JSON.stringify(mergedSettings, null, 2);
+  return { settingsStr, settingsObject: mergedSettings };
+}
+
+function replaceHookCommands(settings, variables) {
+  if (!settings.hooks) return;
+  for (const entries of Object.values(settings.hooks)) {
+    for (const entry of entries) {
+      if (!entry.hooks) continue;
+      for (const hook of entry.hooks) {
+        if (typeof hook.command === 'string') {
+          hook.command = hook.command.replace(/\{(\w+)\}/g, (match, key) =>
+            variables[key] !== undefined ? variables[key] : match
+          );
+        }
+      }
+    }
+  }
 }
 
 // --- Sub-merge operations ---
