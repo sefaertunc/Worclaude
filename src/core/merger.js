@@ -222,8 +222,16 @@ export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSett
 
     for (const workflowEntry of workflowHooks[category]) {
       if (existingMatchers.has(workflowEntry.matcher)) {
-        // Tier 3: conflict — ask user
         const existingEntry = existingMatchers.get(workflowEntry.matcher);
+
+        // If hooks are identical, skip — no conflict to resolve
+        const existingCmd = existingEntry.hooks?.[0]?.command || '';
+        const workflowCmd = workflowEntry.hooks?.[0]?.command || '';
+        if (existingCmd === workflowCmd) {
+          continue;
+        }
+
+        // Tier 3: conflict — ask user
         const resolution = await promptHookConflict(category, existingEntry, workflowEntry);
 
         if (resolution === 'replace') {

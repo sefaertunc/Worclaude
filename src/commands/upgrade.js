@@ -86,6 +86,14 @@ export async function upgradeCommand() {
     display.newline();
   }
 
+  if (categories.modified.length > 0) {
+    display.dim('  Your customizations (no workflow updates available):');
+    for (const { key } of categories.modified) {
+      display.dim(`    ~ ${key}`);
+    }
+    display.newline();
+  }
+
   const hasWork =
     categories.autoUpdate.length > 0 ||
     categories.conflict.length > 0 ||
