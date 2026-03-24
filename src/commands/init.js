@@ -21,9 +21,97 @@ import {
   COMMAND_FILES,
   UNIVERSAL_SKILLS,
   TEMPLATE_SKILLS,
-  NOTIFICATION_COMMANDS,
   TECH_STACKS,
+  NOTIFICATION_COMMANDS,
+  CONFIRMATION_STEPS,
+  SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
+
+// --- Step runner functions ---
+
+async function runProjectInfo(selections) {
+  const { projectName, description } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'projectName',
+      message: 'Project name:',
+      default: selections.projectName || path.basename(process.cwd()),
+    },
+    {
+      type: 'input',
+      name: 'description',
+      message: 'One-line description:',
+      default: selections.description || undefined,
+    },
+  ]);
+  return { ...selections, projectName, description };
+}
+
+async function runProjectType(selections) {
+  const projectTypes = await promptProjectType();
+  return { ...selections, projectTypes };
+}
+
+async function runTechStack(selections) {
+  const { languages, useDocker } = await promptTechStack(selections.projectTypes);
+  return { ...selections, languages, useDocker };
+}
+
+async function runAgents(selections) {
+  const selectedAgents = await promptAgentSelection(selections.projectTypes);
+  return { ...selections, selectedAgents };
+}
+
+const STEP_RUNNERS = {
+  projectInfo: runProjectInfo,
+  projectType: runProjectType,
+  techStack: runTechStack,
+  agents: runAgents,
+};
+
+// --- Confirmation ---
+
+async function showConfirmation(selections) {
+  const stackLabels = selections.languages
+    .filter((l) => l !== 'other')
+    .map((l) => {
+      const entry = TECH_STACKS.find((s) => s.value === l);
+      return entry ? entry.name : l;
+    });
+  if (selections.languages.includes('other') && stackLabels.length === 0) {
+    stackLabels.push('Other / None');
+  }
+  if (selections.useDocker) stackLabels.push('Docker');
+  const stackText = stackLabels.join(', ') || 'None specified';
+
+  const universalCount = UNIVERSAL_AGENTS.length;
+  const optionalCount = selections.selectedAgents.length;
+  const totalCount = universalCount + optionalCount;
+
+  display.reviewBox([
+    `Project:    ${selections.projectName} — ${selections.description || 'No description'}`,
+    `Type:       ${selections.projectTypes.join(', ')}`,
+    `Stack:      ${stackText}`,
+    `Agents:     ${universalCount} universal + ${optionalCount} optional (${totalCount} total)`,
+  ]);
+
+  const { confirmation } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'confirmation',
+      message: 'Everything look right?',
+      choices: [
+        { name: 'Yes, install the workflow', value: 'yes' },
+        { name: 'No, let me start over', value: 'restart' },
+        { name: 'Let me adjust a specific step', value: 'adjust' },
+      ],
+    },
+  ]);
+
+  return confirmation;
+}
+
+// --- Main command ---
 
 export async function initCommand() {
   const projectRoot = process.cwd();
@@ -41,36 +129,79 @@ export async function initCommand() {
   display.header(`Claude Workflow v${version}`);
   display.newline();
 
-  // Step 3: Interactive prompts
-  const { projectName, description } = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'projectName',
-      message: 'Project name:',
-      default: path.basename(projectRoot),
-    },
-    {
-      type: 'input',
-      name: 'description',
-      message: 'One-line description:',
-    },
-  ]);
+  // Step 3: Interactive prompts with confirmation loop
+  let selections = {
+    projectName: path.basename(projectRoot),
+    description: '',
+    projectTypes: [],
+    languages: [],
+    useDocker: false,
+    selectedAgents: [],
+  };
 
-  const projectTypes = await promptProjectType();
-  const { language, useDocker } = await promptTechStack(projectTypes);
-  const selectedAgents = await promptAgentSelection(projectTypes);
+  let confirmed = false;
+  let firstRun = true;
 
-  // Step 4: Build settings.json
+  while (!confirmed) {
+    if (firstRun) {
+      selections = await runProjectInfo(selections);
+      selections = await runProjectType(selections);
+      selections = await runTechStack(selections);
+      selections = await runAgents(selections);
+      firstRun = false;
+    }
+
+    const confirmation = await showConfirmation(selections);
+
+    if (confirmation === 'yes') {
+      confirmed = true;
+    } else if (confirmation === 'restart') {
+      selections = {
+        projectName: path.basename(projectRoot),
+        description: '',
+        projectTypes: [],
+        languages: [],
+        useDocker: false,
+        selectedAgents: [],
+      };
+      display.newline();
+      display.info('Starting over...');
+      display.newline();
+      selections = await runProjectInfo(selections);
+      selections = await runProjectType(selections);
+      selections = await runTechStack(selections);
+      selections = await runAgents(selections);
+    } else if (confirmation === 'adjust') {
+      const { step } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'step',
+          message: 'Which step do you want to adjust?',
+          choices: CONFIRMATION_STEPS,
+        },
+      ]);
+      selections = await STEP_RUNNERS[step](selections);
+    }
+  }
+
+  // Step 4: Build settings.json (multi-language support)
+  const { projectName, description, projectTypes, languages, useDocker, selectedAgents } =
+    selections;
+
   const baseSettings = JSON.parse(await readTemplate('settings/base.json'));
-  let formatter = 'echo "No formatter configured"';
+  const formatters = [];
   const settingsToMerge = [];
 
-  if (language !== 'other') {
-    const stackRaw = await readTemplate(`settings/${language}.json`);
-    const stackSettings = JSON.parse(stackRaw);
-    formatter = stackSettings.formatter || formatter;
-    delete stackSettings.formatter;
-    settingsToMerge.push(stackSettings);
+  for (const lang of languages) {
+    if (lang !== 'other') {
+      const stackRaw = await readTemplate(`settings/${lang}.json`);
+      const stackSettings = JSON.parse(stackRaw);
+      if (stackSettings.formatter) {
+        formatters.push(stackSettings.formatter);
+      }
+      delete stackSettings.formatter;
+      settingsToMerge.push(stackSettings);
+    }
   }
 
   if (useDocker) {
@@ -80,12 +211,14 @@ export async function initCommand() {
     settingsToMerge.push(dockerSettings);
   }
 
+  const formatter =
+    formatters.length > 0 ? formatters.join(' && ') : 'echo "No formatter configured"';
+
   const mergedSettings = mergeSettings(baseSettings, ...settingsToMerge);
 
   // Determine notification command based on OS
   const platform = os.platform();
-  const notification =
-    NOTIFICATION_COMMANDS[platform] || NOTIFICATION_COMMANDS.linux;
+  const notification = NOTIFICATION_COMMANDS[platform] || NOTIFICATION_COMMANDS.linux;
 
   // Substitute hook placeholders
   const settingsStr = substituteVariables(JSON.stringify(mergedSettings, null, 2), {
@@ -94,10 +227,15 @@ export async function initCommand() {
   });
 
   // Step 5: Build template variables
-  // Use the full display label from TECH_STACKS
-  const stackEntry = TECH_STACKS.find((s) => s.value === language);
-  const stackLabel = stackEntry ? stackEntry.name : 'Not specified';
-  const techStackLines = [`- ${stackLabel}`];
+  const techStackLines = languages
+    .filter((l) => l !== 'other')
+    .map((l) => {
+      const entry = TECH_STACKS.find((s) => s.value === l);
+      return `- ${entry ? entry.name : l}`;
+    });
+  if (languages.includes('other') && techStackLines.length === 0) {
+    techStackLines.push('- Not specified');
+  }
   if (useDocker) techStackLines.push('- Docker');
   const techStackText = techStackLines.join('\n');
 
@@ -120,6 +258,7 @@ export async function initCommand() {
     project_name: projectName,
     description: description || 'A project scaffolded with Claude Workflow',
     tech_stack_filled_during_init: techStackText,
+    tech_stack: techStackText,
     commands_filled_during_init: commandsText,
     project_specific_skills: skillsText,
     timestamp: new Date().toISOString(),
@@ -197,9 +336,16 @@ export async function initCommand() {
     await scaffoldFile('mcp-json.json', '.mcp.json', {}, projectRoot);
     spinner.text = 'Created .mcp.json';
 
-    // docs/spec/
-    await scaffoldFile('progress-md.md', path.join('docs', 'spec', 'PROGRESS.md'), variables, projectRoot);
-    await scaffoldFile('spec-md.md', path.join('docs', 'spec', 'SPEC.md'), variables, projectRoot);
+    // docs/spec/ — use project-type-specific SPEC.md variant
+    await scaffoldFile(
+      'progress-md.md',
+      path.join('docs', 'spec', 'PROGRESS.md'),
+      variables,
+      projectRoot
+    );
+    const primaryType = projectTypes[0];
+    const specTemplate = SPEC_MD_TEMPLATE_MAP[primaryType] || 'spec-md.md';
+    await scaffoldFile(specTemplate, path.join('docs', 'spec', 'SPEC.md'), variables, projectRoot);
     spinner.text = 'Created docs/spec/';
 
     // Compute file hashes for all .claude/ files
@@ -216,7 +362,7 @@ export async function initCommand() {
     const meta = createWorkflowMeta({
       version,
       projectTypes,
-      techStack: language,
+      techStack: languages,
       universalAgents: UNIVERSAL_AGENTS,
       optionalAgents: selectedAgents,
       fileHashes,
@@ -236,18 +382,21 @@ export async function initCommand() {
   display.success('CLAUDE.md');
   display.success('.claude/settings.json');
   display.success('.claude/workflow-meta.json');
-  display.success(`.claude/agents/ (${UNIVERSAL_AGENTS.length} universal + ${selectedAgents.length} optional)`);
+  display.success(
+    `.claude/agents/ (${UNIVERSAL_AGENTS.length} universal + ${selectedAgents.length} optional)`
+  );
   display.success(`.claude/commands/ (${COMMAND_FILES.length})`);
-  display.success(`.claude/skills/ (${UNIVERSAL_SKILLS.length} universal + ${TEMPLATE_SKILLS.length} templates)`);
+  display.success(
+    `.claude/skills/ (${UNIVERSAL_SKILLS.length} universal + ${TEMPLATE_SKILLS.length} templates)`
+  );
   display.success('.mcp.json');
   display.success('docs/spec/PROGRESS.md');
   display.success('docs/spec/SPEC.md');
   display.newline();
   display.info('Next steps:');
   display.dim('1. Review and customize CLAUDE.md for your project');
-  display.dim('2. Fill in your Tech Stack and Commands sections');
-  display.dim('3. Fill in project-specific skill templates in .claude/skills/');
-  display.dim('4. Write your SPEC.md with project requirements');
-  display.dim('5. Start a Claude Code session');
+  display.dim('2. Run /setup to fill in project-specific content');
+  display.dim('3. Write your SPEC.md with project requirements');
+  display.dim('4. Start a Claude Code session');
   display.newline();
 }

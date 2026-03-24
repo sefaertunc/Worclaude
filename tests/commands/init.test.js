@@ -26,6 +26,24 @@ vi.spyOn(console, 'log').mockImplementation(() => {});
 import inquirer from 'inquirer';
 import { initCommand } from '../../src/commands/init.js';
 
+// Helper: build standard mock sequence for CLI tool + Node.js
+function setupDefaultMocks() {
+  const responses = [
+    { projectName: 'test-project', description: 'A test project' }, // 1: project info
+    { projectTypes: ['CLI tool'] },                                  // 2: project type
+    { languages: ['node'] },                                         // 3: tech stack (multi-select)
+    { useDocker: false },                                            // 4: docker
+    { selectedCategories: ['Quality', 'Documentation'] },            // 5: agent categories
+    { selectedAgents: ['bug-fixer'] },                               // 6: fine-tune Quality
+    { selectedAgents: ['doc-writer'] },                              // 7: fine-tune Documentation
+    { confirmation: 'yes' },                                         // 8: confirmation
+  ];
+  let callCount = 0;
+  inquirer.prompt.mockImplementation(() => {
+    return Promise.resolve(responses[callCount++] || {});
+  });
+}
+
 describe('init command', () => {
   let tmpDir;
   let originalCwd;
@@ -34,28 +52,7 @@ describe('init command', () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-init-'));
     originalCwd = process.cwd();
     process.chdir(tmpDir);
-
-    // Set up mock responses for all prompts
-    let callCount = 0;
-    inquirer.prompt.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: // Project info
-          return Promise.resolve({ projectName: 'test-project', description: 'A test project' });
-        case 2: // Project type
-          return Promise.resolve({ projectTypes: ['CLI tool'] });
-        case 3: // Tech stack
-          return Promise.resolve({ language: 'node' });
-        case 4: // Docker
-          return Promise.resolve({ useDocker: false });
-        case 5: // Recommended agents
-          return Promise.resolve({ selectedRecommended: ['bug-fixer', 'doc-writer'] });
-        case 6: // Additional agents
-          return Promise.resolve({ selectedAdditional: [] });
-        default:
-          return Promise.resolve({});
-      }
-    });
+    setupDefaultMocks();
   });
 
   afterEach(async () => {
@@ -109,9 +106,9 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'doc-writer.md'))).toBe(true);
   });
 
-  it('creates all 9 commands', async () => {
+  it('creates all 10 commands including setup', async () => {
     await initCommand();
-    const commands = ['start', 'end', 'commit-push-pr', 'review-plan', 'techdebt', 'verify', 'compact-safe', 'status', 'update-claude-md'];
+    const commands = ['start', 'end', 'commit-push-pr', 'review-plan', 'techdebt', 'verify', 'compact-safe', 'status', 'update-claude-md', 'setup'];
     for (const cmd of commands) {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'commands', `${cmd}.md`));
       expect(exists, `${cmd}.md should exist`).toBe(true);
@@ -139,7 +136,7 @@ describe('init command', () => {
     const content = await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8');
     const meta = JSON.parse(content);
     expect(meta.version).toBe('1.0.0');
-    expect(meta.techStack).toBe('node');
+    expect(meta.techStack).toEqual(['node']);
     expect(meta.projectTypes).toContain('CLI tool');
     expect(meta.universalAgents).toHaveLength(5);
     expect(meta.optionalAgents).toContain('bug-fixer');
@@ -152,10 +149,76 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'))).toBe(true);
   });
 
+  it('uses project-type-specific SPEC.md template', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'), 'utf-8');
+    // CLI tool template should have Commands table
+    expect(content).toContain('Commands');
+    expect(content).toContain('test-project');
+  });
+
   it('exits early if .claude/ already exists', async () => {
     await fs.ensureDir(path.join(tmpDir, '.claude'));
     await initCommand();
-    // Should not create CLAUDE.md since it exits early
     expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md'))).toBe(false);
+  });
+
+  it('merges multiple language permissions', async () => {
+    const responses = [
+      { projectName: 'multi-lang', description: 'Multi language project' },
+      { projectTypes: ['Full-stack web application'] },
+      { languages: ['python', 'node'] },
+      { useDocker: true },
+      { selectedCategories: ['Quality'] },
+      { selectedAgents: ['bug-fixer'] },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+    const settings = JSON.parse(content);
+    // Should have both Python and Node permissions
+    expect(settings.permissions.allow).toContain('Bash(python:*)');
+    expect(settings.permissions.allow).toContain('Bash(npm:*)');
+    // Should have Docker permissions
+    expect(settings.permissions.allow).toContain('Bash(docker:*)');
+  });
+
+  it('chains multiple formatters with &&', async () => {
+    const responses = [
+      { projectName: 'multi-fmt', description: 'Test' },
+      { projectTypes: ['Backend / API'] },
+      { languages: ['python', 'node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+    // Should chain both formatters
+    expect(content).toContain('ruff format . || true && npx prettier --write . || true');
+  });
+
+  it('stores techStack as array in workflow-meta.json', async () => {
+    const responses = [
+      { projectName: 'arr-test', description: 'Test' },
+      { projectTypes: ['Backend / API'] },
+      { languages: ['python', 'go'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8');
+    const meta = JSON.parse(content);
+    expect(meta.techStack).toEqual(['python', 'go']);
   });
 });

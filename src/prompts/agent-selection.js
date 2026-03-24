@@ -2,7 +2,8 @@ import inquirer from 'inquirer';
 import {
   UNIVERSAL_AGENTS,
   AGENT_CATALOG,
-  CATEGORY_RECOMMENDATIONS,
+  AGENT_CATEGORIES,
+  PROJECT_TYPE_TO_CATEGORIES,
 } from '../data/agents.js';
 import * as display from '../utils/display.js';
 
@@ -11,59 +12,54 @@ export async function promptAgentSelection(projectTypes) {
   display.newline();
   display.info('Universal agents (always installed):');
   for (const agent of UNIVERSAL_AGENTS) {
-    display.success(`${agent}`);
+    display.success(agent);
   }
   display.newline();
 
-  // Compute recommended agents from project types
-  const recommendedSet = new Set();
+  // Derive pre-selected categories from project types
+  const preSelectedCategories = new Set();
   for (const type of projectTypes) {
-    const agents = CATEGORY_RECOMMENDATIONS[type] || [];
-    for (const agent of agents) {
-      recommendedSet.add(agent);
+    const cats = PROJECT_TYPE_TO_CATEGORIES[type] || [];
+    for (const cat of cats) {
+      preSelectedCategories.add(cat);
     }
   }
-  const recommended = [...recommendedSet];
 
-  // Compute remaining agents (all optional minus recommended)
-  const allOptional = Object.keys(AGENT_CATALOG);
-  const remaining = allOptional.filter((a) => !recommendedSet.has(a));
+  // Step 1: Category selection
+  const categoryNames = Object.keys(AGENT_CATEGORIES);
+  const { selectedCategories } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'selectedCategories',
+      message: 'Which agent categories do you need? (space to toggle)',
+      choices: categoryNames.map((cat) => ({
+        name: `${cat.padEnd(16)}— ${AGENT_CATEGORIES[cat].description}`,
+        value: cat,
+        checked: preSelectedCategories.has(cat),
+      })),
+    },
+  ]);
 
-  let selected = [];
+  // Step 2: Fine-tune each selected category
+  const selected = [];
 
-  // Prompt for recommended agents (pre-checked)
-  if (recommended.length > 0) {
-    const { selectedRecommended } = await inquirer.prompt([
+  for (const cat of selectedCategories) {
+    const agentNames = AGENT_CATEGORIES[cat].agents;
+    const { selectedAgents } = await inquirer.prompt([
       {
         type: 'checkbox',
-        name: 'selectedRecommended',
-        message: `Recommended agents for your project type (space to toggle):`,
-        choices: recommended.map((name) => ({
-          name: `${name} — ${AGENT_CATALOG[name].description}`,
+        name: 'selectedAgents',
+        message: `Fine-tune ${cat} agents? (space to toggle, enter to accept defaults)`,
+        choices: agentNames.map((name) => ({
+          name: `${name.padEnd(24)}— ${AGENT_CATALOG[name].description}`,
           value: name,
           checked: true,
         })),
       },
     ]);
-    selected.push(...selectedRecommended);
+    selected.push(...selectedAgents);
   }
 
-  // Prompt for remaining agents (unchecked)
-  if (remaining.length > 0) {
-    const { selectedAdditional } = await inquirer.prompt([
-      {
-        type: 'checkbox',
-        name: 'selectedAdditional',
-        message: 'Additional agents (optional):',
-        choices: remaining.map((name) => ({
-          name: `${name} — ${AGENT_CATALOG[name].description}`,
-          value: name,
-          checked: false,
-        })),
-      },
-    ]);
-    selected.push(...selectedAdditional);
-  }
-
-  return selected;
+  // Deduplicate
+  return [...new Set(selected)];
 }

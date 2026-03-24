@@ -29,3 +29,13 @@ export function dim(text) {
 export function newline() {
   console.log();
 }
+
+export function reviewBox(lines) {
+  console.log();
+  console.log(chalk.dim('  ─── Review Your Selections ───'));
+  console.log();
+  for (const line of lines) {
+    console.log('  ' + line);
+  }
+  console.log();
+}

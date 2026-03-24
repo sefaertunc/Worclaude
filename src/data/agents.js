@@ -47,6 +47,7 @@ export const COMMAND_FILES = [
   'compact-safe',
   'status',
   'update-claude-md',
+  'setup',
 ];
 
 export const UNIVERSAL_SKILLS = [
@@ -91,6 +92,70 @@ export const FORMATTER_COMMANDS = {
   rust: 'cargo fmt || true',
   go: 'gofmt -w . || true',
 };
+
+export const PROJECT_TYPE_DESCRIPTIONS = {
+  'Full-stack web application': 'Frontend + backend in one repo',
+  'Backend / API': 'Server, REST/GraphQL, no frontend',
+  'Frontend / UI': 'Client-side app, no backend',
+  'CLI tool': 'Command-line application',
+  'Data / ML / AI': 'Data pipelines, ML models, LLM apps',
+  'Library / Package': 'Reusable module published to npm/PyPI',
+  'DevOps / Infrastructure': 'Infrastructure, CI/CD, deployment',
+};
+
+export const AGENT_CATEGORIES = {
+  Backend: {
+    agents: ['api-designer', 'database-analyst', 'auth-auditor'],
+    description: 'api-designer, database-analyst, auth-auditor',
+  },
+  Frontend: {
+    agents: ['ui-reviewer', 'style-enforcer'],
+    description: 'ui-reviewer, style-enforcer',
+  },
+  DevOps: {
+    agents: ['ci-fixer', 'docker-helper', 'deploy-validator', 'dependency-manager'],
+    description: 'ci-fixer, docker-helper, deploy-validator, dependency-manager',
+  },
+  Quality: {
+    agents: ['bug-fixer', 'security-reviewer', 'performance-auditor', 'refactorer'],
+    description: 'bug-fixer, security-reviewer, performance-auditor, refactorer',
+  },
+  Documentation: {
+    agents: ['doc-writer', 'changelog-generator'],
+    description: 'doc-writer, changelog-generator',
+  },
+  'Data / AI': {
+    agents: ['data-pipeline-reviewer', 'ml-experiment-tracker', 'prompt-engineer'],
+    description: 'data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer',
+  },
+};
+
+export const PROJECT_TYPE_TO_CATEGORIES = {
+  'Full-stack web application': ['Backend', 'Frontend', 'Quality', 'Documentation'],
+  'Backend / API': ['Backend', 'Quality'],
+  'Frontend / UI': ['Frontend', 'Quality'],
+  'CLI tool': ['Quality', 'Documentation'],
+  'Data / ML / AI': ['Data / AI', 'Backend'],
+  'Library / Package': ['Quality', 'Documentation'],
+  'DevOps / Infrastructure': ['DevOps'],
+};
+
+export const SPEC_MD_TEMPLATE_MAP = {
+  'Full-stack web application': 'spec-md-fullstack.md',
+  'Backend / API': 'spec-md-backend.md',
+  'Frontend / UI': 'spec-md-frontend.md',
+  'CLI tool': 'spec-md-cli.md',
+  'Data / ML / AI': 'spec-md-data.md',
+  'Library / Package': 'spec-md-library.md',
+  'DevOps / Infrastructure': 'spec-md-devops.md',
+};
+
+export const CONFIRMATION_STEPS = [
+  { name: 'Project name and description', value: 'projectInfo' },
+  { name: 'Project type', value: 'projectType' },
+  { name: 'Tech stack', value: 'techStack' },
+  { name: 'Agent selection', value: 'agents' },
+];
 
 export const NOTIFICATION_COMMANDS = {
   linux: "notify-send 'Claude Code' 'Session needs attention' 2>/dev/null || true",

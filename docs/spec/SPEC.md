@@ -54,70 +54,100 @@ $ claude-workflow init
 ```
 
 ### Step 2: Project Type Selection
-Multi-select with overlap warning.
+Multi-select with inline descriptions and smart redundancy detection.
 ```
-? What type of project is this? (space to select)
-  ◻ Full-stack web application
-  ◻ Backend / API
-  ◻ Frontend / UI
-  ◻ CLI tool
-  ◻ Data / ML / AI
-  ◻ Library / Package
-  ◻ DevOps / Infrastructure
+? What type of project is this? (space to toggle, enter to confirm)
+  ◻ Full-stack web application — Frontend + backend in one repo
+  ◻ Backend / API              — Server, REST/GraphQL, no frontend
+  ◻ Frontend / UI              — Client-side app, no backend
+  ◻ CLI tool                   — Command-line application
+  ◻ Data / ML / AI             — Data pipelines, ML models, LLM apps
+  ◻ Library / Package          — Reusable module published to npm/PyPI
+  ◻ DevOps / Infrastructure    — Infrastructure, CI/CD, deployment
+
+  ℹ Not sure? Pick what's closest. You can add or remove
+    agents later with `claude-workflow upgrade`.
 ```
 
-If multiple types selected that share recommended agents, show:
+If "Full-stack web" AND "Backend / API" or "Frontend / UI" are selected:
 ```
-  Note: 3 agents are recommended by multiple categories
-  (api-designer, bug-fixer, database-analyst)
-  They will appear once in the selection.
+  ⚠ "Full-stack web" already includes backend and frontend.
+    You may not need to select those separately.
+```
+
+If multiple types selected that share recommended agents:
+```
+  ℹ Some agents are recommended by multiple project types: api-designer, bug-fixer
+    They will only be installed once.
 ```
 
 ### Step 3: Tech Stack Selection
-Based on project type. Determines permissions, hooks (formatter), and template content.
+Multi-select languages. Determines permissions, hooks (formatter), and template content.
 ```
-? Primary backend language:
-  ◉ Python
-  ○ Node.js / TypeScript
-  ○ Rust
-  ○ Go
-  ○ Other / None
+? Primary language(s) / runtime: (space to toggle, enter to confirm)
+  ◻ Python
+  ◻ Node.js / TypeScript
+  ◻ Rust
+  ◻ Go
+  ◻ Other / None
 
-? Do you use Docker? (Y/n)
+  ℹ This determines which tool permissions and formatters
+    are added. You can update later by editing
+    .claude/settings.json or running `claude-workflow upgrade`.
+
+? Do you use Docker in this project currently? (y/N)
+  ℹ If you add Docker later, run `claude-workflow upgrade`
+    to add Docker permissions and tools.
 ```
+
+When multiple languages selected, all permissions are merged and formatters are chained with `&&`.
 
 ### Step 4: Agent Selection
-Universal agents listed as already included. Optional agents pre-selected based on project type.
+Two-step category-based approach. Universal agents listed as already included.
+
+**Step 1: Select agent categories (pre-selected based on project type)**
 ```
 ✓ Universal agents (always installed):
-  ✓ plan-reviewer (Opus)
-  ✓ code-simplifier (Sonnet, worktree)
-  ✓ test-writer (Sonnet, worktree)
-  ✓ build-validator (Haiku)
-  ✓ verify-app (Sonnet, worktree)
+  ✓ plan-reviewer
+  ✓ code-simplifier
+  ✓ test-writer
+  ✓ build-validator
+  ✓ verify-app
 
-? Recommended agents for "Backend / API" (space to toggle):
-  ◼ api-designer — Reviews and designs API contracts
-  ◼ database-analyst — Queries, analyzes data, validates schemas
-  ◼ security-reviewer — Scans for vulnerabilities
-  ◼ auth-auditor — Reviews auth flows
-  ◼ bug-fixer — Investigates and fixes errors autonomously
-  ◼ performance-auditor — Profiles and optimizes bottlenecks
-
-? Additional agents available (space to select):
-  ◻ ui-reviewer — Reviews UI for consistency and accessibility
-  ◻ style-enforcer — Ensures design system compliance
-  ◻ ci-fixer — Monitors and fixes CI/CD failures
-  ◻ docker-helper — Manages containerization
-  ◻ deploy-validator — Validates deployment readiness
-  ◻ dependency-manager — Audits and resolves dependencies
-  ◻ doc-writer — Updates docs from code changes
-  ◻ changelog-generator — Generates changelogs from git history
-  ◻ refactorer — Large-scale refactoring with isolation
-  ◻ data-pipeline-reviewer — Reviews data flows
-  ◻ ml-experiment-tracker — Tracks ML experiments
-  ◻ prompt-engineer — Reviews and optimizes LLM prompts
+? Which agent categories do you need? (space to toggle)
+  ◼ Backend         — api-designer, database-analyst, auth-auditor
+  ◻ Frontend        — ui-reviewer, style-enforcer
+  ◻ DevOps          — ci-fixer, docker-helper, deploy-validator, dependency-manager
+  ◼ Quality         — bug-fixer, security-reviewer, performance-auditor, refactorer
+  ◻ Documentation   — doc-writer, changelog-generator
+  ◻ Data / AI       — data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer
 ```
+
+**Step 2: Fine-tune each selected category (press Enter to accept all defaults)**
+```
+? Fine-tune Backend agents? (space to toggle, enter to accept defaults)
+  ◼ api-designer       — Reviews API design for RESTful conventions
+  ◼ database-analyst    — Reviews database schemas and queries
+  ◼ auth-auditor        — Audits authentication and authorization
+```
+
+### Step 4.5: Confirmation
+After all prompts, before scaffolding, show a review summary.
+```
+  ─── Review Your Selections ───
+
+  Project:    My Project — A web app for managing tasks
+  Type:       Backend / API
+  Stack:      Python, Docker
+  Agents:     5 universal + 6 optional (11 total)
+
+? Everything look right?
+  ◉ Yes, install the workflow
+  ○ No, let me start over
+  ○ Let me adjust a specific step
+```
+
+If "adjust a specific step", show step picker and re-run that step only.
 
 ### Step 5: Scaffold
 Create all files. Show progress.
@@ -128,7 +158,7 @@ Create all files. Show progress.
   ✓ .claude/settings.json (permissions, hooks, sandbox)
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 selected)
-  ✓ .claude/commands/ (9 universal)
+  ✓ .claude/commands/ (10 universal)
   ✓ .claude/skills/ (9 universal + 3 templates)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
@@ -407,7 +437,7 @@ See `.claude/skills/` — load only what's relevant:
   "installedAt": "{timestamp}",
   "lastUpdated": "{timestamp}",
   "projectTypes": ["{selected_types}"],
-  "techStack": "{selected_stack}",
+  "techStack": ["{selected_stacks}"],
   "universalAgents": [
     "plan-reviewer",
     "code-simplifier",
@@ -665,7 +695,7 @@ Each agent follows the same frontmatter format. Full content for each agent is i
 
 ## Universal Slash Commands
 
-All 9 are installed in every project. Files live in `.claude/commands/`.
+All 10 are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 ```markdown
@@ -772,6 +802,17 @@ Review what happened:
 
 Write the proposed additions to the Gotchas section or
 Critical Rules section. Show the diff before applying.
+```
+
+### /setup (setup.md)
+```markdown
+Conversational interview to fill in project-specific files with real content.
+Asks 7 sections: Project Story, Architecture, Tech Stack Details, Core Features,
+Development Workflow, Coding Conventions, and Verification Strategy.
+
+After the interview, writes/updates: CLAUDE.md, SPEC.md, backend-conventions.md,
+frontend-design-system.md, project-patterns.md, and PROGRESS.md with real,
+project-specific content from the interview answers.
 ```
 
 ---
