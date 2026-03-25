@@ -35,12 +35,22 @@
                 v-for="option in projectTypes"
                 :key="option"
                 class="radio-option"
-                :class="{ 'radio-hover': hoveredOption === 'project-' + option }"
+                :class="{
+                  'radio-hover': hoveredOption === 'project-' + option && !pendingProjectType,
+                  'radio-selected': pendingProjectType === option,
+                  'radio-dimmed': pendingProjectType && pendingProjectType !== option,
+                }"
                 @mouseenter="hoveredOption = 'project-' + option"
                 @mouseleave="hoveredOption = null"
                 @click="selectProjectType(option)"
               >
-                <span class="radio-bullet">{{ option === projectTypes[0] ? '◉' : '○' }}</span>
+                <span class="radio-bullet">{{
+                  pendingProjectType === option
+                    ? '◉'
+                    : !pendingProjectType && option === projectTypes[0]
+                      ? '◉'
+                      : '○'
+                }}</span>
                 {{ option }}
               </div>
             </div>
@@ -60,12 +70,22 @@
                 v-for="option in languages"
                 :key="option"
                 class="radio-option"
-                :class="{ 'radio-hover': hoveredOption === 'lang-' + option }"
+                :class="{
+                  'radio-hover': hoveredOption === 'lang-' + option && !pendingTechStack,
+                  'radio-selected': pendingTechStack === option,
+                  'radio-dimmed': pendingTechStack && pendingTechStack !== option,
+                }"
                 @mouseenter="hoveredOption = 'lang-' + option"
                 @mouseleave="hoveredOption = null"
                 @click="selectTechStack(option)"
               >
-                <span class="radio-bullet">{{ option === languages[0] ? '◉' : '○' }}</span>
+                <span class="radio-bullet">{{
+                  pendingTechStack === option
+                    ? '◉'
+                    : !pendingTechStack && option === languages[0]
+                      ? '◉'
+                      : '○'
+                }}</span>
                 {{ option }}
               </div>
             </div>
@@ -85,12 +105,22 @@
                 v-for="option in ['Yes', 'No']"
                 :key="option"
                 class="radio-option"
-                :class="{ 'radio-hover': hoveredOption === 'docker-' + option }"
+                :class="{
+                  'radio-hover': hoveredOption === 'docker-' + option && !pendingDocker,
+                  'radio-selected': pendingDocker === option,
+                  'radio-dimmed': pendingDocker && pendingDocker !== option,
+                }"
                 @mouseenter="hoveredOption = 'docker-' + option"
                 @mouseleave="hoveredOption = null"
                 @click="selectDocker(option)"
               >
-                <span class="radio-bullet">{{ option === 'Yes' ? '◉' : '○' }}</span>
+                <span class="radio-bullet">{{
+                  pendingDocker === option
+                    ? '◉'
+                    : !pendingDocker && option === 'Yes'
+                      ? '◉'
+                      : '○'
+                }}</span>
                 {{ option }}
               </div>
             </div>
@@ -115,8 +145,16 @@
               </div>
               <div class="spacer-sm"></div>
               <div class="agents-header">Recommended for "{{ projectType }}":</div>
-              <div v-for="agent in recommendedAgents" :key="agent" class="agent-line">
-                &nbsp;&nbsp;<span class="checkbox-checked">☑</span> {{ agent }}
+              <div
+                v-for="agent in recommendedAgents"
+                :key="agent.name"
+                class="agent-line agent-selectable"
+                @click="toggleAgent(agent)"
+              >
+                &nbsp;&nbsp;<span :class="agent.selected ? 'checkbox-checked' : 'checkbox-unchecked'">{{
+                  agent.selected ? '☑' : '☐'
+                }}</span>
+                {{ agent.name }}
               </div>
               <div class="spacer-sm"></div>
               <button
@@ -132,7 +170,7 @@
             <div v-else>
               <div class="answered-line">
                 <span class="prompt-checkmark">✓</span> Agents configured
-                <span class="dim-text">(5 universal + 6 recommended)</span>
+                <span class="dim-text">(5 universal + {{ selectedAgentCount }} recommended)</span>
               </div>
             </div>
           </div>
@@ -207,7 +245,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 
 const currentStep = ref(0);
 const showCursor = ref(true);
@@ -215,6 +253,9 @@ const showCursor = ref(true);
 const projectType = ref(null);
 const techStack = ref(null);
 const dockerAnswer = ref(null);
+const pendingProjectType = ref(null);
+const pendingTechStack = ref(null);
+const pendingDocker = ref(null);
 const agentsContinued = ref(false);
 const scaffoldIndex = ref(0);
 const scaffoldDone = ref(false);
@@ -242,26 +283,30 @@ const universalAgents = [
   { name: 'verify-app', detail: 'Sonnet, worktree' },
 ];
 
-const recommendedAgents = [
-  'api-designer',
-  'database-analyst',
-  'security-reviewer',
-  'auth-auditor',
-  'bug-fixer',
-  'performance-auditor',
-];
+const recommendedAgents = ref([
+  { name: 'api-designer', selected: true },
+  { name: 'database-analyst', selected: true },
+  { name: 'security-reviewer', selected: true },
+  { name: 'auth-auditor', selected: true },
+  { name: 'bug-fixer', selected: true },
+  { name: 'performance-auditor', selected: true },
+]);
 
-const scaffoldItems = [
+const selectedAgentCount = computed(() =>
+  recommendedAgents.value.filter((a) => a.selected).length
+);
+
+const scaffoldItems = computed(() => [
   'CLAUDE.md',
   '.claude/settings.json',
   '.claude/workflow-meta.json',
-  '.claude/agents/ (5 universal + 6 selected)',
+  `.claude/agents/ (5 universal + ${selectedAgentCount.value} selected)`,
   '.claude/commands/ (10 commands)',
   '.claude/skills/ (9 universal + 3 templates)',
   '.mcp.json',
   'docs/spec/PROGRESS.md',
   'docs/spec/SPEC.md',
-];
+]);
 
 let timeouts = [];
 
@@ -285,30 +330,52 @@ function scrollToBottom() {
 }
 
 function selectProjectType(option) {
-  projectType.value = option;
+  if (pendingProjectType.value) return;
+  pendingProjectType.value = option;
   scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 3;
+    projectType.value = option;
+    pendingProjectType.value = null;
     scrollToBottom();
+    scheduleTimeout(() => {
+      currentStep.value = 3;
+      scrollToBottom();
+    }, 300);
   }, 400);
 }
 
 function selectTechStack(option) {
-  techStack.value = option;
+  if (pendingTechStack.value) return;
+  pendingTechStack.value = option;
   scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 4;
+    techStack.value = option;
+    pendingTechStack.value = null;
     scrollToBottom();
+    scheduleTimeout(() => {
+      currentStep.value = 4;
+      scrollToBottom();
+    }, 300);
   }, 400);
 }
 
 function selectDocker(option) {
-  dockerAnswer.value = option;
+  if (pendingDocker.value) return;
+  pendingDocker.value = option;
   scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 5;
+    dockerAnswer.value = option;
+    pendingDocker.value = null;
     scrollToBottom();
+    scheduleTimeout(() => {
+      currentStep.value = 5;
+      scrollToBottom();
+    }, 300);
   }, 400);
+}
+
+function toggleAgent(agent) {
+  agent.selected = !agent.selected;
 }
 
 function continueAgents() {
@@ -323,7 +390,7 @@ function continueAgents() {
 }
 
 function runScaffoldAnimation() {
-  scaffoldItems.forEach((_, index) => {
+  scaffoldItems.value.forEach((_, index) => {
     scheduleTimeout(
       () => {
         scaffoldIndex.value = index + 1;
@@ -333,7 +400,7 @@ function runScaffoldAnimation() {
     );
   });
 
-  const totalDelay = 200 * (scaffoldItems.length + 1);
+  const totalDelay = 200 * (scaffoldItems.value.length + 1);
 
   scheduleTimeout(() => {
     scaffoldDone.value = true;
@@ -358,11 +425,15 @@ function resetDemo() {
   projectType.value = null;
   techStack.value = null;
   dockerAnswer.value = null;
+  pendingProjectType.value = null;
+  pendingTechStack.value = null;
+  pendingDocker.value = null;
   agentsContinued.value = false;
   scaffoldIndex.value = 0;
   scaffoldDone.value = false;
   hoveredOption.value = null;
   showCursor.value = true;
+  recommendedAgents.value.forEach((a) => (a.selected = true));
 
   scheduleTimeout(() => {
     startDemo();
@@ -510,6 +581,10 @@ onUnmounted(() => {
   color: #27c93f;
 }
 
+.checkbox-unchecked {
+  color: #888;
+}
+
 .radio-option {
   padding: 4px 8px;
   border-radius: 4px;
@@ -522,6 +597,16 @@ onUnmounted(() => {
 .radio-option:hover,
 .radio-option.radio-hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.radio-option.radio-selected {
+  background: rgba(39, 201, 63, 0.2);
+  color: #27c93f;
+}
+
+.radio-option.radio-dimmed {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .radio-bullet {
@@ -548,6 +633,18 @@ onUnmounted(() => {
 .agent-line {
   color: #e0e0e0;
   padding: 1px 0;
+}
+
+.agent-selectable {
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.agent-selectable:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dim-text {
