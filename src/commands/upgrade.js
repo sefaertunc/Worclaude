@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import {
@@ -15,10 +16,62 @@ import { hashFile } from '../utils/hash.js';
 import { writeFile, fileExists, listFilesRecursive } from '../utils/file.js';
 import * as display from '../utils/display.js';
 
+async function getLatestNpmVersion() {
+  try {
+    return execSync('npm view worclaude version', { encoding: 'utf-8' }).trim();
+  } catch {
+    return null;
+  }
+}
+
+async function selfUpdate(latestVersion) {
+  const spinner = ora(`Updating worclaude to v${latestVersion}...`).start();
+  try {
+    execSync('npm install -g worclaude@latest', { encoding: 'utf-8', stdio: 'pipe' });
+    spinner.succeed(`worclaude updated to v${latestVersion}.`);
+    return true;
+  } catch (err) {
+    spinner.fail('Self-update failed.');
+    display.error(err.message);
+    display.info('Try manually: npm install -g worclaude@latest');
+    return false;
+  }
+}
+
 export async function upgradeCommand() {
   const projectRoot = process.cwd();
 
-  // 1. Check prerequisite
+  // 1. Check for CLI self-update from npm
+  const cliVersion = await getPackageVersion();
+  const latestVersion = await getLatestNpmVersion();
+
+  if (latestVersion && latestVersion !== cliVersion) {
+    display.newline();
+    display.info(
+      `New worclaude version available: ${display.dimColor(`v${cliVersion}`)} → ${display.green(`v${latestVersion}`)}`
+    );
+    const { doUpdate } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'doUpdate',
+        message: 'Update worclaude CLI?',
+        choices: [
+          { name: 'Yes, update and continue', value: true },
+          { name: 'No, continue with current version', value: false },
+        ],
+      },
+    ]);
+
+    if (doUpdate) {
+      const updated = await selfUpdate(latestVersion);
+      if (updated) {
+        display.info('Re-run `worclaude upgrade` to apply the new workflow files.');
+        return;
+      }
+    }
+  }
+
+  // 2. Check prerequisite
   if (!(await workflowMetaExists(projectRoot))) {
     display.error('No workflow installation found.');
     display.info('Run `worclaude init` to set up the workflow first.');
@@ -32,7 +85,7 @@ export async function upgradeCommand() {
     return;
   }
 
-  // 2. Version comparison
+  // 3. Version comparison
   const currentVersion = await getPackageVersion();
   const installedVersion = meta.version;
 
@@ -41,10 +94,10 @@ export async function upgradeCommand() {
     return;
   }
 
-  // 3. Categorize files
+  // 4. Categorize files
   const categories = await categorizeFiles(projectRoot, meta);
 
-  // 4. Preview
+  // 5. Preview
   display.sectionHeader(`WORCLAUDE UPGRADE (v${installedVersion} → v${currentVersion})`);
   display.newline();
 
@@ -105,7 +158,7 @@ export async function upgradeCommand() {
     display.newline();
   }
 
-  // 5. Confirm
+  // 6. Confirm
   const { proceed } = await inquirer.prompt([
     {
       type: 'list',
@@ -123,7 +176,7 @@ export async function upgradeCommand() {
     return;
   }
 
-  // 6. Execute
+  // 7. Execute
   const spinner = ora('Upgrading...').start();
 
   try {
@@ -180,7 +233,7 @@ export async function upgradeCommand() {
 
     spinner.succeed(`Upgrade complete! (${installedVersion} → ${currentVersion})`);
 
-    // 7. Display report
+    // 8. Display report
     display.newline();
     if (categories.autoUpdate.length > 0) {
       display.barLine(`Updated:     ${categories.autoUpdate.length} files`);
