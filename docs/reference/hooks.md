@@ -11,10 +11,12 @@ Runs the project's formatter after every `Write` or `Edit` tool use.
 ```json
 {
   "matcher": "Write|Edit",
-  "hooks": [{
-    "type": "command",
-    "command": "npx prettier --write . || true"
-  }]
+  "hooks": [
+    {
+      "type": "command",
+      "command": "npx prettier --write . || true"
+    }
+  ]
 }
 ```
 
@@ -22,23 +24,23 @@ The formatter command is selected based on the project's tech stack during `worc
 
 **Formatter commands by stack:**
 
-| Stack | Formatter Command |
-|---|---|
-| Python | `ruff format . \|\| true` |
-| Node.js / TypeScript | `npx prettier --write . \|\| true` |
-| Java | `google-java-format -i $(find . -name '*.java' 2>/dev/null) \|\| true` |
-| C# / .NET | `dotnet format \|\| true` |
-| C / C++ | `find . -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \| xargs clang-format -i \|\| true` |
-| Go | `gofmt -w . \|\| true` |
-| PHP | `php-cs-fixer fix . \|\| true` |
-| Ruby | `rubocop -A \|\| true` |
-| Kotlin | `ktlint -F \|\| true` |
-| Swift | `swift-format format -r . -i \|\| true` |
-| Rust | `cargo fmt \|\| true` |
-| Dart / Flutter | `dart format . \|\| true` |
-| Scala | `scalafmt \|\| true` |
-| Elixir | `mix format \|\| true` |
-| Zig | `zig fmt . \|\| true` |
+| Stack                | Formatter Command                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| Python               | `ruff format . \|\| true`                                                                                |
+| Node.js / TypeScript | `npx prettier --write . \|\| true`                                                                       |
+| Java                 | `google-java-format -i $(find . -name '*.java' 2>/dev/null) \|\| true`                                   |
+| C# / .NET            | `dotnet format \|\| true`                                                                                |
+| C / C++              | `find . -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \| xargs clang-format -i \|\| true` |
+| Go                   | `gofmt -w . \|\| true`                                                                                   |
+| PHP                  | `php-cs-fixer fix . \|\| true`                                                                           |
+| Ruby                 | `rubocop -A \|\| true`                                                                                   |
+| Kotlin               | `ktlint -F \|\| true`                                                                                    |
+| Swift                | `swift-format format -r . -i \|\| true`                                                                  |
+| Rust                 | `cargo fmt \|\| true`                                                                                    |
+| Dart / Flutter       | `dart format . \|\| true`                                                                                |
+| Scala                | `scalafmt \|\| true`                                                                                     |
+| Elixir               | `mix format \|\| true`                                                                                   |
+| Zig                  | `zig fmt . \|\| true`                                                                                    |
 
 When multiple languages are selected, the first language's formatter is used.
 
@@ -51,10 +53,12 @@ Sends a desktop notification when Claude stops and needs user attention.
 ```json
 {
   "matcher": "Stop",
-  "hooks": [{
-    "type": "command",
-    "command": "notify-send 'Claude Code' 'Session needs attention' 2>/dev/null || true"
-  }]
+  "hooks": [
+    {
+      "type": "command",
+      "command": "notify-send 'Claude Code' 'Session needs attention' 2>/dev/null || true"
+    }
+  ]
 }
 ```
 
@@ -62,10 +66,10 @@ The notification command is selected based on the operating system detected duri
 
 **Notification commands by OS:**
 
-| OS | Command |
-|---|---|
-| Linux | `notify-send 'Claude Code' 'Session needs attention' 2>/dev/null \|\| true` |
-| macOS | `osascript -e 'display notification "Session needs attention" with title "Claude Code"' 2>/dev/null \|\| true` |
+| OS      | Command                                                                                                                |
+| ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Linux   | `notify-send 'Claude Code' 'Session needs attention' 2>/dev/null \|\| true`                                            |
+| macOS   | `osascript -e 'display notification "Session needs attention" with title "Claude Code"' 2>/dev/null \|\| true`         |
 | Windows | `powershell -command "New-BurntToastNotification -Text 'Claude Code','Session needs attention'" 2>/dev/null \|\| true` |
 
 All commands include `2>/dev/null || true` to fail silently if the notification tool is not installed.
@@ -79,10 +83,12 @@ Re-reads CLAUDE.md and PROGRESS.md after context compaction.
 ```json
 {
   "matcher": "",
-  "hooks": [{
-    "type": "command",
-    "command": "cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true"
-  }]
+  "hooks": [
+    {
+      "type": "command",
+      "command": "cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true"
+    }
+  ]
 }
 ```
 
@@ -102,10 +108,12 @@ Hooks are defined in `.claude/settings.json` under the `hooks` key. The structur
     "EventName": [
       {
         "matcher": "ToolPattern",
-        "hooks": [{
-          "type": "command",
-          "command": "shell command here"
-        }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "shell command here"
+          }
+        ]
       }
     ]
   }
@@ -114,10 +122,10 @@ Hooks are defined in `.claude/settings.json` under the `hooks` key. The structur
 
 **Hook events:**
 
-| Event | When It Fires |
-|---|---|
+| Event         | When It Fires                                                                           |
+| ------------- | --------------------------------------------------------------------------------------- |
 | `PostToolUse` | After Claude uses a tool. `matcher` filters by tool name (e.g., `Write\|Edit`, `Stop`). |
-| `PostCompact` | After context compaction. `matcher` is typically empty (fires on all compactions). |
+| `PostCompact` | After context compaction. `matcher` is typically empty (fires on all compactions).      |
 
 **Custom hook examples:**
 

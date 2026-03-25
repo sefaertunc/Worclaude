@@ -60,7 +60,11 @@ describe('status command', () => {
       path.join(tmpDir, '.claude', 'settings.json'),
       JSON.stringify({
         permissions: { allow: ['Bash(npm test)', '// dev tools', 'Bash(git:*)'] },
-        hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'echo test' }] }] },
+        hooks: {
+          PostToolUse: [
+            { matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'echo test' }] },
+          ],
+        },
       })
     );
 
@@ -119,10 +123,7 @@ describe('status command', () => {
       path.join(tmpDir, '.claude', 'workflow-meta.json'),
       JSON.stringify(meta, null, 2)
     );
-    await fs.writeFile(
-      path.join(tmpDir, '.claude', 'skills', 'testing.workflow-ref.md'),
-      '# Ref'
-    );
+    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing.workflow-ref.md'), '# Ref');
 
     await statusCommand();
 

@@ -64,7 +64,10 @@ describe('file-categorizer', () => {
       const original = 'original content';
       const hash = hashContent(original);
       await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
-      await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'test-file.md'), 'modified content');
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'skills', 'test-file.md'),
+        'modified content'
+      );
 
       const meta = {
         fileHashes: { 'skills/test-file.md': hash },
@@ -86,10 +89,7 @@ describe('file-categorizer', () => {
 
     it('detects user-added files', async () => {
       await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
-      await fs.writeFile(
-        path.join(tmpDir, '.claude', 'skills', 'my-custom-skill.md'),
-        '# Custom'
-      );
+      await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'my-custom-skill.md'), '# Custom');
 
       const meta = { fileHashes: {}, optionalAgents: [] };
       const result = await categorizeFiles(tmpDir, meta);

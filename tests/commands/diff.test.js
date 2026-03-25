@@ -88,10 +88,7 @@ describe('diff command', () => {
       path.join(tmpDir, '.claude', 'workflow-meta.json'),
       JSON.stringify(meta, null, 2)
     );
-    await fs.writeFile(
-      path.join(tmpDir, '.claude', 'skills', 'my-custom.md'),
-      '# Custom'
-    );
+    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'my-custom.md'), '# Custom');
 
     await diffCommand();
 
@@ -117,10 +114,7 @@ describe('diff command', () => {
       JSON.stringify(meta, null, 2)
     );
     // Write same old content on disk (user didn't modify)
-    await fs.writeFile(
-      path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'),
-      fakeOldContent
-    );
+    await fs.writeFile(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'), fakeOldContent);
 
     await diffCommand();
 

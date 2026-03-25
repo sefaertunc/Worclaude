@@ -26,6 +26,7 @@ The project name and one-line description from the `worclaude init` prompts. Giv
 
 ```markdown
 ## Key Files
+
 - `docs/spec/PROGRESS.md` — Read first every session
 - `docs/spec/SPEC.md` — Source of truth
 ```
@@ -36,6 +37,7 @@ Points Claude to the two most important documents. PROGRESS.md tracks session-to
 
 ```markdown
 ## Tech Stack
+
 - Python
 - Node.js / TypeScript
 - Docker
@@ -45,15 +47,18 @@ Populated from the tech stack selections during init. Tells Claude what language
 
 ### Commands
 
-```markdown
+````markdown
 ## Commands
+
 ```bash
 # Python
 python -m pytest                # Run tests
 ruff check .                    # Lint
 ruff format .                   # Format
 ```
-```
+````
+
+````
 
 Populated from the tech stack selections. Provides exact commands for testing, linting, and formatting so Claude does not guess or use incorrect tool names.
 
@@ -71,7 +76,7 @@ See `.claude/skills/` — load only what's relevant:
 - backend-conventions.md — Run /setup to fill automatically
 - frontend-design-system.md — Run /setup to fill automatically
 - project-patterns.md — Run /setup to fill automatically
-```
+````
 
 Lists all 9 universal skills and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern.
 
@@ -79,6 +84,7 @@ Lists all 9 universal skills and 3 template skills. The "read on demand, not upf
 
 ```markdown
 ## Session Protocol
+
 **Start:** Read PROGRESS.md. Read active implementation prompt if any.
 **During:** One task at a time. Commit after each. Use subagents for side work.
 **End:** Update PROGRESS.md. Write handoff if ending mid-task.
@@ -90,6 +96,7 @@ Three-line workflow protocol. Covers the full session lifecycle. Each phase has 
 
 ```markdown
 ## Critical Rules
+
 1. SPEC.md is source of truth. Do not invent features.
 2. Test before moving on.
 3. Ask if ambiguous. Do not guess.
@@ -105,6 +112,7 @@ Seven rules that apply to every task. These prevent the most common failure mode
 
 ```markdown
 ## Gotchas
+
 [Grows during development]
 ```
 

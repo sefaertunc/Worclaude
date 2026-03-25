@@ -31,14 +31,14 @@ import { initCommand } from '../../src/commands/init.js';
 function setupDefaultMocks() {
   const responses = [
     { projectName: 'test-project', description: 'A test project' }, // 1: project info
-    { projectTypes: ['CLI tool'] },                                  // 2: project type
-    { languages: ['node'] },                                         // 3: tech stack (multi-select)
-    { useDocker: false },                                            // 4: docker
-    { selectedCategories: ['Quality', 'Documentation'] },            // 5: agent categories
-    { selectedAgents: ['bug-fixer'] },                               // 6: fine-tune Quality
-    { selectedAgents: ['doc-writer'] },                              // 7: fine-tune Documentation
-    { additionalCategories: [] },                                    // 8: unselected categories offer
-    { confirmation: 'yes' },                                         // 9: confirmation
+    { projectTypes: ['CLI tool'] }, // 2: project type
+    { languages: ['node'] }, // 3: tech stack (multi-select)
+    { useDocker: false }, // 4: docker
+    { selectedCategories: ['Quality', 'Documentation'] }, // 5: agent categories
+    { selectedAgents: ['bug-fixer'] }, // 6: fine-tune Quality
+    { selectedAgents: ['doc-writer'] }, // 7: fine-tune Documentation
+    { additionalCategories: [] }, // 8: unselected categories offer
+    { confirmation: 'yes' }, // 9: confirmation
   ];
   let callCount = 0;
   inquirer.prompt.mockImplementation(() => {
@@ -95,7 +95,13 @@ describe('init command', () => {
 
   it('creates universal agents', async () => {
     await initCommand();
-    const agents = ['plan-reviewer', 'code-simplifier', 'test-writer', 'build-validator', 'verify-app'];
+    const agents = [
+      'plan-reviewer',
+      'code-simplifier',
+      'test-writer',
+      'build-validator',
+      'verify-app',
+    ];
     for (const agent of agents) {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'agents', `${agent}.md`));
       expect(exists, `${agent}.md should exist`).toBe(true);
@@ -110,7 +116,18 @@ describe('init command', () => {
 
   it('creates all 10 commands including setup', async () => {
     await initCommand();
-    const commands = ['start', 'end', 'commit-push-pr', 'review-plan', 'techdebt', 'verify', 'compact-safe', 'status', 'update-claude-md', 'setup'];
+    const commands = [
+      'start',
+      'end',
+      'commit-push-pr',
+      'review-plan',
+      'techdebt',
+      'verify',
+      'compact-safe',
+      'status',
+      'update-claude-md',
+      'setup',
+    ];
     for (const cmd of commands) {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'commands', `${cmd}.md`));
       expect(exists, `${cmd}.md should exist`).toBe(true);
@@ -119,7 +136,20 @@ describe('init command', () => {
 
   it('creates all skills', async () => {
     await initCommand();
-    const skills = ['context-management', 'git-conventions', 'planning-with-files', 'review-and-handoff', 'prompt-engineering', 'verification', 'testing', 'claude-md-maintenance', 'subagent-usage', 'backend-conventions', 'frontend-design-system', 'project-patterns'];
+    const skills = [
+      'context-management',
+      'git-conventions',
+      'planning-with-files',
+      'review-and-handoff',
+      'prompt-engineering',
+      'verification',
+      'testing',
+      'claude-md-maintenance',
+      'subagent-usage',
+      'backend-conventions',
+      'frontend-design-system',
+      'project-patterns',
+    ];
     for (const skill of skills) {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'skills', `${skill}.md`));
       expect(exists, `${skill}.md should exist`).toBe(true);
@@ -285,16 +315,16 @@ describe('init command', () => {
       // Scenario B mock sequence:
       // 1: proceed confirmation, 2-9: same as Scenario A, + CLAUDE.md merge
       const responses = [
-        { proceed: true },                                              // confirm proceed
-        { projectName: 'existing-project', description: 'Existing' },   // project info
-        { projectTypes: ['CLI tool'] },                                  // project type
-        { languages: ['node'] },                                         // tech stack
-        { useDocker: false },                                            // docker
-        { selectedCategories: ['Quality'] },                             // categories
-        { selectedAgents: ['bug-fixer'] },                               // fine-tune
-        { additionalCategories: [] },                                    // extra categories
-        { confirmation: 'yes' },                                         // confirm
-        { choice: 'keep' },                                              // CLAUDE.md handling
+        { proceed: true }, // confirm proceed
+        { projectName: 'existing-project', description: 'Existing' }, // project info
+        { projectTypes: ['CLI tool'] }, // project type
+        { languages: ['node'] }, // tech stack
+        { useDocker: false }, // docker
+        { selectedCategories: ['Quality'] }, // categories
+        { selectedAgents: ['bug-fixer'] }, // fine-tune
+        { additionalCategories: [] }, // extra categories
+        { confirmation: 'yes' }, // confirm
+        { choice: 'keep' }, // CLAUDE.md handling
       ];
       let i = 0;
       inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
@@ -321,32 +351,26 @@ describe('init command', () => {
       ).toBe(true);
 
       // Non-conflicting skills added
-      expect(
-        await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'verification.md'))
-      ).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'verification.md'))).toBe(
+        true
+      );
 
       // Agents added
-      expect(
-        await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'))
-      ).toBe(true);
-      expect(
-        await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'bug-fixer.md'))
-      ).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'))).toBe(
+        true
+      );
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'bug-fixer.md'))).toBe(
+        true
+      );
 
       // Commands added
-      expect(
-        await fs.pathExists(path.join(tmpDir, '.claude', 'commands', 'setup.md'))
-      ).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'commands', 'setup.md'))).toBe(true);
 
       // workflow-meta.json created
-      expect(
-        await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-meta.json'))
-      ).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-meta.json'))).toBe(true);
 
       // CLAUDE.md.workflow-suggestions created
-      expect(
-        await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-suggestions'))
-      ).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-suggestions'))).toBe(true);
 
       // Original CLAUDE.md preserved
       const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
@@ -363,9 +387,7 @@ describe('init command', () => {
       await initCommand();
 
       // Nothing should be scaffolded
-      expect(
-        await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-meta.json'))
-      ).toBe(false);
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-meta.json'))).toBe(false);
     });
   });
 });

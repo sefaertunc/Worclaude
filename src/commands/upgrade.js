@@ -45,51 +45,52 @@ export async function upgradeCommand() {
   const categories = await categorizeFiles(projectRoot, meta);
 
   // 4. Preview
-  display.header('Worclaude Upgrade');
-  display.newline();
-  display.dim(`  Current version: ${installedVersion}`);
-  display.dim(`  New version:     ${currentVersion}`);
+  display.sectionHeader(`WORCLAUDE UPGRADE (v${installedVersion} → v${currentVersion})`);
   display.newline();
 
-  display.info('Changes:');
+  display.barLine('Changes:');
 
   if (categories.autoUpdate.length > 0) {
-    display.dim('  Auto-update (unchanged since install):');
+    display.barLine(`${display.green('✓')} Auto-update (unchanged since install):`);
     const showCount = Math.min(categories.autoUpdate.length, 3);
     for (let i = 0; i < showCount; i++) {
-      display.dim(`    ✓ ${categories.autoUpdate[i].key}`);
+      display.barLine(`  ${display.green('✓')} ${categories.autoUpdate[i].key}`);
     }
     if (categories.autoUpdate.length > 3) {
-      display.dim(`    ✓ ${categories.autoUpdate.length - 3} more files`);
+      display.barLine(`  ${display.green('✓')} ${categories.autoUpdate.length - 3} more files`);
     }
     display.newline();
   }
 
   if (categories.conflict.length > 0) {
-    display.dim('  Needs review (you\'ve customized these):');
+    display.barLine(`${display.yellow('~')} Needs review (you've customized these):`);
     for (const { key } of categories.conflict) {
-      display.dim(`    ~ ${key} (modified since install)`);
+      display.barLine(
+        `  ${display.yellow('~')} ${key} ${display.dimColor('(modified since install)')}`
+      );
     }
     display.newline();
   }
 
   if (categories.newFiles.length > 0) {
-    display.dim('  New in this version:');
+    display.barLine(`${display.green('+')} New in this version:`);
     for (const { key } of categories.newFiles) {
-      display.dim(`    + ${key}`);
+      display.barLine(`  ${display.green('+')} ${key}`);
     }
     display.newline();
   }
 
   if (categories.unchanged.length > 0) {
-    display.dim(`  Unchanged (no updates needed): ${categories.unchanged.length} files`);
+    display.barLine(
+      `${display.dimColor('=')} Unchanged: ${display.dimColor(`${categories.unchanged.length} files`)}`
+    );
     display.newline();
   }
 
   if (categories.modified.length > 0) {
-    display.dim('  Your customizations (no workflow updates available):');
+    display.barLine(`${display.yellow('~')} Your customizations (no workflow updates available):`);
     for (const { key } of categories.modified) {
-      display.dim(`    ~ ${key}`);
+      display.barLine(`  ${display.yellow('~')} ${key}`);
     }
     display.newline();
   }
@@ -182,24 +183,28 @@ export async function upgradeCommand() {
     // 7. Display report
     display.newline();
     if (categories.autoUpdate.length > 0) {
-      display.dim(`  Updated:     ${categories.autoUpdate.length} files`);
+      display.barLine(`Updated:     ${categories.autoUpdate.length} files`);
     }
     if (categories.conflict.length > 0) {
-      display.dim(`  Conflicts:   ${categories.conflict.length} files (saved as .workflow-ref.md)`);
+      display.barLine(
+        `Conflicts:   ${categories.conflict.length} files ${display.dimColor('(saved as .workflow-ref.md)')}`
+      );
     }
     if (categories.newFiles.length > 0) {
-      display.dim(`  New:         ${categories.newFiles.length} files added`);
+      display.barLine(`New:         ${categories.newFiles.length} files added`);
     }
-    display.dim(`  Unchanged:   ${categories.unchanged.length} files`);
+    display.barLine(`Unchanged:   ${categories.unchanged.length} files`);
     if (categories.modified.length > 0) {
-      display.dim(`  Customized:  ${categories.modified.length} files (no updates needed)`);
+      display.barLine(
+        `Customized:  ${categories.modified.length} files ${display.dimColor('(no updates needed)')}`
+      );
     }
     display.newline();
-    display.dim(`  Backup: ${path.basename(backupDir)}/`);
+    display.barLine(display.dimColor(`Backup: ${path.basename(backupDir)}/`));
 
     if (categories.conflict.length > 0) {
       display.newline();
-      display.info('Review .workflow-ref.md files and merge what\'s useful.');
+      display.barLine(`Review .workflow-ref.md files and merge what's useful.`);
     }
   } catch (err) {
     spinner.fail('Upgrade failed.');

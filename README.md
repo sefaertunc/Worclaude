@@ -20,6 +20,7 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 `worclaude init` installs a production-ready Claude Code workflow:
 
 **Agents (23 total)**
+
 - 5 universal: plan-reviewer, code-simplifier, test-writer, build-validator, verify-app
 - 18 optional across 6 categories: Backend, Frontend, DevOps, Quality, Documentation, Data/AI
 
@@ -27,15 +28,18 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 `/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/setup`
 
 **Skills (12)**
+
 - 9 universal knowledge files (testing, git conventions, context management, and more)
 - 3 project-specific templates filled in by `/setup`
 
 **Hooks**
+
 - PostToolUse formatter (auto-formats on every write)
 - PostCompact re-injection (re-reads key files after compaction)
 - Stop notifications (desktop alert when Claude finishes)
 
 **Configuration**
+
 - Pre-configured permissions per tech stack (Node.js, Python, Go, Rust, and more)
 - CLAUDE.md template with progressive disclosure
 - Sandbox, effort, and output defaults ready out of the box
@@ -58,14 +62,14 @@ For parallel tasks, run Claude with worktrees: `claude --worktree --tmux`
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `worclaude init` | Scaffold workflow into new or existing project |
-| `worclaude upgrade` | Update universal components to latest version |
-| `worclaude status` | Show current workflow state and version |
-| `worclaude backup` | Create timestamped backup of workflow files |
-| `worclaude restore` | Restore from a previous backup |
-| `worclaude diff` | Compare current setup vs latest version |
+| Command             | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `worclaude init`    | Scaffold workflow into new or existing project |
+| `worclaude upgrade` | Update universal components to latest version  |
+| `worclaude status`  | Show current workflow state and version        |
+| `worclaude backup`  | Create timestamped backup of workflow files    |
+| `worclaude restore` | Restore from a previous backup                 |
+| `worclaude diff`    | Compare current setup vs latest version        |
 
 The `init` command detects existing setups and merges intelligently — no data is overwritten without your confirmation. Use `upgrade` to pull in new features while preserving your customizations.
 

@@ -12,9 +12,27 @@ describe('display', () => {
     logSpy.mockRestore();
   });
 
-  it('header prints bold text with underline', () => {
-    display.header('Test Header');
-    expect(logSpy).toHaveBeenCalledTimes(3); // newline + text + underline
+  it('banner prints version with brand name', () => {
+    display.banner('1.2.0');
+    expect(logSpy).toHaveBeenCalledTimes(3); // blank + styled line + blank
+    const styled = logSpy.mock.calls[1][0];
+    expect(styled).toContain('WORCLAUDE');
+    expect(styled).toContain('1.2.0');
+  });
+
+  it('sectionHeader prints title with bar', () => {
+    display.sectionHeader('TEST TITLE');
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const output = logSpy.mock.calls[0][0];
+    expect(output).toContain('TEST TITLE');
+  });
+
+  it('divider prints labeled separator', () => {
+    display.divider('REVIEW');
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const output = logSpy.mock.calls[0][0];
+    expect(output).toContain('REVIEW');
+    expect(output).toContain('───');
   });
 
   it('success prints with checkmark', () => {
@@ -48,5 +66,22 @@ describe('display', () => {
   it('newline prints empty line', () => {
     display.newline();
     expect(logSpy).toHaveBeenCalledWith();
+  });
+
+  it('barLine prints with vertical bar', () => {
+    display.barLine('content');
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const output = logSpy.mock.calls[0][0];
+    expect(output).toContain('content');
+  });
+
+  it('badge wraps text with style', () => {
+    const result = display.badge('Test', display.badges.opus);
+    expect(result).toContain('Test');
+  });
+
+  it('renderAgentWithBadges includes agent name', () => {
+    const result = display.renderAgentWithBadges('plan-reviewer');
+    expect(result).toContain('plan-reviewer');
   });
 });

@@ -10,9 +10,9 @@ import * as display from '../utils/display.js';
 export async function promptAgentSelection(projectTypes) {
   // Show universal agents (informational)
   display.newline();
-  display.info('Universal agents (always installed):');
+  display.sectionHeader('UNIVERSAL AGENTS');
   for (const agent of UNIVERSAL_AGENTS) {
-    display.success(agent);
+    display.barLine(`${display.green('✓')} ${display.renderAgentWithBadges(agent)}`);
   }
   display.newline();
 
@@ -68,7 +68,7 @@ export async function promptAgentSelection(projectTypes) {
       {
         type: 'checkbox',
         name: 'additionalCategories',
-        message: 'Any other agent categories you\'d like to add? (space to toggle, enter to skip)',
+        message: "Any other agent categories you'd like to add? (space to toggle, enter to skip)",
         choices: unselectedCategories.map((cat) => ({
           name: `${cat} — ${AGENT_CATEGORIES[cat].description}`,
           value: cat,

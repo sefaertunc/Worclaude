@@ -13,11 +13,7 @@ The Claude Code settings file. Controls what tools Claude can use without confir
 ```json
 {
   "permissions": {
-    "allow": [
-      "// -- Section Comment --",
-      "Bash(command:*)",
-      "Edit(pattern)"
-    ]
+    "allow": ["// -- Section Comment --", "Bash(command:*)", "Edit(pattern)"]
   },
   "hooks": {
     "PostToolUse": [
@@ -40,11 +36,11 @@ The Claude Code settings file. Controls what tools Claude can use without confir
 }
 ```
 
-| Section | Purpose | Details |
-|---|---|---|
-| `permissions.allow` | Pre-approved tool invocations | See [Permissions](/reference/permissions) |
-| `hooks.PostToolUse` | Commands triggered after tool use | See [Hooks](/reference/hooks) |
-| `hooks.PostCompact` | Commands triggered after compaction | See [Hooks](/reference/hooks) |
+| Section             | Purpose                             | Details                                   |
+| ------------------- | ----------------------------------- | ----------------------------------------- |
+| `permissions.allow` | Pre-approved tool invocations       | See [Permissions](/reference/permissions) |
+| `hooks.PostToolUse` | Commands triggered after tool use   | See [Hooks](/reference/hooks)             |
+| `hooks.PostCompact` | Commands triggered after compaction | See [Hooks](/reference/hooks)             |
 
 **Built from:** Base permissions (`templates/settings/base.json`) merged with per-stack permissions (e.g., `templates/settings/python.json`, `templates/settings/node.json`) based on selected tech stack. Formatter and notification commands are substituted from stack and OS detection.
 
@@ -67,7 +63,13 @@ Installation metadata used by `worclaude upgrade`, `worclaude status`, and `worc
   "lastUpdated": "2026-03-25T14:30:22.000Z",
   "projectTypes": ["Backend / API", "CLI tool"],
   "techStack": ["node", "python"],
-  "universalAgents": ["plan-reviewer", "code-simplifier", "test-writer", "build-validator", "verify-app"],
+  "universalAgents": [
+    "plan-reviewer",
+    "code-simplifier",
+    "test-writer",
+    "build-validator",
+    "verify-app"
+  ],
   "optionalAgents": ["api-designer", "bug-fixer"],
   "useDocker": false,
   "fileHashes": {
@@ -78,17 +80,17 @@ Installation metadata used by `worclaude upgrade`, `worclaude status`, and `worc
 }
 ```
 
-| Field | Type | Purpose |
-|---|---|---|
-| `version` | string | Worclaude CLI version at install/upgrade time |
-| `installedAt` | ISO 8601 | When `worclaude init` was first run |
-| `lastUpdated` | ISO 8601 | When `worclaude init` or `worclaude upgrade` last ran |
-| `projectTypes` | string[] | Selected project types from init |
-| `techStack` | string[] | Selected language identifiers (e.g., `"node"`, `"python"`) |
-| `universalAgents` | string[] | Names of installed universal agents |
-| `optionalAgents` | string[] | Names of installed optional agents |
-| `useDocker` | boolean | Whether Docker was selected during init |
-| `fileHashes` | object | SHA-256 hashes of all files in `.claude/` at install time (excluding `workflow-meta.json` and `settings.json`) |
+| Field             | Type     | Purpose                                                                                                        |
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `version`         | string   | Worclaude CLI version at install/upgrade time                                                                  |
+| `installedAt`     | ISO 8601 | When `worclaude init` was first run                                                                            |
+| `lastUpdated`     | ISO 8601 | When `worclaude init` or `worclaude upgrade` last ran                                                          |
+| `projectTypes`    | string[] | Selected project types from init                                                                               |
+| `techStack`       | string[] | Selected language identifiers (e.g., `"node"`, `"python"`)                                                     |
+| `universalAgents` | string[] | Names of installed universal agents                                                                            |
+| `optionalAgents`  | string[] | Names of installed optional agents                                                                             |
+| `useDocker`       | boolean  | Whether Docker was selected during init                                                                        |
+| `fileHashes`      | object   | SHA-256 hashes of all files in `.claude/` at install time (excluding `workflow-meta.json` and `settings.json`) |
 
 **Hash tracking:** File hashes enable `worclaude diff` to detect user modifications and `worclaude upgrade` to determine which files can be auto-updated (unchanged) vs which need conflict resolution (modified by user).
 

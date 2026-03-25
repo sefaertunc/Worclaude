@@ -1,10 +1,12 @@
 # PROGRESS.md
 
 ## Current Status
+
 **Phase:** All phases complete — ready for npm publish
 **Last Updated:** 2026-03-24
 
 ## Completed
+
 - [x] Workflow design (53 tips analyzed, all decisions made)
 - [x] SPEC.md written
 - [x] CLAUDE.md written
@@ -68,6 +70,7 @@
   - [x] Cross-platform hardening: CRLF-safe split() in claude-md-merge.js and detector.js
 
 ## Stats
+
 - 6 CLI commands: init, upgrade, status, backup, restore, diff
 - 5 universal agents + 18 optional agents (6 categories)
 - 10 slash commands
@@ -77,5 +80,6 @@
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
+
 - Derived from 53 tips by Boris Cherny (howborisusesclaudecode.com)
 - Ready for: npm publish

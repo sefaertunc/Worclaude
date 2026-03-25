@@ -10,10 +10,10 @@ Without pre-approved permissions, Claude Code asks for user confirmation on ever
 
 Permissions use the format `Tool(pattern)` where the pattern supports wildcards:
 
-| Format | Meaning | Example |
-|---|---|---|
-| `Bash(command:*)` | Allow a shell command with any arguments | `Bash(git status:*)` |
-| `Edit(glob)` | Allow editing files matching a glob pattern | `Edit(src/**)` |
+| Format            | Meaning                                     | Example              |
+| ----------------- | ------------------------------------------- | -------------------- |
+| `Bash(command:*)` | Allow a shell command with any arguments    | `Bash(git status:*)` |
+| `Edit(glob)`      | Allow editing files matching a glob pattern | `Edit(src/**)`       |
 
 The `*` wildcard matches any arguments. The `**` glob matches any path depth.
 
@@ -52,17 +52,17 @@ echo, mkdir, touch, cp, mv, curl, wget, tar, zip, unzip, make
 
 File editing by path pattern:
 
-| Pattern | Scope |
-|---|---|
-| `Edit(.claude/**)` | All workflow configuration files |
-| `Edit(docs/**)` | All documentation |
-| `Edit(src/**)` | Source code |
-| `Edit(tests/**)`, `Edit(test/**)` | Test files |
-| `Edit(README*)` | README files |
-| `Edit(*.md)` | Any Markdown file |
-| `Edit(package.json)` | Node.js package manifest |
-| `Edit(pyproject.toml)` | Python project config |
-| `Edit(.github/**)` | GitHub Actions and configs |
+| Pattern                           | Scope                            |
+| --------------------------------- | -------------------------------- |
+| `Edit(.claude/**)`                | All workflow configuration files |
+| `Edit(docs/**)`                   | All documentation                |
+| `Edit(src/**)`                    | Source code                      |
+| `Edit(tests/**)`, `Edit(test/**)` | Test files                       |
+| `Edit(README*)`                   | README files                     |
+| `Edit(*.md)`                      | Any Markdown file                |
+| `Edit(package.json)`              | Node.js package manifest         |
+| `Edit(pyproject.toml)`            | Python project config            |
+| `Edit(.github/**)`                | GitHub Actions and configs       |
 
 ## Per-Stack Permissions
 

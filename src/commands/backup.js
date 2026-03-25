@@ -19,8 +19,8 @@ export async function backupCommand() {
   }
 
   display.newline();
-  display.success(`Backed up to ${path.basename(backupDir)}/`);
-  display.newline();
+  display.success(`Backup created!`);
+  display.success(`${display.dimColor(path.basename(backupDir) + '/')}`);
 
   // Summarize contents
   const contents = [];
@@ -35,7 +35,6 @@ export async function backupCommand() {
     const commands = await listFiles(path.join(claudeBackup, 'commands'));
     const skills = await listFiles(path.join(claudeBackup, 'skills'));
     const parts = [];
-    if (await fileExists(path.join(claudeBackup, 'settings.json'))) parts.push('settings.json');
     if (agents.length > 0) parts.push(`${agents.length} agents`);
     if (commands.length > 0) parts.push(`${commands.length} commands`);
     if (skills.length > 0) parts.push(`${skills.length} skills`);
@@ -47,9 +46,6 @@ export async function backupCommand() {
   }
 
   if (contents.length > 0) {
-    display.info('Contents:');
-    for (const item of contents) {
-      display.dim(`  ${item}`);
-    }
+    display.dim(`  ${contents.join(' · ')}`);
   }
 }

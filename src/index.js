@@ -38,10 +38,7 @@ program
   .description('Create a backup of current Claude setup')
   .action(backupCommand);
 
-program
-  .command('restore')
-  .description('Restore Claude setup from a backup')
-  .action(restoreCommand);
+program.command('restore').description('Restore Claude setup from a backup').action(restoreCommand);
 
 program
   .command('diff')

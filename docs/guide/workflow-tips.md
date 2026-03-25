@@ -168,6 +168,7 @@ Detailed knowledge belongs in skills, not in `CLAUDE.md`. Your `CLAUDE.md` shoul
 
 ```markdown
 ## Skills (read on demand, not upfront)
+
 See `.claude/skills/` — load only what's relevant
 ```
 

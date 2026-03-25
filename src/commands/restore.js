@@ -15,7 +15,7 @@ export async function restoreCommand() {
     return;
   }
 
-  display.header('Available Backups');
+  display.sectionHeader('AVAILABLE BACKUPS');
   display.newline();
 
   const choices = backups.map((b, i) => ({
@@ -77,7 +77,8 @@ export async function restoreCommand() {
   // Show what was restored
   const restored = [];
   if (await fileExists(path.join(projectRoot, 'CLAUDE.md'))) restored.push('CLAUDE.md');
-  if (await dirExists(path.join(projectRoot, '.claude'))) restored.push('.claude/ (full directory)');
+  if (await dirExists(path.join(projectRoot, '.claude')))
+    restored.push('.claude/ (full directory)');
   if (await fileExists(path.join(projectRoot, '.mcp.json'))) restored.push('.mcp.json');
 
   if (restored.length > 0) {
@@ -88,8 +89,6 @@ export async function restoreCommand() {
   }
 
   display.newline();
-  display.info(
-    'Note: workflow-meta.json has been restored to its backup state.'
-  );
+  display.info('Note: workflow-meta.json has been restored to its backup state.');
   display.dim('  Run `worclaude upgrade` if you want to update to the latest version.');
 }

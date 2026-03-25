@@ -16,11 +16,11 @@ worclaude init
 
 The command detects one of three scenarios automatically:
 
-| Scenario | Condition | Action |
-|---|---|---|
-| **A -- Fresh** | No `.claude/` directory, no `CLAUDE.md` | Full scaffold from scratch |
-| **B -- Existing** | Some Claude files exist but no `workflow-meta.json` | Smart merge with backup |
-| **Upgrade redirect** | `workflow-meta.json` exists | Tells user to run `worclaude upgrade` instead |
+| Scenario             | Condition                                           | Action                                        |
+| -------------------- | --------------------------------------------------- | --------------------------------------------- |
+| **A -- Fresh**       | No `.claude/` directory, no `CLAUDE.md`             | Full scaffold from scratch                    |
+| **B -- Existing**    | Some Claude files exist but no `workflow-meta.json` | Smart merge with backup                       |
+| **Upgrade redirect** | `workflow-meta.json` exists                         | Tells user to run `worclaude upgrade` instead |
 
 **Interactive prompts (all scenarios)**
 
@@ -93,13 +93,13 @@ Requires an existing `workflow-meta.json` from a prior `worclaude init`. Exits w
 1. Compares installed version against CLI version. Exits early if already current.
 2. Categorizes every tracked file into one of five buckets:
 
-| Category | Meaning | Action |
-|---|---|---|
-| **Auto-update** | File unchanged since install | Replaced with new version |
-| **Conflict** | User has customized the file | New version saved as `.workflow-ref.md` |
-| **New** | File added in this CLI version | Installed directly |
-| **Unchanged** | Template unchanged between versions | No action |
-| **Modified** | User customized, no template update available | No action |
+| Category        | Meaning                                       | Action                                  |
+| --------------- | --------------------------------------------- | --------------------------------------- |
+| **Auto-update** | File unchanged since install                  | Replaced with new version               |
+| **Conflict**    | User has customized the file                  | New version saved as `.workflow-ref.md` |
+| **New**         | File added in this CLI version                | Installed directly                      |
+| **Unchanged**   | Template unchanged between versions           | No action                               |
+| **Modified**    | User customized, no template update available | No action                               |
 
 3. Displays a preview of all changes.
 4. Prompts for confirmation (Yes / No).
@@ -142,15 +142,15 @@ Requires `workflow-meta.json`. Shows a setup prompt if not found.
 
 **Output includes**
 
-| Section | Details |
-|---|---|
-| Version info | Installed version, install date, last update date |
-| Project info | Project types, tech stack |
-| Agents | Universal count, optional count, optional agent names |
-| Files | Command count, skill count |
-| Customized files | Files whose hash differs from the installed version |
-| Pending review | Any `.workflow-ref.md` or `.workflow-suggestions` files |
-| Settings | Number of active hooks, number of permission rules |
+| Section          | Details                                                 |
+| ---------------- | ------------------------------------------------------- |
+| Version info     | Installed version, install date, last update date       |
+| Project info     | Project types, tech stack                               |
+| Agents           | Universal count, optional count, optional agent names   |
+| Files            | Command count, skill count                              |
+| Customized files | Files whose hash differs from the installed version     |
+| Pending review   | Any `.workflow-ref.md` or `.workflow-suggestions` files |
+| Settings         | Number of active hooks, number of permission rules      |
 
 **Examples**
 
@@ -245,13 +245,13 @@ Requires `workflow-meta.json`. Exits with guidance if not found.
 
 **Output categories**
 
-| Symbol | Category | Meaning |
-|---|---|---|
-| `~` | Modified | User changed the file since install |
-| `-` | Deleted | File was removed since install |
-| `+` | Extra | User added files not from the workflow |
-| `^` | Outdated | CLI has a newer template version available |
-| (count) | Unchanged | Files matching their installed hash |
+| Symbol  | Category  | Meaning                                    |
+| ------- | --------- | ------------------------------------------ |
+| `~`     | Modified  | User changed the file since install        |
+| `-`     | Deleted   | File was removed since install             |
+| `+`     | Extra     | User added files not from the workflow     |
+| `^`     | Outdated  | CLI has a newer template version available |
+| (count) | Unchanged | Files matching their installed hash        |
 
 **Behavior**
 

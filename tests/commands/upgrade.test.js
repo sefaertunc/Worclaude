@@ -54,7 +54,9 @@ describe('upgrade command', () => {
     // Read actual package version
     const pkgPath = path.resolve(
       path.dirname(new URL(import.meta.url).pathname),
-      '..', '..', 'package.json'
+      '..',
+      '..',
+      'package.json'
     );
     const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf-8'));
     const currentVersion = pkg.version;
@@ -118,10 +120,7 @@ describe('upgrade command', () => {
       JSON.stringify(meta, null, 2)
     );
     // File on disk matches stored (user hasn't modified) → should auto-update
-    await fs.writeFile(
-      path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'),
-      fakeOldContent
-    );
+    await fs.writeFile(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'), fakeOldContent);
     // Create settings.json for merge
     await fs.writeFile(
       path.join(tmpDir, '.claude', 'settings.json'),
@@ -197,9 +196,7 @@ describe('upgrade command', () => {
 
     // .workflow-ref.md should exist with new template
     expect(
-      await fs.pathExists(
-        path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.workflow-ref.md')
-      )
+      await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.workflow-ref.md'))
     ).toBe(true);
   });
 

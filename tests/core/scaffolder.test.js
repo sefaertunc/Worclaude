@@ -91,7 +91,12 @@ describe('scaffoldFile', () => {
 
   it('creates file with variable substitution', async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-scaffold-'));
-    await scaffoldFile('spec-md.md', 'SPEC.md', { project_name: 'TestProj', description: 'A test' }, tmpDir);
+    await scaffoldFile(
+      'spec-md.md',
+      'SPEC.md',
+      { project_name: 'TestProj', description: 'A test' },
+      tmpDir
+    );
     const content = await fs.readFile(path.join(tmpDir, 'SPEC.md'), 'utf-8');
     expect(content).toContain('TestProj');
     expect(content).toContain('A test');

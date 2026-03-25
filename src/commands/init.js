@@ -204,18 +204,27 @@ async function showConfirmation(selections) {
     stackLabels.push('Other / None');
   }
   if (selections.useDocker) stackLabels.push('Docker');
-  const stackText = stackLabels.join(', ') || 'None specified';
 
   const universalCount = UNIVERSAL_AGENTS.length;
   const optionalCount = selections.selectedAgents.length;
   const totalCount = universalCount + optionalCount;
 
-  display.reviewBox([
-    `Project:    ${selections.projectName} — ${selections.description || 'No description'}`,
-    `Type:       ${selections.projectTypes.join(', ')}`,
-    `Stack:      ${stackText}`,
-    `Agents:     ${universalCount} universal + ${optionalCount} optional (${totalCount} total)`,
-  ]);
+  display.newline();
+  display.divider('REVIEW');
+  display.newline();
+  console.log(
+    `  ${'Project'.padEnd(10)}${display.white(selections.projectName)}${selections.description ? display.dimColor(` — ${selections.description}`) : ''}`
+  );
+  console.log(
+    `  ${'Type'.padEnd(10)}${display.renderBadgeList(selections.projectTypes, display.TYPE_BADGES)}`
+  );
+  console.log(
+    `  ${'Stack'.padEnd(10)}${display.renderBadgeList(stackLabels, display.STACK_BADGES)}`
+  );
+  console.log(
+    `  ${'Agents'.padEnd(10)}${display.white(`${universalCount} universal + ${optionalCount} optional`)} ${display.dimColor(`(${totalCount} total)`)}`
+  );
+  display.newline();
 
   const { confirmation } = await inquirer.prompt([
     {
@@ -318,15 +327,11 @@ function buildTemplateVariables(selections) {
     techStackTableItems.push('Not specified');
   }
   const techStackTable = techStackTableItems.join(', ');
-  const dockerRow = useDocker
-    ? '\n| Containers   | Docker                            |'
-    : '';
+  const dockerRow = useDocker ? '\n| Containers   | Docker                            |' : '';
 
   const commandsText = buildCommandsBlock(languages, useDocker);
 
-  const skillsLines = TEMPLATE_SKILLS.map(
-    (s) => `- ${s}.md — Run /setup to fill automatically`
-  );
+  const skillsLines = TEMPLATE_SKILLS.map((s) => `- ${s}.md — Run /setup to fill automatically`);
   const skillsText = skillsLines.join('\n');
 
   return {
@@ -346,7 +351,10 @@ async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
   const fileHashes = {};
   const claudeFiles = await listFilesRecursive(path.join(projectRoot, '.claude'));
   for (const filePath of claudeFiles) {
-    const relativePath = path.relative(path.join(projectRoot, '.claude'), filePath).split(path.sep).join('/');
+    const relativePath = path
+      .relative(path.join(projectRoot, '.claude'), filePath)
+      .split(path.sep)
+      .join('/');
     if (relativePath !== 'workflow-meta.json' && relativePath !== 'settings.json') {
       fileHashes[relativePath] = await hashFile(filePath);
     }
@@ -448,7 +456,12 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     if (!(await fileExists(specPath))) {
       const primaryType = projectTypes[0];
       const specTemplate = SPEC_MD_TEMPLATE_MAP[primaryType] || 'spec-md.md';
-      await scaffoldFile(specTemplate, path.join('docs', 'spec', 'SPEC.md'), variables, projectRoot);
+      await scaffoldFile(
+        specTemplate,
+        path.join('docs', 'spec', 'SPEC.md'),
+        variables,
+        projectRoot
+      );
     } else {
       skipped.specMd = true;
     }
@@ -467,67 +480,66 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
 }
 
 function displayFreshSuccess(selections, skipped) {
+  const totalAgents = UNIVERSAL_AGENTS.length + selections.selectedAgents.length;
+  const totalSkills = UNIVERSAL_SKILLS.length + TEMPLATE_SKILLS.length;
+
   display.newline();
   display.success('CLAUDE.md');
   display.success('.claude/settings.json');
   display.success('.claude/workflow-meta.json');
-  display.success(
-    `.claude/agents/ (${UNIVERSAL_AGENTS.length} universal + ${selections.selectedAgents.length} optional)`
-  );
-  display.success(`.claude/commands/ (${COMMAND_FILES.length})`);
-  display.success(
-    `.claude/skills/ (${UNIVERSAL_SKILLS.length} universal + ${TEMPLATE_SKILLS.length} templates)`
-  );
+  display.success(`.claude/agents/${display.dimColor(`        ${totalAgents} agents`)}`);
+  display.success(`.claude/commands/${display.dimColor(`      ${COMMAND_FILES.length} commands`)}`);
+  display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.mcp.json');
   if (skipped.progressMd) {
     display.dim('  docs/spec/PROGRESS.md — already exists, skipped');
+  } else if (skipped.specMd) {
+    display.success(`docs/spec/${display.dimColor('             PROGRESS.md, SPEC.md')}`);
   } else {
-    display.success('docs/spec/PROGRESS.md');
+    display.success(`docs/spec/${display.dimColor('             PROGRESS.md, SPEC.md')}`);
   }
-  if (skipped.specMd) {
-    display.dim('  docs/spec/SPEC.md — already exists, skipped');
-  } else {
-    display.success('docs/spec/SPEC.md');
-  }
+
   display.newline();
-  display.info('What to do next:');
+  display.divider('NEXT');
   display.newline();
-  display.dim('  1. Start a Claude Code session in this project');
-  display.dim('  2. Run /setup — Claude will interview you about your project');
-  display.dim('     and fill in all configuration files automatically');
-  display.dim('  3. Review CLAUDE.md and adjust if needed');
-  display.dim('  4. Start building!');
+  console.log(`  ${display.white('1.')} Start a Claude Code session in this project`);
+  console.log(
+    `  ${display.white('2.')} Run ${display.purple('/setup')} — Claude will interview you about your project`
+  );
+  console.log(`     and fill in all configuration files automatically`);
+  console.log(`  ${display.white('3.')} Review CLAUDE.md and adjust if needed`);
+  console.log(`  ${display.white('4.')} Start building!`);
   display.newline();
-  display.info('Tip: The /setup command is the fastest way to configure');
-  display.dim('  your project. It takes about 5 minutes.');
+  console.log(
+    `  ${display.yellow('TIP')} ${display.dimColor(`${display.purple('/setup')} is the fastest way to configure. ~5 minutes.`)}`
+  );
   display.newline();
 }
 
 // --- Scenario B: Detection report and merge report ---
 
 function displayDetectionReport(scan) {
-  display.info('Detected existing Claude Code setup:');
-  display.newline();
+  display.sectionHeader('DETECTED SETUP');
 
   const dot = (label, width = 26) => label + ' ' + '.'.repeat(width - label.length) + ' ';
 
-  display.dim(
-    `  ${dot('CLAUDE.md')}${scan.hasClaudeMd ? `exists (${scan.claudeMdLineCount} lines)` : 'not found'}`
+  display.barLine(
+    `${display.dimColor(dot('CLAUDE.md'))}${scan.hasClaudeMd ? display.white(`exists (${scan.claudeMdLineCount} lines)`) : display.dimColor('not found')}`
   );
-  display.dim(
-    `  ${dot('.claude/settings.json')}${scan.hasSettingsJson ? 'exists' : 'not found'}`
+  display.barLine(
+    `${display.dimColor(dot('.claude/settings.json'))}${scan.hasSettingsJson ? display.white('exists') : display.dimColor('not found')}`
   );
-  display.dim(
-    `  ${dot('.claude/skills/')}${scan.existingSkills.length > 0 ? `${scan.existingSkills.length} files found` : 'not found'}`
+  display.barLine(
+    `${display.dimColor(dot('.claude/skills/'))}${scan.existingSkills.length > 0 ? display.white(`${scan.existingSkills.length} files found`) : display.dimColor('not found')}`
   );
-  display.dim(
-    `  ${dot('.claude/agents/')}${scan.existingAgents.length > 0 ? `${scan.existingAgents.length} files found` : 'not found'}`
+  display.barLine(
+    `${display.dimColor(dot('.claude/agents/'))}${scan.existingAgents.length > 0 ? display.white(`${scan.existingAgents.length} files found`) : display.dimColor('not found')}`
   );
-  display.dim(
-    `  ${dot('.claude/commands/')}${scan.existingCommands.length > 0 ? `${scan.existingCommands.length} files found` : 'not found'}`
+  display.barLine(
+    `${display.dimColor(dot('.claude/commands/'))}${scan.existingCommands.length > 0 ? display.white(`${scan.existingCommands.length} files found`) : display.dimColor('not found')}`
   );
-  display.dim(
-    `  ${dot('.mcp.json')}${scan.hasMcpJson ? 'exists' : 'not found'}`
+  display.barLine(
+    `${display.dimColor(dot('.mcp.json'))}${scan.hasMcpJson ? display.white('exists') : display.dimColor('not found')}`
   );
   display.newline();
   display.info('A backup will be created before any changes.');
@@ -543,23 +555,25 @@ function displayMergeReport(report, backupPath) {
     report.added.commands.length > 0 ||
     report.added.skills.length > 0
   ) {
-    display.info('Added automatically:');
+    display.barLine(`${display.green('+')} Added automatically:`);
     if (report.added.agents.length > 0) {
-      display.success(`${report.added.agents.length} agents added`);
+      display.barLine(`  ${display.green('✓')} ${report.added.agents.length} agents added`);
     }
     if (report.added.commands.length > 0) {
-      display.success(`${report.added.commands.length} commands added`);
+      display.barLine(`  ${display.green('✓')} ${report.added.commands.length} commands added`);
     }
     if (report.added.skills.length > 0) {
-      display.success(
-        `${report.added.skills.length} skills added${report.conflicts.skills.length > 0 ? ` (${report.conflicts.skills.length} conflicts saved as .workflow-ref.md)` : ''}`
+      display.barLine(
+        `  ${display.green('✓')} ${report.added.skills.length} skills added${report.conflicts.skills.length > 0 ? ` (${report.conflicts.skills.length} conflicts saved as .workflow-ref.md)` : ''}`
       );
     }
     if (report.added.permissions > 0) {
-      display.success(`${report.added.permissions} permission rules appended to settings.json`);
+      display.barLine(
+        `  ${display.green('✓')} ${report.added.permissions} permission rules appended to settings.json`
+      );
     }
     if (report.added.hooks > 0) {
-      display.success(`${report.added.hooks} hooks added to settings.json`);
+      display.barLine(`  ${display.green('✓')} ${report.added.hooks} hooks added to settings.json`);
     }
     display.newline();
   }
@@ -571,19 +585,19 @@ function displayMergeReport(report, backupPath) {
     ...report.conflicts.commands,
   ];
   if (allConflicts.length > 0) {
-    display.info('Conflicts (saved alongside for review):');
+    display.barLine(`${display.yellow('~')} Conflicts (saved alongside for review):`);
     for (const file of allConflicts) {
       const refName = file.replace('.md', '.workflow-ref.md');
-      display.warn(`${file} → ${refName}`);
+      display.barLine(`  ${display.yellow('⚠')} ${file} → ${refName}`);
     }
     display.newline();
   }
 
   // Tier 3 — Hook conflicts
   if (report.hookConflicts.length > 0) {
-    display.info('Hook conflicts resolved:');
+    display.barLine(`Hook conflicts resolved:`);
     for (const desc of report.hookConflicts) {
-      display.dim(`  ${desc}`);
+      display.barLine(`  ${display.dimColor(desc)}`);
     }
     display.newline();
   }
@@ -610,17 +624,22 @@ function displayMergeReport(report, backupPath) {
   if (backupPath) {
     display.dim(`  Backup: ${path.basename(backupPath)}/`);
   }
+
   display.newline();
-  display.info('What to do next:');
+  display.divider('NEXT');
   display.newline();
   if (allConflicts.length > 0) {
-    display.dim('  1. Review .workflow-ref.md files and merge what\'s useful');
+    console.log(`  ${display.white('1.')} Review .workflow-ref.md files and merge what's useful`);
   }
   if (report.claudeMdHandling === 'suggestions-generated') {
-    display.dim('  2. Review CLAUDE.md.workflow-suggestions');
-    display.dim('  3. Delete .workflow-ref.md and .workflow-suggestions files when done');
+    console.log(`  ${display.white('2.')} Review CLAUDE.md.workflow-suggestions`);
+    console.log(
+      `  ${display.white('3.')} Delete .workflow-ref.md and .workflow-suggestions files when done`
+    );
   }
-  display.dim('  Run /setup in Claude Code for project-specific configuration');
+  console.log(
+    `  Run ${display.purple('/setup')} in Claude Code for project-specific configuration`
+  );
   display.newline();
 }
 
@@ -634,17 +653,14 @@ export async function initCommand() {
 
   if (scenario === 'upgrade') {
     const meta = await readWorkflowMeta(projectRoot);
-    display.info(
-      `This project was initialized with Worclaude v${meta?.version || 'unknown'}.`
-    );
+    display.info(`This project was initialized with Worclaude v${meta?.version || 'unknown'}.`);
     display.info('Use `worclaude upgrade` to update.');
     return;
   }
 
   // Step 2: Welcome
   const version = await getPackageVersion();
-  display.header(`Worclaude v${version}`);
-  display.newline();
+  display.banner(version);
 
   // Step 3: If existing project, show detection report and confirm
   let existingScan = null;
@@ -692,7 +708,9 @@ export async function initCommand() {
     // Scenario B: merge
     const spinner = ora('Merging workflow...').start();
     try {
-      const report = await performMerge(projectRoot, existingScan, selections, variables, { spinner });
+      const report = await performMerge(projectRoot, existingScan, selections, variables, {
+        spinner,
+      });
       await computeAndWriteWorkflowMeta(projectRoot, selections, version);
       spinner.succeed('Workflow merged successfully!');
       displayMergeReport(report, backupPath);

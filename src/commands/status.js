@@ -25,40 +25,41 @@ export async function statusCommand() {
     return;
   }
 
-  display.header('Worclaude Status');
-  display.newline();
+  display.sectionHeader('WORCLAUDE STATUS');
 
-  // Version and dates
-  display.dim(`  Version:      ${meta.version}`);
-  display.dim(`  Installed:    ${meta.installedAt?.split('T')[0] || 'unknown'}`);
-  display.dim(`  Last updated: ${meta.lastUpdated?.split('T')[0] || 'unknown'}`);
-  display.newline();
+  // Version
+  display.barLine(
+    `${'Version'.padEnd(11)}${display.green(`v${meta.version}`)} ${display.dimColor('(up to date)')}`
+  );
 
   // Project info
-  const projectTypes = (meta.projectTypes || []).join(', ');
-  if (projectTypes) display.dim(`  Project type: ${projectTypes}`);
+  const projectTypes = meta.projectTypes || [];
+  if (projectTypes.length > 0) {
+    display.barLine(`${'Project'.padEnd(11)}${display.white(projectTypes.join(', '))}`);
+    display.barLine(
+      `${'Type'.padEnd(11)}${display.renderBadgeList(projectTypes, display.TYPE_BADGES)}`
+    );
+  }
 
-  const techNames = (meta.techStack || [])
-    .map((t) => TECH_DISPLAY_NAMES[t] || t)
-    .join(', ');
-  if (techNames) display.dim(`  Tech stack:   ${techNames}`);
-  display.newline();
+  const techNames = (meta.techStack || []).map((t) => TECH_DISPLAY_NAMES[t] || t);
+  if (techNames.length > 0) {
+    display.barLine(
+      `${'Stack'.padEnd(11)}${display.renderBadgeList(techNames, display.STACK_BADGES)}`
+    );
+  }
 
   // Agents
   const universalCount = (meta.universalAgents || []).length;
   const optionalCount = (meta.optionalAgents || []).length;
-  const totalAgents = universalCount + optionalCount;
-  display.dim(`  Agents:       ${universalCount} universal + ${optionalCount} optional (${totalAgents} total)`);
-  if (optionalCount > 0) {
-    display.dim(`    Optional: ${meta.optionalAgents.join(', ')}`);
-  }
-  display.newline();
+  display.barLine(
+    `${'Agents'.padEnd(11)}${display.white(`${universalCount} universal + ${optionalCount} optional`)}`
+  );
 
   // Commands and skills counts
   const commandCount = countByPrefix(meta.fileHashes || {}, 'commands/');
   const skillCount = countByPrefix(meta.fileHashes || {}, 'skills/');
-  display.dim(`  Commands:     ${commandCount} installed`);
-  display.dim(`  Skills:       ${skillCount} installed`);
+  display.barLine(`${'Commands'.padEnd(11)}${display.white(String(commandCount))}`);
+  display.barLine(`${'Skills'.padEnd(11)}${display.white(String(skillCount))}`);
   display.newline();
 
   // Customized files
@@ -127,10 +128,7 @@ export async function statusCommand() {
       const permCount = allow.filter((p) => !p.trim().startsWith('//')).length;
 
       const hooks = settings.hooks || {};
-      const hookCount = Object.values(hooks).reduce(
-        (sum, entries) => sum + entries.length,
-        0
-      );
+      const hookCount = Object.values(hooks).reduce((sum, entries) => sum + entries.length, 0);
 
       display.dim(`  Hooks:        ${hookCount} active`);
       display.dim(`  Permissions:  ${permCount} rules`);

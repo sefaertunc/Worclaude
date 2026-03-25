@@ -64,6 +64,7 @@ npm test          # Run the full test suite
 ```
 
 When adding new features, include tests that cover:
+
 - The expected happy path
 - Edge cases and error conditions
 - Integration with existing commands (init, upgrade, status)

@@ -55,9 +55,7 @@
         <transition name="slide-fade">
           <div v-if="currentStep >= 3" class="terminal-block">
             <div v-if="!techStack" class="prompt-section">
-              <div class="prompt-line">
-                <span class="prompt-qmark">?</span> Primary language:
-              </div>
+              <div class="prompt-line"><span class="prompt-qmark">?</span> Primary language:</div>
               <div
                 v-for="option in languages"
                 :key="option"
@@ -82,9 +80,7 @@
         <transition name="slide-fade">
           <div v-if="currentStep >= 4" class="terminal-block">
             <div v-if="!dockerAnswer" class="prompt-section">
-              <div class="prompt-line">
-                <span class="prompt-qmark">?</span> Do you use Docker?
-              </div>
+              <div class="prompt-line"><span class="prompt-qmark">?</span> Do you use Docker?</div>
               <div
                 v-for="option in ['Yes', 'No']"
                 :key="option"
@@ -118,9 +114,7 @@
                 <span class="dim-text">({{ agent.detail }})</span>
               </div>
               <div class="spacer-sm"></div>
-              <div class="agents-header">
-                Recommended for "{{ projectType }}":
-              </div>
+              <div class="agents-header">Recommended for "{{ projectType }}":</div>
               <div v-for="agent in recommendedAgents" :key="agent" class="agent-line">
                 &nbsp;&nbsp;<span class="checkbox-checked">☑</span> {{ agent }}
               </div>
@@ -150,10 +144,7 @@
             <div class="spacer-sm"></div>
             <div class="output-text">Creating workflow structure...</div>
             <div class="spacer-sm"></div>
-            <div
-              v-for="(item, index) in scaffoldItems"
-              :key="item"
-            >
+            <div v-for="(item, index) in scaffoldItems" :key="item">
               <transition name="fade">
                 <div v-if="scaffoldIndex > index" class="scaffold-line">
                   &nbsp;&nbsp;<span class="prompt-checkmark">✓</span> {{ item }}
@@ -163,7 +154,8 @@
             <transition name="fade">
               <div v-if="scaffoldDone" class="scaffold-done">
                 <div class="spacer-sm"></div>
-                &nbsp;&nbsp;<span class="highlight-text">Done!</span> Workflow installed successfully.
+                &nbsp;&nbsp;<span class="highlight-text">Done!</span> Workflow installed
+                successfully.
               </div>
             </transition>
           </div>
@@ -174,9 +166,18 @@
           <div v-if="currentStep >= 7" class="terminal-block">
             <div class="spacer"></div>
             <div class="output-text">Next steps:</div>
-            <div class="next-step">&nbsp;&nbsp;1. Run <span class="highlight-text">/setup</span> to configure project-specific details</div>
-            <div class="next-step">&nbsp;&nbsp;2. Launch Claude Code: <span class="highlight-text">claude --worktree --tmux</span></div>
-            <div class="next-step">&nbsp;&nbsp;3. Start with <span class="highlight-text">/start</span> to begin your session</div>
+            <div class="next-step">
+              &nbsp;&nbsp;1. Run <span class="highlight-text">/setup</span> to configure
+              project-specific details
+            </div>
+            <div class="next-step">
+              &nbsp;&nbsp;2. Launch Claude Code:
+              <span class="highlight-text">claude --worktree --tmux</span>
+            </div>
+            <div class="next-step">
+              &nbsp;&nbsp;3. Start with <span class="highlight-text">/start</span> to begin your
+              session
+            </div>
           </div>
         </transition>
 
@@ -206,20 +207,20 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 
-const currentStep = ref(0)
-const showCursor = ref(true)
+const currentStep = ref(0);
+const showCursor = ref(true);
 
-const projectType = ref(null)
-const techStack = ref(null)
-const dockerAnswer = ref(null)
-const agentsContinued = ref(false)
-const scaffoldIndex = ref(0)
-const scaffoldDone = ref(false)
-const hoveredOption = ref(null)
+const projectType = ref(null);
+const techStack = ref(null);
+const dockerAnswer = ref(null);
+const agentsContinued = ref(false);
+const scaffoldIndex = ref(0);
+const scaffoldDone = ref(false);
+const hoveredOption = ref(null);
 
-const contentRef = ref(null)
+const contentRef = ref(null);
 
 const projectTypes = [
   'Backend / API',
@@ -228,24 +229,18 @@ const projectTypes = [
   'Library / Package',
   'CLI Tool',
   'Data / ML Pipeline',
-  'DevOps / Infrastructure'
-]
+  'DevOps / Infrastructure',
+];
 
-const languages = [
-  'Python',
-  'Node.js / TypeScript',
-  'Go',
-  'Rust',
-  'Java'
-]
+const languages = ['Python', 'Node.js / TypeScript', 'Go', 'Rust', 'Java'];
 
 const universalAgents = [
   { name: 'plan-reviewer', detail: 'Opus' },
   { name: 'code-simplifier', detail: 'Sonnet, worktree' },
   { name: 'test-writer', detail: 'Sonnet, worktree' },
   { name: 'build-validator', detail: 'Haiku' },
-  { name: 'verify-app', detail: 'Sonnet, worktree' }
-]
+  { name: 'verify-app', detail: 'Sonnet, worktree' },
+];
 
 const recommendedAgents = [
   'api-designer',
@@ -253,8 +248,8 @@ const recommendedAgents = [
   'security-reviewer',
   'auth-auditor',
   'bug-fixer',
-  'performance-auditor'
-]
+  'performance-auditor',
+];
 
 const scaffoldItems = [
   'CLAUDE.md',
@@ -265,131 +260,134 @@ const scaffoldItems = [
   '.claude/skills/ (9 universal + 3 templates)',
   '.mcp.json',
   'docs/spec/PROGRESS.md',
-  'docs/spec/SPEC.md'
-]
+  'docs/spec/SPEC.md',
+];
 
-let timeouts = []
+let timeouts = [];
 
 function scheduleTimeout(fn, delay) {
-  const id = setTimeout(fn, delay)
-  timeouts.push(id)
-  return id
+  const id = setTimeout(fn, delay);
+  timeouts.push(id);
+  return id;
 }
 
 function clearAllTimeouts() {
-  timeouts.forEach(id => clearTimeout(id))
-  timeouts = []
+  timeouts.forEach((id) => clearTimeout(id));
+  timeouts = [];
 }
 
 function scrollToBottom() {
   nextTick(() => {
     if (contentRef.value) {
-      contentRef.value.scrollTop = contentRef.value.scrollHeight
+      contentRef.value.scrollTop = contentRef.value.scrollHeight;
     }
-  })
+  });
 }
 
 function selectProjectType(option) {
-  projectType.value = option
-  scrollToBottom()
+  projectType.value = option;
+  scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 3
-    scrollToBottom()
-  }, 400)
+    currentStep.value = 3;
+    scrollToBottom();
+  }, 400);
 }
 
 function selectTechStack(option) {
-  techStack.value = option
-  scrollToBottom()
+  techStack.value = option;
+  scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 4
-    scrollToBottom()
-  }, 400)
+    currentStep.value = 4;
+    scrollToBottom();
+  }, 400);
 }
 
 function selectDocker(option) {
-  dockerAnswer.value = option
-  scrollToBottom()
+  dockerAnswer.value = option;
+  scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 5
-    scrollToBottom()
-  }, 400)
+    currentStep.value = 5;
+    scrollToBottom();
+  }, 400);
 }
 
 function continueAgents() {
-  agentsContinued.value = true
-  scrollToBottom()
+  agentsContinued.value = true;
+  scrollToBottom();
   scheduleTimeout(() => {
-    currentStep.value = 6
-    showCursor.value = false
-    scrollToBottom()
-    runScaffoldAnimation()
-  }, 400)
+    currentStep.value = 6;
+    showCursor.value = false;
+    scrollToBottom();
+    runScaffoldAnimation();
+  }, 400);
 }
 
 function runScaffoldAnimation() {
   scaffoldItems.forEach((_, index) => {
-    scheduleTimeout(() => {
-      scaffoldIndex.value = index + 1
-      scrollToBottom()
-    }, 200 * (index + 1))
-  })
+    scheduleTimeout(
+      () => {
+        scaffoldIndex.value = index + 1;
+        scrollToBottom();
+      },
+      200 * (index + 1)
+    );
+  });
 
-  const totalDelay = 200 * (scaffoldItems.length + 1)
-
-  scheduleTimeout(() => {
-    scaffoldDone.value = true
-    scrollToBottom()
-  }, totalDelay + 300)
+  const totalDelay = 200 * (scaffoldItems.length + 1);
 
   scheduleTimeout(() => {
-    currentStep.value = 7
-    scrollToBottom()
-  }, totalDelay + 800)
+    scaffoldDone.value = true;
+    scrollToBottom();
+  }, totalDelay + 300);
 
   scheduleTimeout(() => {
-    currentStep.value = 8
-    showCursor.value = true
-    scrollToBottom()
-  }, totalDelay + 1200)
+    currentStep.value = 7;
+    scrollToBottom();
+  }, totalDelay + 800);
+
+  scheduleTimeout(() => {
+    currentStep.value = 8;
+    showCursor.value = true;
+    scrollToBottom();
+  }, totalDelay + 1200);
 }
 
 function resetDemo() {
-  clearAllTimeouts()
-  currentStep.value = 0
-  projectType.value = null
-  techStack.value = null
-  dockerAnswer.value = null
-  agentsContinued.value = false
-  scaffoldIndex.value = 0
-  scaffoldDone.value = false
-  hoveredOption.value = null
-  showCursor.value = true
+  clearAllTimeouts();
+  currentStep.value = 0;
+  projectType.value = null;
+  techStack.value = null;
+  dockerAnswer.value = null;
+  agentsContinued.value = false;
+  scaffoldIndex.value = 0;
+  scaffoldDone.value = false;
+  hoveredOption.value = null;
+  showCursor.value = true;
 
   scheduleTimeout(() => {
-    startDemo()
-  }, 300)
+    startDemo();
+  }, 300);
 }
 
 function startDemo() {
-  currentStep.value = 1
-  scrollToBottom()
+  currentStep.value = 1;
+  scrollToBottom();
 
   scheduleTimeout(() => {
-    currentStep.value = 2
-    scrollToBottom()
-  }, 1200)
+    currentStep.value = 2;
+    scrollToBottom();
+  }, 1200);
 }
 
 onMounted(() => {
   scheduleTimeout(() => {
-    startDemo()
-  }, 500)
-})
+    startDemo();
+  }, 500);
+});
 
 onUnmounted(() => {
-  clearAllTimeouts()
-})
+  clearAllTimeouts();
+});
 </script>
 
 <style scoped>
@@ -404,7 +402,9 @@ onUnmounted(() => {
   width: 100%;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
   background: #1a1a2e;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
   font-size: 13px;
@@ -586,7 +586,9 @@ onUnmounted(() => {
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   margin-top: 4px;
 }
 
@@ -605,8 +607,13 @@ onUnmounted(() => {
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 /* Transitions */

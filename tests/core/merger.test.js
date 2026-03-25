@@ -10,7 +10,9 @@ vi.mock('../../src/prompts/conflict-resolution.js', () => ({
 
 vi.mock('../../src/prompts/claude-md-merge.js', () => ({
   promptClaudeMdMerge: vi.fn().mockResolvedValue('keep'),
-  generateWorkflowSuggestions: vi.fn().mockReturnValue('# Workflow Suggestions\n\nSuggested content.'),
+  generateWorkflowSuggestions: vi
+    .fn()
+    .mockReturnValue('# Workflow Suggestions\n\nSuggested content.'),
   detectMissingSections: vi.fn().mockReturnValue(['Session Protocol', 'Critical Rules']),
   interactiveSectionMerge: vi.fn(),
 }));
@@ -317,10 +319,7 @@ describe('merger', () => {
       expect(report.skipped.specMd).toBe(true);
 
       // Original content preserved
-      const progress = await fs.readFile(
-        path.join(tmpDir, 'docs', 'spec', 'PROGRESS.md'),
-        'utf-8'
-      );
+      const progress = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'PROGRESS.md'), 'utf-8');
       expect(progress).toBe('# My Progress');
     });
 

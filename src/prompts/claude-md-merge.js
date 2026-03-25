@@ -58,7 +58,7 @@ export function generateWorkflowSuggestions(existingContent, renderedTemplate) {
     '# Worclaude — Suggested CLAUDE.md Additions',
     '',
     'The following sections are recommended based on the Claude Code',
-    'workflow system. Review and merge what\'s useful into your CLAUDE.md.',
+    "workflow system. Review and merge what's useful into your CLAUDE.md.",
     '',
   ];
 

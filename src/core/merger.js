@@ -1,12 +1,7 @@
 import path from 'node:path';
 import os from 'node:os';
 import { readFile, writeFile } from '../utils/file.js';
-import {
-  readTemplate,
-  substituteVariables,
-  scaffoldFile,
-  mergeSettings,
-} from './scaffolder.js';
+import { readTemplate, substituteVariables, scaffoldFile, mergeSettings } from './scaffolder.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
   detectMissingSections,
@@ -102,8 +97,16 @@ function parseUserJson(raw, filename) {
 
 async function mergeSkills(projectRoot, existingScan, variables, report) {
   const allSkills = [
-    ...UNIVERSAL_SKILLS.map((s) => ({ name: s, templatePath: `skills/universal/${s}.md`, vars: {} })),
-    ...TEMPLATE_SKILLS.map((s) => ({ name: s, templatePath: `skills/templates/${s}.md`, vars: variables })),
+    ...UNIVERSAL_SKILLS.map((s) => ({
+      name: s,
+      templatePath: `skills/universal/${s}.md`,
+      vars: {},
+    })),
+    ...TEMPLATE_SKILLS.map((s) => ({
+      name: s,
+      templatePath: `skills/templates/${s}.md`,
+      vars: variables,
+    })),
   ];
 
   for (const skill of allSkills) {
@@ -251,13 +254,9 @@ export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSett
               },
             ],
           };
-          report.hookConflicts.push(
-            `${category} "${workflowEntry.matcher}": chained both hooks`
-          );
+          report.hookConflicts.push(`${category} "${workflowEntry.matcher}": chained both hooks`);
         } else {
-          report.hookConflicts.push(
-            `${category} "${workflowEntry.matcher}": kept existing hook`
-          );
+          report.hookConflicts.push(`${category} "${workflowEntry.matcher}": kept existing hook`);
         }
       } else {
         // Tier 1: no conflict — append
@@ -291,9 +290,7 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
   try {
     await mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, report);
   } catch {
-    display.warn(
-      'Existing settings.json contains invalid JSON — creating fresh settings instead.'
-    );
+    display.warn('Existing settings.json contains invalid JSON — creating fresh settings instead.');
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
     report.added.permissions = workflowSettings.permissions?.allow?.length || 0;
     report.added.hooks = countHooks(workflowSettings.hooks);
@@ -383,7 +380,13 @@ async function handleClaudeMd(projectRoot, existingScan, variables, report) {
 
 // --- Main merge function ---
 
-export async function performMerge(projectRoot, existingScan, selections, variables, { spinner } = {}) {
+export async function performMerge(
+  projectRoot,
+  existingScan,
+  selections,
+  variables,
+  { spinner } = {}
+) {
   const report = {
     added: { skills: [], agents: [], commands: [], permissions: 0, hooks: 0 },
     conflicts: { skills: [], agents: [], commands: [] },

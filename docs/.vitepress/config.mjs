@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitepress'
+import { defineConfig } from 'vitepress';
 
 export default defineConfig({
   title: 'Worclaude',
@@ -24,8 +24,8 @@ export default defineConfig({
             { text: 'Existing Projects', link: '/guide/existing-projects' },
             { text: 'Upgrading', link: '/guide/upgrading' },
             { text: 'Workflow Tips', link: '/guide/workflow-tips' },
-          ]
-        }
+          ],
+        },
       ],
       '/reference/': [
         {
@@ -39,27 +39,25 @@ export default defineConfig({
             { text: 'Hooks', link: '/reference/hooks' },
             { text: 'Permissions', link: '/reference/permissions' },
             { text: 'Configuration', link: '/reference/configuration' },
-          ]
-        }
-      ]
+          ],
+        },
+      ],
     },
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/sefaertunc/Worclaude' }
-    ],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/sefaertunc/Worclaude' }],
 
     footer: {
-      message: 'Built with best practices from Boris Cherny\'s 53 Claude Code tips.',
-      copyright: 'MIT License'
+      message: "Built with best practices from Boris Cherny's 53 Claude Code tips.",
+      copyright: 'MIT License',
     },
 
     search: {
-      provider: 'local'
+      provider: 'local',
     },
 
     editLink: {
       pattern: 'https://github.com/sefaertunc/Worclaude/edit/main/docs/:path',
-      text: 'Edit this page on GitHub'
-    }
-  }
-})
+      text: 'Edit this page on GitHub',
+    },
+  },
+});

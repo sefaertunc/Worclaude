@@ -1,5 +1,9 @@
 import inquirer from 'inquirer';
-import { PROJECT_TYPES, PROJECT_TYPE_DESCRIPTIONS, CATEGORY_RECOMMENDATIONS } from '../data/agents.js';
+import {
+  PROJECT_TYPES,
+  PROJECT_TYPE_DESCRIPTIONS,
+  CATEGORY_RECOMMENDATIONS,
+} from '../data/agents.js';
 import * as display from '../utils/display.js';
 
 export async function promptProjectType() {
@@ -8,7 +12,7 @@ export async function promptProjectType() {
       type: 'checkbox',
       name: 'projectTypes',
       message:
-        'What type of project is this? (space to toggle, enter to confirm)\n  ℹ Not sure? Pick what\'s closest. You can add/remove agents later.',
+        "What type of project is this? (space to toggle, enter to confirm)\n  ℹ Not sure? Pick what's closest. You can add/remove agents later.",
       choices: PROJECT_TYPES.map((t) => ({
         name: `${t} — ${PROJECT_TYPE_DESCRIPTIONS[t]}`,
         value: t,

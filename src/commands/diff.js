@@ -17,52 +17,52 @@ export async function diffCommand() {
   }
 
   const categories = await categorizeFiles(projectRoot, meta);
+  const cliVersion = await getPackageVersion();
 
-  display.header('Worclaude Diff');
-  display.newline();
-  display.dim(`  Comparing current setup to workflow v${meta.version}:`);
+  display.sectionHeader(`WORCLAUDE DIFF (v${meta.version} → v${cliVersion})`);
   display.newline();
 
   let hasChanges = false;
 
   if (categories.modified.length > 0) {
     hasChanges = true;
-    display.info('Modified (your changes):');
+    display.barLine(`${display.yellow('~')} Modified (your changes):`);
     for (const { key } of categories.modified) {
-      display.dim(`    ~ .claude/${key}`);
+      display.barLine(`  ${display.yellow(key)}`);
     }
     display.newline();
   }
 
   if (categories.deleted.length > 0) {
     hasChanges = true;
-    display.info('Deleted (removed since install):');
+    display.barLine(`${display.red('-')} Deleted (removed since install):`);
     for (const { key } of categories.deleted) {
-      display.dim(`    - .claude/${key}`);
+      display.barLine(`  ${display.red(key)}`);
     }
     display.newline();
   }
 
   if (categories.userAdded.length > 0) {
     hasChanges = true;
-    display.info('Extra (you added):');
+    display.barLine(`${display.green('+')} Extra (you added):`);
     for (const { key } of categories.userAdded) {
-      display.dim(`    + .claude/${key}`);
+      display.barLine(`  ${display.green(key)}`);
     }
     display.newline();
   }
 
   if (categories.outdated.length > 0) {
     hasChanges = true;
-    const cliVersion = await getPackageVersion();
-    display.info(`Outdated (newer version available in CLI v${cliVersion}):`);
+    display.barLine(`${display.blue('↑')} Outdated (newer version available):`);
     for (const { key } of categories.outdated) {
-      display.dim(`    ↑ .claude/${key}`);
+      display.barLine(`  ${display.blue(key)}`);
     }
     display.newline();
   }
 
-  display.dim(`  Unchanged: ${categories.unchanged.length} files`);
+  display.barLine(
+    `${display.dimColor('=')} Unchanged: ${display.dimColor(`${categories.unchanged.length} files`)}`
+  );
 
   if (!hasChanges) {
     display.newline();
@@ -71,6 +71,6 @@ export async function diffCommand() {
 
   if (categories.outdated.length > 0) {
     display.newline();
-    display.info('Run `worclaude upgrade` to update outdated files.');
+    display.barLine(`Run ${display.purple('worclaude upgrade')} to apply changes.`);
   }
 }
