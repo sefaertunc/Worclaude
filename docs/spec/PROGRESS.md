@@ -2,8 +2,9 @@
 
 ## Current Status
 
-**Phase:** All phases complete — ready for npm publish
-**Last Updated:** 2026-03-24
+**Phase:** All phases complete — published on npm as `worclaude`
+**Version:** 1.2.3
+**Last Updated:** 2026-03-25
 
 ## Completed
 
@@ -61,7 +62,7 @@
   - [x] All placeholder commands in index.js replaced with real implementations
 
 - [x] Phase 5: Polish & Publish
-  - [x] Comprehensive README.md (~300 lines)
+  - [x] Comprehensive README.md
   - [x] package.json npm publish fields (files, repository, author, engines, keywords)
   - [x] .gitignore cleanup (replaced Python template with Node.js-focused)
   - [x] .npmignore created (excludes tests, docs, config from package)
@@ -69,17 +70,44 @@
   - [x] Cross-platform hardening: path separator normalization in init.js
   - [x] Cross-platform hardening: CRLF-safe split() in claude-md-merge.js and detector.js
 
+- [x] Post-release improvements (v1.1.0–v1.2.3)
+  - [x] Expanded tech stack: 16 language options (added Java, C#, C/C++, PHP, Ruby, Kotlin, Swift, Dart, Scala, Elixir, Zig) with per-language settings templates and formatters
+  - [x] Renamed project from claude-workflow to worclaude
+  - [x] VitePress documentation site with interactive terminal demo
+  - [x] Bold + Badges visual system restyle for CLI output
+  - [x] Restore command UX: selectable list instead of confirm prompt, cancel option
+  - [x] Unknown command error handling with suggestions and help output
+  - [x] Graceful handling of corrupted settings.json during init merge
+  - [x] User feedback when CLAUDE.md already has all recommended sections
+  - [x] Skipped status display for existing PROGRESS.md and SPEC.md in fresh init
+  - [x] Fix: fresh init no longer overwrites existing PROGRESS.md and SPEC.md
+  - [x] Fix: shell-escaped braces in user JSON files during merge
+  - [x] Fix: malformed user JSON files show clear error messages
+  - [x] Fix: JSON parse error from unsafe text substitution in settings builder
+  - [x] Fix: .mcp.json-only projects no longer overwritten by fresh scaffold
+  - [x] Fix: confirm prompts reject random text as input
+  - [x] Fix: spinner no longer animates during interactive prompts in Scenario B
+  - [x] Fix: double quotes in fallback formatter command no longer break JSON
+  - [x] Fix: tech stack table labels corrected in fullstack, frontend, and devops templates
+  - [x] Fix: Docker edit permissions moved from base to docker-only settings
+  - [x] Fix: upgrade preview shows modified files and correct hook conflicts
+  - [x] Fix: upgrade post-completion summary shows customized file count
+  - [x] No-memory rule added to setup interview template
+  - [x] GitHub Pages deployment workflow
+
 ## Stats
 
 - 6 CLI commands: init, upgrade, status, backup, restore, diff
 - 5 universal agents + 18 optional agents (6 categories)
 - 10 slash commands
 - 9 universal skills + 3 template skills
-- 7 SPEC.md template variants
-- 135 tests across 16 test files
+- 8 SPEC.md template variants (1 default + 7 project-type-specific)
+- 16 tech stack language options with per-language settings templates
+- 142 tests across 16 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
 
 - Derived from 53 tips by Boris Cherny (howborisusesclaudecode.com)
-- Ready for: npm publish
+- Published: npm as `worclaude`
+- Docs: VitePress site deployed via GitHub Pages

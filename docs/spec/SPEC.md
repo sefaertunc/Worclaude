@@ -4,6 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from 53 tips by Boris Cherny (creator of Claude Code at Anthropic).
 
+**Version:** 1.2.3
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -51,7 +52,7 @@ Project previously ran `worclaude init`. Update universal components without tou
 ```
 $ worclaude init
 
-  Worclaude v1.0.0
+  Worclaude v1.2.3
   ─────────────────────
 
 ? Project name: My Project
@@ -113,13 +114,13 @@ Multi-select languages. Determines permissions, hooks (formatter), and template 
   ◻ Zig
   ◻ Other / None
 
-  ℹ This determines which tool permissions and formatters
-    are added. You can update later by editing
-    .claude/settings.json or running `worclaude upgrade`.
+  ℹ This sets tool permissions and formatters.
+    Update anytime via settings.json.
 
-? Do you use Docker in this project currently? (y/N)
-  ℹ If you add Docker later, run `worclaude upgrade`
-    to add Docker permissions and tools.
+? Do you use Docker currently?
+  ❯ Yes
+    No
+  ℹ If you add Docker later, run `worclaude upgrade`.
 ```
 
 When multiple languages selected, all permissions are merged and formatters are chained with `&&`.
@@ -211,7 +212,7 @@ Create all files. Show progress.
 ```
 $ worclaude init
 
-  Worclaude v1.0.0
+  Worclaude v1.2.3
   ─────────────────────
 
   Detected existing Claude Code setup:
@@ -350,7 +351,7 @@ Same tiered merge as Scenario B for conflicting files. Auto-update unchanged fil
 ```
 $ worclaude status
 
-  Worclaude v1.0.0
+  Worclaude v1.2.3
   Installed: 2026-03-23
 
   Project type: Backend / API
@@ -412,7 +413,7 @@ $ worclaude restore
 ```
 $ worclaude diff
 
-  Comparing current setup to workflow v1.0.0:
+  Comparing current setup to workflow v1.2.3:
 
   Modified (your changes):
   ~ CLAUDE.md (added 5 gotchas)
@@ -585,7 +586,7 @@ See `.claude/skills/` — load only what's relevant:
       "Edit(docker-compose*)",
       "Edit(.github/**)"
 
-      // Project-specific permissions appended based on tech stack
+      // Per-language permissions appended from settings/{lang}.json (16 languages supported)
     ]
   },
   "hooks": {
@@ -629,8 +630,19 @@ See `.claude/skills/` — load only what's relevant:
 |---|---|
 | Python | `ruff format . \|\| true` |
 | Node/TypeScript | `npx prettier --write . \|\| true` |
-| Rust | `cargo fmt \|\| true` |
+| Java | `google-java-format -i $(find . -name '*.java') \|\| true` |
+| C# / .NET | `dotnet format \|\| true` |
+| C / C++ | `clang-format -i ... \|\| true` |
 | Go | `gofmt -w . \|\| true` |
+| PHP | `php-cs-fixer fix . \|\| true` |
+| Ruby | `rubocop -A \|\| true` |
+| Kotlin | `ktlint -F \|\| true` |
+| Swift | `swift-format format -r . -i \|\| true` |
+| Rust | `cargo fmt \|\| true` |
+| Dart / Flutter | `dart format . \|\| true` |
+| Scala | `scalafmt \|\| true` |
+| Elixir | `mix format \|\| true` |
+| Zig | `zig fmt . \|\| true` |
 
 **Notification commands by OS:**
 | OS | Command |
@@ -799,7 +811,7 @@ Each agent follows the same frontmatter format. Full content for each agent is i
 
 ## Universal Slash Commands
 
-All 10 are installed in every project. Files live in `.claude/commands/`.
+All 10 slash commands are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 
@@ -1016,7 +1028,7 @@ Default: Sandbox with auto-allow. Structural safety via file and network isolati
 ```json
 {
   "name": "worclaude",
-  "version": "1.0.0",
+  "version": "1.2.3",
   "bin": {
     "worclaude": "./src/index.js"
   }
@@ -1028,7 +1040,7 @@ Default: Sandbox with auto-allow. Structural safety via file and network isolati
 ## Project Structure
 
 ```
-Worclaude/
+worclaude/
 ├── package.json
 ├── README.md
 ├── LICENSE
@@ -1037,13 +1049,18 @@ Worclaude/
 │   ├── settings.json
 │   └── skills/
 ├── docs/
-│   ├── spec/
-│   │   ├── SPEC.md
-│   │   └── PROGRESS.md
-│   └── reference/
-│       └── workflow-reference.docx
+│   ├── index.md                    # VitePress landing page
+│   ├── .vitepress/                 # VitePress config + theme
+│   ├── guide/                      # User guides (intro, getting-started, existing, upgrading, tips)
+│   ├── reference/                  # Reference docs (agents, commands, skills, hooks, permissions, config)
+│   ├── demo/                       # Interactive terminal demo
+│   └── spec/
+│       ├── SPEC.md
+│       └── PROGRESS.md
 ├── src/
 │   ├── index.js                    # CLI entry point
+│   ├── data/
+│   │   └── agents.js               # Catalogs, tech stacks, formatters, categories
 │   ├── commands/
 │   │   ├── init.js
 │   │   ├── upgrade.js
@@ -1056,7 +1073,8 @@ Worclaude/
 │   │   ├── merger.js               # Tiered merge logic
 │   │   ├── scaffolder.js           # Template → project file creation
 │   │   ├── backup.js               # Backup/restore logic
-│   │   └── config.js               # workflow-meta.json management
+│   │   ├── config.js               # workflow-meta.json management
+│   │   └── file-categorizer.js     # Hash maps + file categorization for upgrade/diff
 │   ├── prompts/
 │   │   ├── project-type.js
 │   │   ├── agent-selection.js
@@ -1065,56 +1083,52 @@ Worclaude/
 │   │   └── claude-md-merge.js
 │   └── utils/
 │       ├── file.js
-│       ├── git.js
 │       ├── hash.js
-│       └── display.js
+│       ├── time.js                 # relativeTime() for backup listing
+│       └── display.js              # Bold + Badges visual system
 ├── templates/
 │   ├── claude-md.md
 │   ├── mcp-json.json
 │   ├── workflow-meta.json
 │   ├── progress-md.md
-│   ├── spec-md.md
+│   ├── spec-md.md                  # Default SPEC template
+│   ├── spec-md-{type}.md           # 7 project-type-specific SPEC templates
 │   ├── settings/
-│   │   ├── base.json
+│   │   ├── base.json               # Universal permissions
 │   │   ├── python.json
 │   │   ├── node.json
-│   │   ├── rust.json
+│   │   ├── java.json
+│   │   ├── csharp.json
+│   │   ├── cpp.json
 │   │   ├── go.json
+│   │   ├── php.json
+│   │   ├── ruby.json
+│   │   ├── kotlin.json
+│   │   ├── swift.json
+│   │   ├── rust.json
+│   │   ├── dart.json
+│   │   ├── scala.json
+│   │   ├── elixir.json
+│   │   ├── zig.json
 │   │   └── docker.json
 │   ├── agents/
-│   │   ├── universal/
-│   │   │   ├── plan-reviewer.md
-│   │   │   ├── code-simplifier.md
-│   │   │   ├── test-writer.md
-│   │   │   ├── build-validator.md
-│   │   │   └── verify-app.md
+│   │   ├── universal/ (5 agents)
 │   │   └── optional/
-│   │       ├── frontend/ (ui-reviewer.md, style-enforcer.md)
-│   │       ├── backend/ (api-designer.md, database-analyst.md, auth-auditor.md)
-│   │       ├── devops/ (dependency-manager.md, ci-fixer.md, docker-helper.md, deploy-validator.md)
-│   │       ├── quality/ (bug-fixer.md, security-reviewer.md, performance-auditor.md, refactorer.md)
-│   │       ├── docs/ (doc-writer.md, changelog-generator.md)
-│   │       └── data/ (data-pipeline-reviewer.md, ml-experiment-tracker.md, prompt-engineer.md)
-│   ├── commands/
-│   │   ├── start.md
-│   │   ├── end.md
-│   │   ├── commit-push-pr.md
-│   │   ├── review-plan.md
-│   │   ├── techdebt.md
-│   │   ├── verify.md
-│   │   ├── compact-safe.md
-│   │   ├── status.md
-│   │   └── update-claude-md.md
+│   │       ├── frontend/ (ui-reviewer, style-enforcer)
+│   │       ├── backend/ (api-designer, database-analyst, auth-auditor)
+│   │       ├── devops/ (ci-fixer, docker-helper, deploy-validator, dependency-manager)
+│   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer)
+│   │       ├── docs/ (doc-writer, changelog-generator)
+│   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
+│   ├── commands/ (10 slash commands)
 │   └── skills/
 │       ├── universal/ (9 files)
 │       └── templates/ (3 files)
 └── tests/
-    ├── commands/ (init.test.js, upgrade.test.js, status.test.js)
-    ├── core/ (detector.test.js, merger.test.js, scaffolder.test.js)
-    └── fixtures/
-        ├── fresh-project/
-        ├── existing-project/
-        └── workflow-project/
+    ├── commands/ (init, upgrade, status, backup, restore, diff)
+    ├── core/ (detector, merger, scaffolder, backup, file-categorizer)
+    ├── prompts/ (claude-md-merge)
+    └── utils/ (display, file, hash, time)
 ```
 
 ---
@@ -1159,6 +1173,14 @@ Worclaude/
 - Cross-platform testing (Linux, macOS, Windows)
 - README with documentation
 - npm publish preparation
+
+### Post-release (v1.1.0–v1.2.3)
+
+- Expanded tech stack from 6 to 16 language options with per-language settings templates and formatters
+- Renamed project from claude-workflow to worclaude
+- VitePress documentation site with interactive terminal demo and GitHub Pages deployment
+- Bold + Badges visual system restyle for all CLI output
+- Numerous UX improvements and bug fixes (see PROGRESS.md for full list)
 
 ---
 

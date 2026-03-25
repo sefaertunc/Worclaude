@@ -20,9 +20,14 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 node src/index.js init          # Test init command locally
 node src/index.js upgrade       # Test upgrade command
 node src/index.js status        # Test status command
-npm test                        # Run tests
+node src/index.js backup        # Test backup command
+node src/index.js restore       # Test restore command
+node src/index.js diff          # Test diff command
+npm test                        # Run tests (142 tests, 16 files)
 npm run lint                    # Lint
 npm run format                  # Format
+npm run docs:dev                # VitePress dev server
+npm run docs:build              # Build docs for deployment
 ```
 
 ## Skills (read on demand)
@@ -44,6 +49,15 @@ See `.claude/skills/` for project-specific guidance.
 5. Self-healing: same mistake twice → update this file.
 6. Use subagents for side work to keep main context clean.
 
+## Key Directories
+
+- `src/data/agents.js` — All catalogs, tech stacks, formatters, categories
+- `src/utils/display.js` — Bold + Badges visual system for CLI output
+- `templates/settings/` — 16 language-specific + 1 base + 1 docker settings templates
+
 ## Gotchas
 
-[Grows during development]
+- JSON text substitution in settings builder can break on special chars — use safe merge
+- Shell-escaped braces in user JSON files need handling during merge
+- Docker edit permissions live in docker.json, not base.json
+- Spinner must be stopped before interactive prompts in Scenario B merge
