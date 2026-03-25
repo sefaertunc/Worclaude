@@ -24,9 +24,13 @@ function selfUpdate(latestVersion) {
     spinner.succeed(`worclaude updated to v${latestVersion}.`);
     return true;
   } catch (err) {
-    spinner.fail('Self-update failed.');
-    display.error(err.message);
-    display.info('Try manually: npm install -g worclaude@latest');
+    spinner.fail('Self-update failed (permission denied).');
+    const msg = String(err.message || err);
+    if (msg.includes('EACCES') || msg.includes('permission denied') || msg.includes('EPERM')) {
+      display.info('Try: sudo npm install -g worclaude@latest');
+    } else {
+      display.info('Try manually: npm install -g worclaude@latest');
+    }
     return false;
   }
 }
