@@ -143,11 +143,11 @@ describe('status command', () => {
     expect(allOutput).toContain('up to date');
   });
 
-  it('shows update available when npm has newer version', async () => {
-    getLatestNpmVersion.mockReturnValue('9.9.9');
+  it('shows upgrade available when workflow version is behind CLI', async () => {
+    getLatestNpmVersion.mockReturnValue(null);
 
     const meta = {
-      version: '1.0.0',
+      version: '0.9.0',
       installedAt: '2026-03-24T12:00:00.000Z',
       lastUpdated: '2026-03-24T12:00:00.000Z',
       projectTypes: [],
@@ -165,15 +165,52 @@ describe('status command', () => {
 
     await statusCommand();
     const allOutput = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
-    expect(allOutput).toContain('update available');
+    expect(allOutput).toContain('upgrade available');
+  });
+
+  it('shows CLI update available when npm has newer version', async () => {
+    const pkg = JSON.parse(
+      await fs.readFile(
+        path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'package.json'),
+        'utf-8'
+      )
+    );
+    getLatestNpmVersion.mockReturnValue('9.9.9');
+
+    const meta = {
+      version: pkg.version,
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: [],
+      techStack: [],
+      universalAgents: [],
+      optionalAgents: [],
+      fileHashes: {},
+    };
+
+    await fs.ensureDir(path.join(tmpDir, '.claude'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+
+    await statusCommand();
+    const allOutput = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(allOutput).toContain('CLI update available');
     expect(allOutput).toContain('9.9.9');
   });
 
-  it('shows version without status when offline', async () => {
+  it('shows version without status when offline and workflow current', async () => {
+    const pkg = JSON.parse(
+      await fs.readFile(
+        path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'package.json'),
+        'utf-8'
+      )
+    );
     getLatestNpmVersion.mockReturnValue(null);
 
     const meta = {
-      version: '1.0.0',
+      version: pkg.version,
       installedAt: '2026-03-24T12:00:00.000Z',
       lastUpdated: '2026-03-24T12:00:00.000Z',
       projectTypes: [],
@@ -193,6 +230,7 @@ describe('status command', () => {
     const allOutput = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(allOutput).not.toContain('up to date');
     expect(allOutput).not.toContain('update available');
+    expect(allOutput).not.toContain('upgrade available');
   });
 
   it('detects workflow-ref.md files as pending review', async () => {

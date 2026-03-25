@@ -33,8 +33,10 @@ export async function statusCommand() {
   const latestVersion = getLatestNpmVersion();
 
   let versionSuffix = '';
-  if (latestVersion && latestVersion !== cliVersion) {
-    versionSuffix = ` ${display.yellow(`(update available: v${latestVersion})`)}`;
+  if (meta.version !== cliVersion) {
+    versionSuffix = ` ${display.yellow(`(upgrade available: v${cliVersion})`)}`;
+  } else if (latestVersion && latestVersion !== cliVersion) {
+    versionSuffix = ` ${display.yellow(`(CLI update available: v${latestVersion})`)}`;
   } else if (latestVersion) {
     versionSuffix = ` ${display.dimColor('(up to date)')}`;
   }
