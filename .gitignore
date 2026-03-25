@@ -32,3 +32,7 @@ npm-debug.log*
 
 # Test artifacts
 /tmp/
+
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
