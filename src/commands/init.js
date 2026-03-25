@@ -45,12 +45,26 @@ function buildCommandsBlock(languages, useDocker) {
     lines.push('npx eslint .                    # Lint');
     lines.push('npx prettier --write .          # Format');
   }
-  if (languages.includes('rust')) {
+  if (languages.includes('java')) {
     if (lines.length > 1) lines.push('');
-    lines.push('# Rust');
-    lines.push('cargo test                      # Run tests');
-    lines.push('cargo clippy                    # Lint');
-    lines.push('cargo fmt                       # Format');
+    lines.push('# Java');
+    lines.push('mvn test                        # Run tests');
+    lines.push('mvn checkstyle:check            # Lint');
+    lines.push('mvn spotless:apply              # Format');
+  }
+  if (languages.includes('csharp')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# C# / .NET');
+    lines.push('dotnet test                     # Run tests');
+    lines.push('dotnet format --verify-no-changes # Lint');
+    lines.push('dotnet format                   # Format');
+  }
+  if (languages.includes('cpp')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# C / C++');
+    lines.push('cmake --build build && ctest    # Build & test');
+    lines.push('clang-tidy src/*.cpp            # Lint');
+    lines.push('clang-format -i src/*.[ch]pp    # Format');
   }
   if (languages.includes('go')) {
     if (lines.length > 1) lines.push('');
@@ -58,6 +72,69 @@ function buildCommandsBlock(languages, useDocker) {
     lines.push('go test ./...                   # Run tests');
     lines.push('golangci-lint run               # Lint');
     lines.push('gofmt -w .                      # Format');
+  }
+  if (languages.includes('php')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# PHP');
+    lines.push('vendor/bin/phpunit              # Run tests');
+    lines.push('vendor/bin/phpstan analyse      # Lint');
+    lines.push('vendor/bin/php-cs-fixer fix .   # Format');
+  }
+  if (languages.includes('ruby')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Ruby');
+    lines.push('bundle exec rspec               # Run tests');
+    lines.push('rubocop                         # Lint');
+    lines.push('rubocop -A                      # Format');
+  }
+  if (languages.includes('kotlin')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Kotlin');
+    lines.push('gradle test                     # Run tests');
+    lines.push('detekt                          # Lint');
+    lines.push('ktlint -F                       # Format');
+  }
+  if (languages.includes('swift')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Swift');
+    lines.push('swift test                      # Run tests');
+    lines.push('swiftlint                       # Lint');
+    lines.push('swift-format format -r . -i     # Format');
+  }
+  if (languages.includes('rust')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Rust');
+    lines.push('cargo test                      # Run tests');
+    lines.push('cargo clippy                    # Lint');
+    lines.push('cargo fmt                       # Format');
+  }
+  if (languages.includes('dart')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Dart / Flutter');
+    lines.push('dart test                       # Run tests');
+    lines.push('dart analyze                    # Lint');
+    lines.push('dart format .                   # Format');
+  }
+  if (languages.includes('scala')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Scala');
+    lines.push('sbt test                        # Run tests');
+    lines.push('sbt scalafix                    # Lint');
+    lines.push('scalafmt                        # Format');
+  }
+  if (languages.includes('elixir')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Elixir');
+    lines.push('mix test                        # Run tests');
+    lines.push('mix credo                       # Lint');
+    lines.push('mix format                      # Format');
+  }
+  if (languages.includes('zig')) {
+    if (lines.length > 1) lines.push('');
+    lines.push('# Zig');
+    lines.push('zig build test                  # Run tests');
+    lines.push('zig build                       # Build (lint via compiler)');
+    lines.push('zig fmt .                       # Format');
   }
   if (useDocker) {
     if (lines.length > 1) lines.push('');

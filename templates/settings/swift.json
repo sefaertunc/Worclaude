@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Swift --",
+      "Bash(swift:*)", "Bash(swiftc:*)",
+      "Bash(xcodebuild:*)", "Bash(xcrun:*)",
+      "Bash(swift-format:*)", "Bash(swiftlint:*)",
+      "Edit(*.swift)", "Edit(Package.swift)", "Edit(Package.resolved)",
+      "Edit(*.xcodeproj/**)", "Edit(*.xcworkspace/**)"
+    ]
+  },
+  "formatter": "swift-format format -r . -i || true"
+}

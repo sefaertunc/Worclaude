@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- C# / .NET --",
+      "Bash(dotnet:*)", "Bash(nuget:*)",
+      "Edit(*.cs)", "Edit(*.csproj)", "Edit(*.sln)",
+      "Edit(*.props)", "Edit(*.targets)",
+      "Edit(appsettings*.json)", "Edit(launchSettings.json)"
+    ]
+  },
+  "formatter": "dotnet format || true"
+}

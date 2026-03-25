@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Ruby --",
+      "Bash(ruby:*)", "Bash(irb:*)",
+      "Bash(bundle:*)", "Bash(bundler:*)",
+      "Bash(gem:*)", "Bash(rake:*)",
+      "Bash(rspec:*)", "Bash(rubocop:*)",
+      "Bash(rails:*)",
+      "Edit(*.rb)", "Edit(*.erb)", "Edit(*.rake)",
+      "Edit(Gemfile)", "Edit(Gemfile.lock)", "Edit(Rakefile)",
+      "Edit(.rubocop.yml)"
+    ]
+  },
+  "formatter": "rubocop -A || true"
+}

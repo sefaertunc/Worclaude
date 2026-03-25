@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- C / C++ --",
+      "Bash(gcc:*)", "Bash(g++:*)", "Bash(clang:*)", "Bash(clang++:*)",
+      "Bash(make:*)", "Bash(cmake:*)", "Bash(ctest:*)", "Bash(cpack:*)",
+      "Bash(clang-format:*)", "Bash(clang-tidy:*)",
+      "Bash(valgrind:*)", "Bash(gdb:*)",
+      "Edit(*.c)", "Edit(*.cpp)", "Edit(*.cc)", "Edit(*.cxx)",
+      "Edit(*.h)", "Edit(*.hpp)", "Edit(*.hxx)",
+      "Edit(CMakeLists.txt)", "Edit(*.cmake)",
+      "Edit(Makefile)", "Edit(*.mk)"
+    ]
+  },
+  "formatter": "find . -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i || true"
+}

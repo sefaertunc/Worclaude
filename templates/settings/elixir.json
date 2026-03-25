@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Elixir --",
+      "Bash(elixir:*)", "Bash(elixirc:*)", "Bash(iex:*)",
+      "Bash(mix:*)", "Bash(hex:*)",
+      "Bash(dialyzer:*)", "Bash(credo:*)",
+      "Edit(*.ex)", "Edit(*.exs)", "Edit(*.heex)", "Edit(*.leex)",
+      "Edit(mix.exs)", "Edit(mix.lock)",
+      "Edit(config/*.exs)"
+    ]
+  },
+  "formatter": "mix format || true"
+}

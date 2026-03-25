@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Kotlin --",
+      "Bash(kotlin:*)", "Bash(kotlinc:*)",
+      "Bash(gradle:*)", "Bash(gradlew:*)",
+      "Bash(ktlint:*)", "Bash(detekt:*)",
+      "Edit(*.kt)", "Edit(*.kts)",
+      "Edit(build.gradle*)", "Edit(settings.gradle*)",
+      "Edit(gradle.properties)"
+    ]
+  },
+  "formatter": "ktlint -F || true"
+}

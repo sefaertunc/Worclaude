@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- PHP --",
+      "Bash(php:*)", "Bash(composer:*)",
+      "Bash(phpunit:*)", "Bash(phpstan:*)",
+      "Bash(php-cs-fixer:*)", "Bash(pint:*)",
+      "Bash(artisan:*)", "Bash(sail:*)",
+      "Edit(*.php)", "Edit(composer.json)", "Edit(composer.lock)",
+      "Edit(phpunit.xml*)", "Edit(phpstan.neon*)",
+      "Edit(.php-cs-fixer*)"
+    ]
+  },
+  "formatter": "php-cs-fixer fix . || true"
+}

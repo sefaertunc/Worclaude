@@ -81,16 +81,38 @@ export const PROJECT_TYPES = [
 export const TECH_STACKS = [
   { name: 'Python', value: 'python' },
   { name: 'Node.js / TypeScript', value: 'node' },
-  { name: 'Rust', value: 'rust' },
+  { name: 'Java', value: 'java' },
+  { name: 'C# / .NET', value: 'csharp' },
+  { name: 'C / C++', value: 'cpp' },
   { name: 'Go', value: 'go' },
+  { name: 'PHP', value: 'php' },
+  { name: 'Ruby', value: 'ruby' },
+  { name: 'Kotlin', value: 'kotlin' },
+  { name: 'Swift', value: 'swift' },
+  { name: 'Rust', value: 'rust' },
+  { name: 'Dart / Flutter', value: 'dart' },
+  { name: 'Scala', value: 'scala' },
+  { name: 'Elixir', value: 'elixir' },
+  { name: 'Zig', value: 'zig' },
   { name: 'Other / None', value: 'other' },
 ];
 
 export const FORMATTER_COMMANDS = {
   python: 'ruff format . || true',
   node: 'npx prettier --write . || true',
-  rust: 'cargo fmt || true',
+  java: "google-java-format -i $(find . -name '*.java' 2>/dev/null) || true",
+  csharp: 'dotnet format || true',
+  cpp: "find . -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i || true",
   go: 'gofmt -w . || true',
+  php: 'php-cs-fixer fix . || true',
+  ruby: 'rubocop -A || true',
+  kotlin: 'ktlint -F || true',
+  swift: 'swift-format format -r . -i || true',
+  rust: 'cargo fmt || true',
+  dart: 'dart format . || true',
+  scala: 'scalafmt || true',
+  elixir: 'mix format || true',
+  zig: 'zig fmt . || true',
 };
 
 export const PROJECT_TYPE_DESCRIPTIONS = {

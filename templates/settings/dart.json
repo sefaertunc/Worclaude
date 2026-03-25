@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Dart / Flutter --",
+      "Bash(dart:*)", "Bash(flutter:*)",
+      "Bash(pub:*)",
+      "Edit(*.dart)",
+      "Edit(pubspec.yaml)", "Edit(pubspec.lock)",
+      "Edit(analysis_options.yaml)",
+      "Edit(*.g.dart)"
+    ]
+  },
+  "formatter": "dart format . || true"
+}

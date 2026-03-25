@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Zig --",
+      "Bash(zig:*)",
+      "Edit(*.zig)", "Edit(build.zig)", "Edit(build.zig.zon)"
+    ]
+  },
+  "formatter": "zig fmt . || true"
+}

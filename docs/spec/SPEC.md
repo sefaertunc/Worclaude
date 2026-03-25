@@ -87,8 +87,19 @@ Multi-select languages. Determines permissions, hooks (formatter), and template 
 ? Primary language(s) / runtime: (space to toggle, enter to confirm)
   ◻ Python
   ◻ Node.js / TypeScript
-  ◻ Rust
+  ◻ Java
+  ◻ C# / .NET
+  ◻ C / C++
   ◻ Go
+  ◻ PHP
+  ◻ Ruby
+  ◻ Kotlin
+  ◻ Swift
+  ◻ Rust
+  ◻ Dart / Flutter
+  ◻ Scala
+  ◻ Elixir
+  ◻ Zig
   ◻ Other / None
 
   ℹ This determines which tool permissions and formatters

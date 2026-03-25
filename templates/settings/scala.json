@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Scala --",
+      "Bash(scala:*)", "Bash(scalac:*)",
+      "Bash(sbt:*)", "Bash(mill:*)",
+      "Bash(scalafmt:*)", "Bash(scalafix:*)",
+      "Edit(*.scala)", "Edit(*.sc)", "Edit(*.sbt)",
+      "Edit(build.sbt)", "Edit(project/*.scala)", "Edit(project/*.sbt)",
+      "Edit(.scalafmt.conf)"
+    ]
+  },
+  "formatter": "scalafmt || true"
+}
