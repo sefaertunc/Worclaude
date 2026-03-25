@@ -15,6 +15,9 @@ program
   .version('1.0.0')
   .description('Scaffold a comprehensive Claude Code workflow into any project');
 
+program.showSuggestionAfterError(true);
+program.showHelpAfterError(true);
+
 program
   .command('init')
   .description('Initialize Claude workflow in the current project')
