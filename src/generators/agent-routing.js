@@ -8,7 +8,7 @@ import { AGENT_REGISTRY } from '../data/agent-registry.js';
  * @returns {string} - complete markdown content for agent-routing.md
  */
 export function buildAgentRoutingSkill(selectedAgentNames, _projectTypes) {
-  const allAgents = [...UNIVERSAL_AGENTS, ...selectedAgentNames];
+  const allAgents = [...new Set([...UNIVERSAL_AGENTS, ...selectedAgentNames])];
 
   const automaticAgents = [];
   const manualAgents = [];
