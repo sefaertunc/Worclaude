@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tgz
+
+# Coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Cache
+.eslintcache
+.vitest/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test artifacts
+/tmp/
+
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
