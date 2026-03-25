@@ -288,7 +288,16 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
     return;
   }
 
-  await mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, report);
+  try {
+    await mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, report);
+  } catch {
+    display.warn(
+      'Existing settings.json contains invalid JSON — creating fresh settings instead.'
+    );
+    await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
+    report.added.permissions = workflowSettings.permissions?.allow?.length || 0;
+    report.added.hooks = countHooks(workflowSettings.hooks);
+  }
 }
 
 function countHooks(hooks) {

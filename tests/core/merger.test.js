@@ -267,6 +267,33 @@ describe('merger', () => {
       expect(promptHookConflict).toHaveBeenCalled();
     });
 
+    it('falls back to fresh settings when existing settings.json has invalid JSON', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(path.join(tmpDir, '.claude', 'settings.json'), 'BROKEN JSON');
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      expect(report.added.permissions).toBeGreaterThan(0);
+
+      // Should have written valid JSON
+      const raw = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+      const settings = JSON.parse(raw);
+      expect(settings.permissions.allow).toBeDefined();
+      expect(settings.permissions.allow.length).toBeGreaterThan(0);
+    });
+
     it('skips PROGRESS.md and SPEC.md when they exist', async () => {
       await fs.ensureDir(path.join(tmpDir, 'docs', 'spec'));
       await fs.writeFile(path.join(tmpDir, 'docs', 'spec', 'PROGRESS.md'), '# My Progress');
