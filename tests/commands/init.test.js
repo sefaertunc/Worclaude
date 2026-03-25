@@ -137,7 +137,9 @@ describe('init command', () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8');
     const meta = JSON.parse(content);
-    expect(meta.version).toBe('1.0.0');
+    const pkgPath = path.resolve(import.meta.dirname, '..', '..', 'package.json');
+    const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf-8'));
+    expect(meta.version).toBe(pkg.version);
     expect(meta.techStack).toEqual(['node']);
     expect(meta.projectTypes).toContain('CLI tool');
     expect(meta.universalAgents).toHaveLength(5);
