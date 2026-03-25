@@ -48,10 +48,14 @@ export async function restoreCommand() {
 
   const { confirm } = await inquirer.prompt([
     {
-      type: 'confirm',
+      type: 'list',
       name: 'confirm',
       message: 'Confirm restore?',
-      default: false,
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+      default: 1,
     },
   ]);
 
