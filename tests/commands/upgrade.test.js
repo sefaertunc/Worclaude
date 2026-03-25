@@ -12,6 +12,17 @@ vi.mock('inquirer', () => ({
   },
 }));
 
+// Mock child_process to prevent real npm registry calls
+vi.mock('node:child_process', () => ({
+  execSync: vi.fn(() => {
+    // Return current package version so self-update check is skipped
+    const pkg = JSON.parse(
+      fs.readFileSync(path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'package.json'), 'utf-8')
+    );
+    return pkg.version;
+  }),
+}));
+
 // Mock ora
 vi.mock('ora', () => ({
   default: () => ({
