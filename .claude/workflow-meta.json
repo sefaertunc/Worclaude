@@ -1,7 +1,7 @@
 {
-  "version": "1.3.1",
+  "version": "1.3.2",
   "installedAt": "2026-03-25T23:25:08.720Z",
-  "lastUpdated": "2026-03-25T23:25:08.720Z",
+  "lastUpdated": "2026-03-26T18:16:53.375Z",
   "projectTypes": [
     "CLI tool"
   ],
@@ -36,7 +36,8 @@
     "agents/security-reviewer.md": "82ec30209224f3b6bda8193bf321686fa5b72178e111e19d9e1547e0cae7bbd5",
     "agents/test-writer.md": "bf575c3bd8a5c9b020aaf7cf7408946e3e70e37d0932896621cea9259c164084",
     "agents/verify-app.md": "a860a03bee3a40495b6ec2b7887e4f978a8149b8ab20f890a1bea34aa5711c0d",
-    "commands/commit-push-pr.md": "12a408ba896e1aa54954fd14dc008872207cb5e58f5e86fca59e1322c6588ef7",
+    "commands/commit-push-pr.md": "0a97da83b66aaea918aeff8bdd541dfbb19c7a3cd40eb3cc6801465604134c73",
+    "commands/commit-push-pr.workflow-ref.md": "0a97da83b66aaea918aeff8bdd541dfbb19c7a3cd40eb3cc6801465604134c73",
     "commands/compact-safe.md": "27ae3a279435ea5de8dda3cd0027ca8b2bb2439b2c13a8fb2513d917e2e890c5",
     "commands/end.md": "00b7826dab3e7da6deabcc6839433801d1069afa865c562168287d00ed84fac0",
     "commands/review-plan.md": "668f2d1c3d6d620e9497a30424f80166b90cf853e9b42ea0708246257608675d",
@@ -51,7 +52,8 @@
     "skills/claude-md-maintenance.md": "6d5347ee02735bc10ce6a9bbc617c62c17a0d332ca0c81f50a1d1e5149ba176c",
     "skills/context-management.md": "4b8d6bb4172d14cce014bc53a400e4863bba539bcac089286b0873323c8839b0",
     "skills/frontend-design-system.md": "8f9ae65e0108d7c273a3176c8b60bdefec685e015fed575b1317813ac8dc608b",
-    "skills/git-conventions.md": "5831a87078909fc4023da35d2400cee0961115ea2d2c2f02afd51949b1d75044",
+    "skills/git-conventions.md": "0b2fae67704280a4dbf95f43f434e47d2dc938164275b0e7edb207932cd5f4e5",
+    "skills/git-conventions.workflow-ref.md": "0b2fae67704280a4dbf95f43f434e47d2dc938164275b0e7edb207932cd5f4e5",
     "skills/planning-with-files.md": "f25d4902a34bdc93114d898f1340b52065abd1240b63a6e7ffe5cbc3d61801bc",
     "skills/project-patterns.md": "39a2db38995da5fadf2379104d2108cc34b787bba446f646647a0b148792ad43",
     "skills/prompt-engineering.md": "c17e2df5611ab3c669a73d8cd119e293b7323d97c8bc0b86a6ab106510dd1d3a",
