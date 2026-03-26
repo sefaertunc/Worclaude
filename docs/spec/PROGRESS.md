@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.3.0
-**Last Updated:** 2026-03-25
+**Version:** 1.3.1
+**Last Updated:** 2026-03-26
 
 ## Completed
 
@@ -108,6 +108,13 @@
     - [x] CLAUDE.md template updated: Session Protocol reads agent-routing.md on start
     - [x] 17 new tests (13 unit + 4 integration)
 
+- [x] CI & Branching Strategy (v1.3.1)
+  - [x] GitHub Actions CI workflow: test matrix (Node 18/20/22) + Prettier format check
+  - [x] CI triggers: PRs to main/develop, pushes to develop
+  - [x] CONTRIBUTING.md rewritten for develop→main branching model
+  - [x] commit-push-pr command updated with branch-aware PR targeting rules
+  - [x] git-conventions skill updated with branching strategy section
+
 ## Stats
 
 - 6 CLI commands: init, upgrade, status, backup, restore, diff
@@ -116,7 +123,7 @@
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 166 tests across 18 test files
+- 180 tests across 19 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

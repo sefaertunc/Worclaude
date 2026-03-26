@@ -23,7 +23,7 @@ node src/index.js status        # Test status command
 node src/index.js backup        # Test backup command
 node src/index.js restore       # Test restore command
 node src/index.js diff          # Test diff command
-npm test                        # Run tests (166 tests, 18 files)
+npm test                        # Run tests (180 tests, 19 files)
 npm run lint                    # Lint
 npm run format                  # Format
 npm run docs:dev                # VitePress dev server
