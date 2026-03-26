@@ -4,7 +4,7 @@
 
 **Phase:** All phases complete — published on npm as `worclaude`
 **Version:** 1.3.5
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-03-27
 
 ## Completed
 
@@ -114,6 +114,16 @@
   - [x] CONTRIBUTING.md rewritten for develop→main branching model
   - [x] commit-push-pr command updated with branch-aware PR targeting rules
   - [x] git-conventions skill updated with branching strategy section
+
+- [x] Project Structure Cleanup (2026-03-27)
+  - [x] Moved 8 SPEC templates from `templates/` root into `templates/specs/`
+  - [x] Moved 4 core templates (claude-md, mcp-json, progress-md, workflow-meta) into `templates/core/`
+  - [x] Updated all `readTemplate()`/`scaffoldFile()` references in init.js, merger.js, agents.js
+  - [x] Updated SPEC_MD_TEMPLATE_MAP values with `specs/` prefix
+  - [x] Updated scaffolder.test.js template path references
+  - [x] Updated directory tree in SPEC.md documentation
+  - [x] Removed stale `CLAUDE.md.manual-backup`
+  - [x] PR: sefaertunc/Worclaude#1 (develop → main)
 
 ## Stats
 
