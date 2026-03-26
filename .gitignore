@@ -36,3 +36,7 @@ npm-debug.log*
 # VitePress
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# Worclaude (generated workflow files)
+.claude/
+.claude-backup-*/

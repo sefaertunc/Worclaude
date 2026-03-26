@@ -8,6 +8,7 @@ import {
   readTemplate,
   scaffoldFile,
   getTemplatesDir,
+  updateGitignore,
 } from '../../src/core/scaffolder.js';
 
 describe('substituteVariables', () => {
@@ -107,5 +108,56 @@ describe('getTemplatesDir', () => {
   it('returns a path that exists', async () => {
     const dir = getTemplatesDir();
     expect(await fs.pathExists(dir)).toBe(true);
+  });
+});
+
+describe('updateGitignore', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) {
+      await fs.remove(tmpDir);
+      tmpDir = null;
+    }
+  });
+
+  it('creates .gitignore when it does not exist', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
+    const result = await updateGitignore(tmpDir);
+    expect(result).toBe(true);
+    const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(content).toContain('.claude/');
+    expect(content).toContain('.claude-backup-*/');
+    expect(content).toContain('# Worclaude');
+  });
+
+  it('appends entries to existing .gitignore', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
+    await fs.writeFile(path.join(tmpDir, '.gitignore'), 'node_modules/\n');
+    const result = await updateGitignore(tmpDir);
+    expect(result).toBe(true);
+    const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(content).toContain('node_modules/');
+    expect(content).toContain('.claude/');
+    expect(content).toContain('.claude-backup-*/');
+  });
+
+  it('is idempotent when entries already present', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
+    await fs.writeFile(path.join(tmpDir, '.gitignore'), '.claude/\n.claude-backup-*/\n');
+    const result = await updateGitignore(tmpDir);
+    expect(result).toBe(false);
+  });
+
+  it('adds only missing entries', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
+    await fs.writeFile(path.join(tmpDir, '.gitignore'), '.claude/\n');
+    const result = await updateGitignore(tmpDir);
+    expect(result).toBe(true);
+    const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(content).toContain('.claude-backup-*/');
+    // Should not duplicate .claude/
+    const matches = content.match(/\.claude\//g);
+    expect(matches.length).toBe(1);
   });
 });

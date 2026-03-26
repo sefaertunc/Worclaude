@@ -1,7 +1,7 @@
 import path from 'node:path';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { scaffoldFile } from '../core/scaffolder.js';
+import { scaffoldFile, updateGitignore } from '../core/scaffolder.js';
 import {
   createWorkflowMeta,
   getPackageVersion,
@@ -447,6 +447,9 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await scaffoldFile('mcp-json.json', '.mcp.json', {}, projectRoot);
     spinner.text = 'Created .mcp.json';
 
+    await updateGitignore(projectRoot);
+    spinner.text = 'Updated .gitignore';
+
     const progressPath = path.join(projectRoot, 'docs', 'spec', 'PROGRESS.md');
     const specPath = path.join(projectRoot, 'docs', 'spec', 'SPEC.md');
     const skipped = { progressMd: false, specMd: false };
@@ -499,6 +502,7 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/commands/${display.dimColor(`      ${COMMAND_FILES.length} commands`)}`);
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.mcp.json');
+  display.success('.gitignore');
   if (skipped.progressMd) {
     display.dim('  docs/spec/PROGRESS.md — already exists, skipped');
   } else if (skipped.specMd) {
@@ -719,6 +723,7 @@ export async function initCommand() {
       const report = await performMerge(projectRoot, existingScan, selections, variables, {
         spinner,
       });
+      await updateGitignore(projectRoot);
       await computeAndWriteWorkflowMeta(projectRoot, selections, version);
       spinner.succeed('Workflow merged successfully!');
       displayMergeReport(report, backupPath);

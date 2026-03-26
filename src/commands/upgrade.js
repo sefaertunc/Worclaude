@@ -11,7 +11,7 @@ import {
 import { createBackup } from '../core/backup.js';
 import { categorizeFiles } from '../core/file-categorizer.js';
 import { buildSettingsJson, mergeSettingsPermissionsAndHooks } from '../core/merger.js';
-import { readTemplate } from '../core/scaffolder.js';
+import { readTemplate, updateGitignore } from '../core/scaffolder.js';
 import { hashFile } from '../utils/hash.js';
 import { writeFile, fileExists, listFilesRecursive } from '../utils/file.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
@@ -221,6 +221,9 @@ export async function upgradeCommand() {
         fileHashes[relKey] = await hashFile(filePath);
       }
     }
+
+    // Ensure .gitignore has worclaude entries
+    await updateGitignore(projectRoot);
 
     // Update meta
     meta.version = currentVersion;
