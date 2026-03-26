@@ -321,14 +321,14 @@ function countHooks(hooks) {
 
 async function mergeMcpJson(projectRoot, existingScan) {
   if (!existingScan.hasMcpJson) {
-    await scaffoldFile('mcp-json.json', '.mcp.json', {}, projectRoot);
+    await scaffoldFile('core/mcp-json.json', '.mcp.json', {}, projectRoot);
     return;
   }
 
   // Merge mcpServers — user's servers take priority
   const existingRaw = await readFile(path.join(projectRoot, '.mcp.json'));
   const existing = parseUserJson(existingRaw, '.mcp.json');
-  const workflowRaw = await readTemplate('mcp-json.json');
+  const workflowRaw = await readTemplate('core/mcp-json.json');
   const workflow = JSON.parse(workflowRaw);
 
   const merged = {
@@ -342,7 +342,7 @@ async function mergeMcpJson(projectRoot, existingScan) {
 async function mergeDocSpecs(projectRoot, existingScan, variables, selections, report) {
   if (!existingScan.hasProgressMd) {
     await scaffoldFile(
-      'progress-md.md',
+      'core/progress-md.md',
       path.join('docs', 'spec', 'PROGRESS.md'),
       variables,
       projectRoot
@@ -352,7 +352,7 @@ async function mergeDocSpecs(projectRoot, existingScan, variables, selections, r
 
   if (!existingScan.hasSpecMd) {
     const primaryType = selections.projectTypes[0];
-    const specTemplate = SPEC_MD_TEMPLATE_MAP[primaryType] || 'spec-md.md';
+    const specTemplate = SPEC_MD_TEMPLATE_MAP[primaryType] || 'specs/spec-md.md';
     await scaffoldFile(specTemplate, path.join('docs', 'spec', 'SPEC.md'), variables, projectRoot);
   }
   report.skipped.specMd = existingScan.hasSpecMd;
@@ -361,13 +361,13 @@ async function mergeDocSpecs(projectRoot, existingScan, variables, selections, r
 async function handleClaudeMd(projectRoot, existingScan, variables, report) {
   if (!existingScan.hasClaudeMd) {
     // No CLAUDE.md — scaffold fresh
-    await scaffoldFile('claude-md.md', 'CLAUDE.md', variables, projectRoot);
+    await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
     report.claudeMdHandling = 'created';
     return;
   }
 
   const existingContent = await readFile(path.join(projectRoot, 'CLAUDE.md'));
-  const renderedTemplate = substituteVariables(await readTemplate('claude-md.md'), variables);
+  const renderedTemplate = substituteVariables(await readTemplate('core/claude-md.md'), variables);
   const missingSections = detectMissingSections(existingContent);
 
   if (missingSections.length === 0) {

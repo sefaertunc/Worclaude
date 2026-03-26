@@ -283,13 +283,13 @@ export const PROJECT_TYPE_TO_CATEGORIES = {
 };
 
 export const SPEC_MD_TEMPLATE_MAP = {
-  'Full-stack web application': 'spec-md-fullstack.md',
-  'Backend / API': 'spec-md-backend.md',
-  'Frontend / UI': 'spec-md-frontend.md',
-  'CLI tool': 'spec-md-cli.md',
-  'Data / ML / AI': 'spec-md-data.md',
-  'Library / Package': 'spec-md-library.md',
-  'DevOps / Infrastructure': 'spec-md-devops.md',
+  'Full-stack web application': 'specs/spec-md-fullstack.md',
+  'Backend / API': 'specs/spec-md-backend.md',
+  'Frontend / UI': 'specs/spec-md-frontend.md',
+  'CLI tool': 'specs/spec-md-cli.md',
+  'Data / ML / AI': 'specs/spec-md-data.md',
+  'Library / Package': 'specs/spec-md-library.md',
+  'DevOps / Infrastructure': 'specs/spec-md-devops.md',
 };
 
 export const CONFIRMATION_STEPS = [

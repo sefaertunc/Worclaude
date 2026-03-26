@@ -380,7 +380,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
   const spinner = ora('Creating workflow structure...').start();
 
   try {
-    await scaffoldFile('claude-md.md', 'CLAUDE.md', variables, projectRoot);
+    await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
     spinner.text = 'Created CLAUDE.md';
 
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
@@ -444,7 +444,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     );
     spinner.text = 'Created agent routing guide';
 
-    await scaffoldFile('mcp-json.json', '.mcp.json', {}, projectRoot);
+    await scaffoldFile('core/mcp-json.json', '.mcp.json', {}, projectRoot);
     spinner.text = 'Created .mcp.json';
 
     await updateGitignore(projectRoot);
@@ -456,7 +456,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
 
     if (!(await fileExists(progressPath))) {
       await scaffoldFile(
-        'progress-md.md',
+        'core/progress-md.md',
         path.join('docs', 'spec', 'PROGRESS.md'),
         variables,
         projectRoot
@@ -466,7 +466,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     }
     if (!(await fileExists(specPath))) {
       const primaryType = projectTypes[0];
-      const specTemplate = SPEC_MD_TEMPLATE_MAP[primaryType] || 'spec-md.md';
+      const specTemplate = SPEC_MD_TEMPLATE_MAP[primaryType] || 'specs/spec-md.md';
       await scaffoldFile(
         specTemplate,
         path.join('docs', 'spec', 'SPEC.md'),
