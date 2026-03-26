@@ -75,7 +75,7 @@ describe('mergeSettings', () => {
 
 describe('readTemplate', () => {
   it('reads a template file', async () => {
-    const content = await readTemplate('mcp-json.json');
+    const content = await readTemplate('core/mcp-json.json');
     expect(content).toContain('mcpServers');
   });
 });
@@ -93,7 +93,7 @@ describe('scaffoldFile', () => {
   it('creates file with variable substitution', async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-scaffold-'));
     await scaffoldFile(
-      'spec-md.md',
+      'specs/spec-md.md',
       'SPEC.md',
       { project_name: 'TestProj', description: 'A test' },
       tmpDir

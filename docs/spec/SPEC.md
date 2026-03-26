@@ -1093,12 +1093,14 @@ worclaude/
 │       ├── time.js                 # relativeTime() for backup listing
 │       └── display.js              # Bold + Badges visual system
 ├── templates/
-│   ├── claude-md.md
-│   ├── mcp-json.json
-│   ├── workflow-meta.json
-│   ├── progress-md.md
-│   ├── spec-md.md                  # Default SPEC template
-│   ├── spec-md-{type}.md           # 7 project-type-specific SPEC templates
+│   ├── core/
+│   │   ├── claude-md.md
+│   │   ├── mcp-json.json
+│   │   ├── progress-md.md
+│   │   └── workflow-meta.json
+│   ├── specs/
+│   │   ├── spec-md.md              # Default SPEC template
+│   │   └── spec-md-{type}.md       # 7 project-type-specific SPEC templates
 │   ├── settings/
 │   │   ├── base.json               # Universal permissions
 │   │   ├── python.json
