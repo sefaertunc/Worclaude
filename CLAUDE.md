@@ -45,7 +45,7 @@ See `.claude/skills/` for project-specific guidance.
 
 **Start:** Read PROGRESS.md. Check which phase is active.
 **During:** One feature at a time. Test after each. Commit working increments.
-**End:** Update PROGRESS.md. Note what's done and what's next.
+**End:** Use /commit-push-pr (updates PROGRESS.md, commits, pushes, creates PR). Use /end only if stopping mid-task.
 
 ## Critical Rules
 

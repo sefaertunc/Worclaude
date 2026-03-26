@@ -26,7 +26,7 @@ See `.claude/skills/` — load only what's relevant:
 ## Session Protocol
 **Start:** Read PROGRESS.md → Read `.claude/skills/agent-routing.md` → Read active implementation prompt if any.
 **During:** One task at a time. Commit after each. Use subagents per routing guide.
-**End:** Update PROGRESS.md. Write handoff if ending mid-task.
+**End:** Use /commit-push-pr (updates PROGRESS.md, commits, pushes, creates PR). Use /end only if stopping mid-task.
 
 ## Critical Rules
 1. SPEC.md is source of truth. Do not invent features.

@@ -1,7 +1,8 @@
-1. Stage all changes: git add -A
-2. Write a clear, conventional commit message
-3. Push to the current branch
-4. Create a PR with:
+1. Update docs/spec/PROGRESS.md with what was completed this session
+2. Stage all changes: git add -A
+3. Write a clear, conventional commit message
+4. Push to the current branch
+5. Create a PR with:
    - Clear title matching conventional commit format
    - Description of changes
    - Testing done
