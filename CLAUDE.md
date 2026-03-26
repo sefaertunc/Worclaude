@@ -61,6 +61,7 @@ See `.claude/skills/` for project-specific guidance.
 10. Always add new agents to both `agents.js` AND `agent-registry.js`.
 11. Always add new template files to both scaffolder AND workflow-meta hash computation.
 12. Always handle the "Other / None" language edge case in stack-related code.
+13. Version bump required when templates or CLI behavior change. No bump for docs/CI/tests only. See git-conventions.md Versioning Policy.
 
 ## Key Directories
 
