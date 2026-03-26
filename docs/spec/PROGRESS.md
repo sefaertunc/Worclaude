@@ -125,6 +125,12 @@
   - [x] Removed stale `CLAUDE.md.manual-backup`
   - [x] PR: sefaertunc/Worclaude#1 (develop → main)
 
+- [x] Session-end workflow fix (2026-03-27)
+  - [x] Moved PROGRESS.md update from /end into /commit-push-pr as step 1 (eliminates extra commit after PR)
+  - [x] Simplified /end to mid-task stops only (handoff documents, progress snapshot)
+  - [x] Updated Session Protocol in CLAUDE.md and template claude-md.md
+  - [x] All 4 files updated: project commands + shipped templates
+
 ## Stats
 
 - 6 CLI commands: init, upgrade, status, backup, restore, diff
@@ -133,7 +139,7 @@
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 180 tests across 19 test files
+- 184 tests across 19 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
