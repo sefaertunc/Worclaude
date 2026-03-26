@@ -1,5 +1,5 @@
 ---
-description: "Session ending protocol, HANDOFF document format, seamless continuation between sessions"
+description: 'Session ending protocol, HANDOFF document format, seamless continuation between sessions'
 ---
 
 # Review and Handoff
@@ -10,6 +10,7 @@ Every session should end cleanly. The /end command triggers this, but understand
 the protocol matters more than the command.
 
 Before ending:
+
 1. Commit any working code (don't leave uncommitted changes)
 2. Run tests to confirm nothing is broken
 3. Update PROGRESS.md
@@ -20,21 +21,27 @@ Before ending:
 PROGRESS.md is the single source of truth for project state across sessions.
 
 Update these sections:
+
 ```markdown
 ## Current Status
+
 {What phase/feature is active}
 
 ## Completed This Session
+
 - {Specific thing done}
 - {Another specific thing done}
 
 ## In Progress
+
 - {What's partially done, and where it stands}
 
 ## Blockers
+
 - {Anything preventing forward progress}
 
 ## Next Steps
+
 - {Ordered list of what to do next}
 ```
 
@@ -51,37 +58,44 @@ When ending mid-task, PROGRESS.md isn't enough. Write a handoff at
 # Handoff: {Date}
 
 ## What I Was Doing
+
 {1-2 sentences on the exact task}
 
 ## Current State
+
 - Branch: {branch name}
 - Last commit: {hash and message}
 - Tests: {passing/failing, which ones}
 - Files changed: {list of modified files}
 
 ## What's Left
+
 1. {Next specific step}
 2. {Step after that}
 3. {Final step for this task}
 
 ## Context That Matters
+
 - {Decision made during this session and why}
 - {Gotcha discovered that isn't documented elsewhere}
 - {Assumption being made that should be validated}
 
 ## How to Verify When Done
+
 {What "done" looks like for this task}
 ```
 
 ## What Context Matters
 
 Include in handoffs:
+
 - WHY decisions were made, not just what
 - Failed approaches and why they failed (prevents re-trying dead ends)
 - Dependencies discovered during implementation
 - Anything that surprised you about the codebase
 
 Don't include:
+
 - Obvious things a fresh session can figure out from the code
 - Full code dumps (the code is in version control)
 - Speculation about future tasks unrelated to the current work

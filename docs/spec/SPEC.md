@@ -355,6 +355,7 @@ Same tiered merge as Scenario B for conflicting files. Auto-update unchanged fil
 ## Status Command
 
 Checks the npm registry and shows version status:
+
 - `(up to date)` — workflow and CLI are current
 - `(upgrade available: vX.Y.Z)` — workflow is behind CLI, run `worclaude upgrade`
 - `(CLI update available: vX.Y.Z)` — newer CLI on npm, run `npm install -g worclaude@latest`

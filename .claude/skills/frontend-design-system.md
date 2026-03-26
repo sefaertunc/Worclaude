@@ -1,5 +1,5 @@
 ---
-description: "Design system, component library, styling approach, accessibility and responsive design standards"
+description: 'Design system, component library, styling approach, accessibility and responsive design standards'
 ---
 
 # Frontend Design System

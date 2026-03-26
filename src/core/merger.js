@@ -133,10 +133,7 @@ async function mergeSkills(projectRoot, existingScan, variables, report, selecti
   // Generated skill: agent-routing.md
   const routingFilename = 'agent-routing.md';
   const skillsDir = path.join('.claude', 'skills');
-  const routingContent = buildAgentRoutingSkill(
-    selections.selectedAgents,
-    selections.projectTypes
-  );
+  const routingContent = buildAgentRoutingSkill(selections.selectedAgents, selections.projectTypes);
 
   if (existingScan.existingSkills.includes(routingFilename)) {
     await writeFile(

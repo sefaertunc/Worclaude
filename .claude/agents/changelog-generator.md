@@ -28,20 +28,24 @@ not a git log audience.
 ## Rules for Writing Entries
 
 **Be specific and user-facing**
+
 - Bad: "Refactored user service"
 - Good: "Fixed timeout errors when loading large user lists"
 
 **One entry per user-visible change**
+
 - Combine related commits into a single entry
 - Skip purely internal changes (refactors with no user impact, CI tweaks, test-only changes)
 - But DO include security fixes, dependency updates with security implications, and deprecations
 
 **Include context**
+
 - Reference PR/issue numbers: `Fixed login redirect loop (#142)`
 - Note breaking changes prominently
 - Include migration instructions for breaking changes
 
 **Skip noise**
+
 - Merge commits, formatting changes, typo fixes
 - Internal refactoring that doesn't change behavior
 - Test-only changes
@@ -52,15 +56,19 @@ not a git log audience.
 ## [version] - YYYY-MM-DD
 
 ### Added
+
 - Description of new feature (#PR)
 
 ### Changed
+
 - Description of change (#PR)
 
 ### Fixed
+
 - Description of bug fix (#PR)
 
 ### Security
+
 - Description of security fix (#PR)
 ```
 

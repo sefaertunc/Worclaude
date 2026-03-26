@@ -10,6 +10,7 @@ for missing verification steps, and ensure the plan is specific
 enough for one-shot implementation.
 
 Review the plan critically:
+
 - Are there ambiguous requirements that could be interpreted multiple ways?
 - Is there a clear verification strategy for each step?
 - Are there edge cases not addressed?

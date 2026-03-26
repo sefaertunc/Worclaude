@@ -1,5 +1,5 @@
 ---
-description: "Domain-specific verification beyond tests, closing the feedback loop for web, API, CLI, data"
+description: 'Domain-specific verification beyond tests, closing the feedback loop for web, API, CLI, data'
 ---
 
 # Verification
@@ -32,6 +32,7 @@ After changing UI or API behavior:
 6. Verify responsive behavior if UI changed
 
 For API changes:
+
 ```bash
 # Test the endpoint directly
 curl -X POST http://localhost:3000/api/resource \
@@ -44,6 +45,7 @@ curl -X POST http://localhost:3000/api/resource \
 ## API Verification
 
 Test beyond the happy path:
+
 - Valid request with all fields
 - Valid request with minimum fields
 - Invalid request (missing required field)
@@ -102,6 +104,7 @@ All five must pass. If any fails, stop and fix before continuing.
 ## When Verification Reveals Problems
 
 If verification fails:
+
 1. Don't panic. Read the error carefully.
 2. Check if it's a pre-existing issue or something you introduced.
 3. If you introduced it, fix it before committing.

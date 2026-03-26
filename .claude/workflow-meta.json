@@ -2,12 +2,8 @@
   "version": "1.3.1",
   "installedAt": "2026-03-25T23:25:08.720Z",
   "lastUpdated": "2026-03-25T23:25:08.720Z",
-  "projectTypes": [
-    "CLI tool"
-  ],
-  "techStack": [
-    "node"
-  ],
+  "projectTypes": ["CLI tool"],
+  "techStack": ["node"],
   "universalAgents": [
     "plan-reviewer",
     "code-simplifier",

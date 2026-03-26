@@ -1,5 +1,5 @@
 ---
-description: "How Claude writes rules for itself, when to update CLAUDE.md, keeping it lean and effective"
+description: 'How Claude writes rules for itself, when to update CLAUDE.md, keeping it lean and effective'
 ---
 
 # CLAUDE.md Maintenance
@@ -10,6 +10,7 @@ When Claude makes the same mistake twice, it should update CLAUDE.md to prevent 
 third occurrence. This is "self-healing" — the system learns from its errors.
 
 The cycle:
+
 1. Claude makes mistake X
 2. User corrects Claude
 3. Claude makes mistake X again
@@ -31,6 +32,7 @@ Long CLAUDE.md files waste context on every single interaction.
 ## What Belongs in CLAUDE.md
 
 YES:
+
 - Project identity (name, one-line description)
 - Key file pointers (PROGRESS.md, SPEC.md)
 - Tech stack and build/test/run commands
@@ -40,6 +42,7 @@ YES:
 - Skills pointer (list of available skills)
 
 NO:
+
 - Detailed coding standards (put in a skill)
 - Architecture documentation (put in a skill or docs/)
 - API documentation (put in docs/)
@@ -52,6 +55,7 @@ CLAUDE.md: things Claude needs to know EVERY session, regardless of task.
 Skills: things Claude needs to know SOMETIMES, for specific types of work.
 
 Example:
+
 - "Use conventional commits" -> CLAUDE.md (applies to every commit)
 - "Commit message format: type(scope): description, body explains why..." -> skill
   (only needed when actually writing commits)
@@ -62,6 +66,7 @@ The Gotchas section captures project-specific traps. Format:
 
 ```markdown
 ## Gotchas
+
 - The settings merger must handle comment strings in JSON arrays (they're not valid
   JSON but we support them for readability)
 - Always use path.join(), never string concatenation for file paths — breaks on Windows
@@ -69,6 +74,7 @@ The Gotchas section captures project-specific traps. Format:
 ```
 
 Each gotcha should be:
+
 - Specific (not "be careful with paths")
 - Actionable (says what to do, not just what's wrong)
 - Born from real experience (don't pre-populate with hypotheticals)
@@ -76,12 +82,14 @@ Each gotcha should be:
 ## When to Prune
 
 Review CLAUDE.md when:
+
 - It exceeds 50 lines
 - You notice rules that no longer apply
 - A rule has been absorbed into a skill
 - Two rules say the same thing differently
 
 Pruning checklist:
+
 - Remove rules for code that no longer exists
 - Consolidate duplicate rules
 - Move detailed guidance to skills
@@ -90,6 +98,7 @@ Pruning checklist:
 ## Using /update-claude-md
 
 The /update-claude-md command helps at session end:
+
 1. Reviews what happened during the session
 2. Identifies mistakes that should become rules
 3. Identifies patterns worth documenting

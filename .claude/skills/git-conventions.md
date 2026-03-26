@@ -1,5 +1,5 @@
 ---
-description: "Branch naming, commit message format, PR workflow, worktree conventions"
+description: 'Branch naming, commit message format, PR workflow, worktree conventions'
 ---
 
 # Git Conventions
@@ -9,6 +9,7 @@ description: "Branch naming, commit message format, PR workflow, worktree conven
 Pattern: `{type}/{short-description}`
 
 Types:
+
 - `feature/` — New functionality
 - `fix/` — Bug fixes
 - `refactor/` — Code restructuring without behavior change
@@ -17,6 +18,7 @@ Types:
 - `chore/` — Tooling, dependencies, config
 
 Examples:
+
 - `feature/auth-flow`
 - `fix/login-timeout`
 - `refactor/extract-merger-module`
@@ -41,6 +43,7 @@ Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `ci`
 Scope is optional but helpful: `feat(auth): add OAuth2 token refresh`
 
 Rules:
+
 - Subject line under 72 characters
 - Imperative mood ("add" not "added" or "adds")
 - No period at the end of the subject line
@@ -50,6 +53,7 @@ Rules:
 ## When to Commit
 
 Commit after each logical unit of work:
+
 - A function is complete and tested
 - A refactor is done and tests pass
 - A bug is fixed and verified

@@ -1,5 +1,5 @@
 ---
-description: "Stack-specific backend patterns, API design, database access, error handling conventions"
+description: 'Stack-specific backend patterns, API design, database access, error handling conventions'
 ---
 
 # Backend Conventions

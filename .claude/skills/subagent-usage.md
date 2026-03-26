@@ -1,5 +1,5 @@
 ---
-description: "When to use subagents, how many, context hygiene, worktree isolation patterns"
+description: 'When to use subagents, how many, context hygiene, worktree isolation patterns'
 ---
 
 # Subagent Usage
@@ -13,6 +13,7 @@ session. Your main context stays clean.
 ## When Subagents Help
 
 Tasks that benefit from subagents:
+
 - **Testing**: writing tests for code you just implemented (test-writer agent)
 - **Code review**: reviewing your own changes for quality (code-simplifier agent)
 - **Research**: reading many files to answer a specific question
@@ -36,11 +37,13 @@ Your main session has limited context. Every file you read, every long output yo
 generate, consumes context. Subagents let you offload this:
 
 Instead of:
+
 1. Read 10 test files to understand patterns (consumes context)
 2. Write new tests (uses that context)
 3. Continue main work (context is now polluted with test details)
 
 Do:
+
 1. Spawn test-writer subagent with: "write tests for src/merger.js following
    patterns in tests/core/"
 2. Continue main work while subagent works
@@ -50,10 +53,12 @@ Do:
 ## Parallel vs Sequential Subagents
 
 **Parallel**: when tasks are independent.
+
 - Run test-writer and code-simplifier on different parts of the code simultaneously
 - Run build-validator while continuing implementation
 
 **Sequential**: when tasks depend on each other.
+
 - Run code-simplifier first, then test-writer on the simplified code
 - Run security-reviewer first, then fix the issues it found
 
@@ -65,6 +70,7 @@ coordination overhead grows.
 Some agents use `git worktree` to make changes without affecting your working tree:
 
 How it works:
+
 1. Agent creates a worktree from your current branch
 2. Makes changes in the worktree (isolated from your files)
 3. Commits changes
@@ -74,6 +80,7 @@ Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fix
 bug-fixer, refactorer, doc-writer.
 
 Benefits:
+
 - Agent's changes don't conflict with your uncommitted work
 - You can review agent changes before merging
 - If the agent breaks something, it's isolated

@@ -106,11 +106,11 @@ Covers when subagents help vs when they do not, context hygiene (offloading to k
 
 ### agent-routing
 
-|                 |                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/agent-routing.md`                                                           |
-| **Description** | When and how to use each installed agent — decision matrix, triggers, and routing rules      |
-| **When loaded** | At the start of every session (referenced in Session Protocol)                              |
+|                 |                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------- |
+| **File**        | `.claude/skills/agent-routing.md`                                                       |
+| **Description** | When and how to use each installed agent — decision matrix, triggers, and routing rules |
+| **When loaded** | At the start of every session (referenced in Session Protocol)                          |
 
 Dynamically generated based on which agents the user selects during `worclaude init`. Contains: a "How Agents Work" overview, automatic trigger agents (spawned without asking), manual trigger agents (spawned on request), a decision matrix mapping situations to agents, and general routing rules. Only includes agents that were actually installed — no noise from unused agents.
 

@@ -1,5 +1,5 @@
 ---
-description: "Context budget awareness, when to compact, when to clear, subagent offloading"
+description: 'Context budget awareness, when to compact, when to clear, subagent offloading'
 ---
 
 # Context Management
@@ -11,6 +11,7 @@ context, it's time to act. Don't wait until you're out of room — you lose the 
 to reason well before you hit the hard limit.
 
 Signs you're running low:
+
 - You've read many large files in this session
 - You've had a long back-and-forth conversation
 - You're working on a second or third major task
@@ -19,39 +20,44 @@ Signs you're running low:
 ## Three Tools, Different Jobs
 
 ### /compact — Compress and continue
+
 Use when: you're mid-task and need more room but want to keep working.
 What it does: summarizes conversation history, freeing context.
 Pair with: PostCompact hook that re-reads CLAUDE.md and PROGRESS.md automatically.
 
 After compaction, always re-orient:
+
 - What task am I working on?
 - What branch am I on?
 - What did I just do?
 
 ### /clear — Fresh start
+
 Use when: you're starting a genuinely new task with no relationship to the current one.
 What it does: wipes conversation entirely.
 Caution: you lose ALL context. Make sure PROGRESS.md is updated first.
 
 ### Subagents — Offload without losing context
+
 Use when: a side task would pollute your main context (research, testing, file generation).
 What it does: spawns a separate context that does work and returns results.
 Your main context stays clean.
 
 ## Decision Matrix
 
-| Situation | Action |
-|---|---|
-| ~70% context, mid-task | /compact |
-| Task complete, starting unrelated work | /clear |
-| Need to research something tangential | Subagent |
-| Need to run tests while continuing design | Subagent |
-| Context feels sluggish, responses degrading | /compact |
-| Long debugging session, found the fix | /compact, then implement |
+| Situation                                   | Action                   |
+| ------------------------------------------- | ------------------------ |
+| ~70% context, mid-task                      | /compact                 |
+| Task complete, starting unrelated work      | /clear                   |
+| Need to research something tangential       | Subagent                 |
+| Need to run tests while continuing design   | Subagent                 |
+| Context feels sluggish, responses degrading | /compact                 |
+| Long debugging session, found the fix       | /compact, then implement |
 
 ## PostCompact Hook
 
 The workflow installs a PostCompact hook that runs:
+
 ```
 cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true
 ```

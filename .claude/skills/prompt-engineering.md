@@ -1,5 +1,5 @@
 ---
-description: "Effective prompting patterns for working with Claude, demanding quality, writing specs"
+description: 'Effective prompting patterns for working with Claude, demanding quality, writing specs'
 ---
 
 # Prompt Engineering
@@ -31,11 +31,13 @@ Don't accept the first output as final. Iterate.
 ## When to Be Specific vs When to Delegate
 
 Be specific about:
+
 - Requirements (what the code MUST do)
 - Constraints (performance, compatibility, patterns to follow)
 - Verification criteria (how to know it works)
 
 Delegate to Claude:
+
 - Implementation approach (unless you have a strong preference)
 - Variable naming and code organization details
 - Which standard library functions to use
@@ -47,6 +49,7 @@ A good spec eliminates ambiguity. The SPEC.md pattern works because it forces
 specificity before implementation begins.
 
 Spec checklist:
+
 - Every feature described with concrete examples
 - Input/output pairs for non-obvious behavior
 - Error cases listed explicitly

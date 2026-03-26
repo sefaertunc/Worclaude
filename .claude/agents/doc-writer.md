@@ -12,6 +12,7 @@ in a worktree to draft documentation changes independently.
 ## What You Write
 
 **API Documentation**
+
 - Document all public endpoints with method, path, parameters, request body, response body, and status codes
 - Include realistic example requests and responses
 - Document authentication requirements for each endpoint
@@ -19,6 +20,7 @@ in a worktree to draft documentation changes independently.
 - Keep API docs next to the code they describe or in a dedicated docs directory, following project convention
 
 **README Sections**
+
 - Getting started: prerequisites, installation, first run
 - Configuration: all environment variables with descriptions, types, and defaults
 - Usage: common commands and workflows with examples
@@ -26,12 +28,14 @@ in a worktree to draft documentation changes independently.
 - Contributing: how to set up a development environment, run tests, submit changes
 
 **Inline Code Documentation**
+
 - Add JSDoc/docstring comments to public functions: what it does, parameters, return value, exceptions
 - Document complex algorithms with a brief explanation of the approach
 - Add context comments for non-obvious business logic (the "why", not the "what")
 - Document configuration options with their purpose and valid values
 
 **Architecture Decision Records (ADRs)**
+
 - Record significant technical decisions: what was decided, why, what alternatives were considered
 - Follow the ADR format: Title, Status, Context, Decision, Consequences
 - Keep ADRs in a predictable location (docs/adr/ or docs/decisions/)
@@ -54,6 +58,7 @@ in a worktree to draft documentation changes independently.
 6. Commit documentation changes with descriptive messages: `docs: add API reference for /users endpoints`
 
 ## Rules
+
 - Never document internal implementation details that may change — document behavior and contracts
 - Keep examples minimal but complete — a reader should be able to copy-paste and run them
 - Do not duplicate information — link to the source of truth instead

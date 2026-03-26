@@ -1,5 +1,5 @@
 ---
-description: "Test philosophy, coverage strategy, test-first patterns, what to test and what not to"
+description: 'Test philosophy, coverage strategy, test-first patterns, what to test and what not to'
 ---
 
 # Testing
@@ -19,12 +19,14 @@ Bad test: "calls regex.match with pattern /^[a-z].../"
 if your tests don't exercise meaningful paths.
 
 Focus coverage on:
+
 - Business logic (the rules that make your app unique)
 - Error handling paths (what happens when things go wrong)
 - Boundary conditions (empty, null, max values, off-by-one)
 - Integration points (where your code meets external systems)
 
 Skip coverage on:
+
 - Simple getters/setters
 - Framework boilerplate
 - Generated code
@@ -49,11 +51,13 @@ are realistic for your specific case.
 ## Test-First Workflow
 
 Writing tests first helps when:
+
 - The behavior is well-defined but the implementation isn't clear
 - You're fixing a bug (write the failing test first, then fix)
 - You're implementing a spec (tests become the spec's executable form)
 
 Test-first hurts when:
+
 - You're exploring and don't know what the API should look like
 - You're prototyping and will throw the code away
 - The test would be trivial (testing that a constant equals itself)
@@ -82,11 +86,13 @@ No shared mutable state between tests.
 ## Naming Tests
 
 Test names should read like specifications:
+
 - "should return 401 when token is expired"
 - "should merge arrays without duplicates"
 - "should create backup directory if it doesn't exist"
 
 Not:
+
 - "test1"
 - "it works"
 - "handles edge case"

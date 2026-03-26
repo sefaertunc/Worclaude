@@ -44,7 +44,10 @@ describe('buildAgentRoutingSkill', () => {
     const resultUniversal = buildAgentRoutingSkill([], []);
     const universalRows = resultUniversal
       .split('\n')
-      .filter((line) => line.startsWith('| ') && !line.startsWith('| You just') && !line.startsWith('|---'));
+      .filter(
+        (line) =>
+          line.startsWith('| ') && !line.startsWith('| You just') && !line.startsWith('|---')
+      );
     expect(universalRows).toHaveLength(UNIVERSAL_AGENTS.length);
 
     // All agents = 23 rows
@@ -52,7 +55,10 @@ describe('buildAgentRoutingSkill', () => {
     const resultAll = buildAgentRoutingSkill(allOptional, []);
     const allRows = resultAll
       .split('\n')
-      .filter((line) => line.startsWith('| ') && !line.startsWith('| You just') && !line.startsWith('|---'));
+      .filter(
+        (line) =>
+          line.startsWith('| ') && !line.startsWith('| You just') && !line.startsWith('|---')
+      );
     expect(allRows).toHaveLength(UNIVERSAL_AGENTS.length + allOptional.length);
   });
 

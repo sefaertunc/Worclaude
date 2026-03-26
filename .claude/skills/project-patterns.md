@@ -1,5 +1,5 @@
 ---
-description: "Architectural patterns, naming conventions, file organization, and error handling philosophy for this project"
+description: 'Architectural patterns, naming conventions, file organization, and error handling philosophy for this project'
 ---
 
 # Project Patterns

@@ -12,12 +12,14 @@ micro-optimizations that don't matter in practice.
 ## What You Analyze
 
 **Algorithmic Complexity**
+
 - Flag O(n^2) or worse operations on collections that could grow large
 - Detect nested loops over the same or related datasets that could be flattened with Maps/Sets
 - Check sort operations for appropriate algorithm choice and unnecessary re-sorting
 - Flag repeated linear searches that should use index structures
 
 **Memory & Resource Management**
+
 - Detect memory leaks: event listeners not removed, intervals not cleared, subscriptions not unsubscribed
 - Flag large object creation inside loops or hot paths
 - Check for unbounded caches or arrays that grow without limits
@@ -25,6 +27,7 @@ micro-optimizations that don't matter in practice.
 - Flag large file reads that should use streaming
 
 **Frontend Performance**
+
 - Flag unnecessary re-renders: missing React.memo, unstable references in props/deps arrays
 - Check for expensive computations that should be memoized (useMemo/useCallback)
 - Detect large component trees re-rendering when only a leaf changes
@@ -33,6 +36,7 @@ micro-optimizations that don't matter in practice.
 - Flag synchronous operations that block the main thread
 
 **Backend Performance**
+
 - Flag sequential I/O operations that could run in parallel (Promise.all)
 - Detect missing database query pagination on collection endpoints
 - Check for connection pool configuration and connection leak risks
@@ -40,6 +44,7 @@ micro-optimizations that don't matter in practice.
 - Detect response payloads that include unnecessary data
 
 **Query Performance**
+
 - Flag queries without appropriate indexes (check against schema)
 - Detect N+1 query patterns in data loading code
 - Check for missing query result caching where data changes infrequently
@@ -47,6 +52,7 @@ micro-optimizations that don't matter in practice.
 - Detect repeated identical queries in a single request cycle
 
 **Caching**
+
 - Check that expensive operations have appropriate caching
 - Verify cache invalidation logic is correct (stale data risks)
 - Flag cache keys that don't include all relevant parameters
@@ -55,6 +61,7 @@ micro-optimizations that don't matter in practice.
 ## Output Format
 
 For each finding:
+
 1. **Location**: file and line
 2. **Impact**: estimated severity (high/medium/low) and what metric it affects (latency, memory, bundle size)
 3. **Current**: what the code does now and why it's slow

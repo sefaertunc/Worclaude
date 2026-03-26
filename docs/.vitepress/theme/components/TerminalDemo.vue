@@ -115,11 +115,7 @@
                 @click="selectDocker(option)"
               >
                 <span class="radio-bullet">{{
-                  pendingDocker === option
-                    ? '◉'
-                    : !pendingDocker && option === 'Yes'
-                      ? '◉'
-                      : '○'
+                  pendingDocker === option ? '◉' : !pendingDocker && option === 'Yes' ? '◉' : '○'
                 }}</span>
                 {{ option }}
               </div>
@@ -151,9 +147,10 @@
                 class="agent-line agent-selectable"
                 @click="toggleAgent(agent)"
               >
-                &nbsp;&nbsp;<span :class="agent.selected ? 'checkbox-checked' : 'checkbox-unchecked'">{{
-                  agent.selected ? '☑' : '☐'
-                }}</span>
+                &nbsp;&nbsp;<span
+                  :class="agent.selected ? 'checkbox-checked' : 'checkbox-unchecked'"
+                  >{{ agent.selected ? '☑' : '☐' }}</span
+                >
                 {{ agent.name }}
               </div>
               <div class="spacer-sm"></div>
@@ -292,9 +289,7 @@ const recommendedAgents = ref([
   { name: 'performance-auditor', selected: true },
 ]);
 
-const selectedAgentCount = computed(() =>
-  recommendedAgents.value.filter((a) => a.selected).length
-);
+const selectedAgentCount = computed(() => recommendedAgents.value.filter((a) => a.selected).length);
 
 const scaffoldItems = computed(() => [
   'CLAUDE.md',
