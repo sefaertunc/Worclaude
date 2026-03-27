@@ -11,12 +11,7 @@
       "Bash(env:*)", "Bash(printenv:*)",
 
       "// -- Git --",
-      "Bash(git status:*)", "Bash(git log:*)", "Bash(git diff:*)",
-      "Bash(git branch:*)", "Bash(git checkout:*)",
-      "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push:*)",
-      "Bash(git pull:*)", "Bash(git fetch:*)", "Bash(git merge:*)",
-      "Bash(git stash:*)", "Bash(git worktree:*)",
-      "Bash(git rebase:*)", "Bash(git cherry-pick:*)", "Bash(git tag:*)",
+      "Bash(git:*)",
       "Bash(gh:*)",
 
       "// -- Common Dev Tools --",
@@ -24,7 +19,15 @@
       "Bash(cp:*)", "Bash(mv:*)",
       "Bash(curl:*)", "Bash(wget:*)",
       "Bash(tar:*)", "Bash(zip:*)", "Bash(unzip:*)",
+      "Bash(rm:*)",
       "Bash(make:*)",
+
+      "Bash(npm test:*)", "Bash(npm run:*)", "Bash(cd:*)",
+
+      "// -- Read Permissions --",
+      "Read(src/**)", "Read(tests/**)", "Read(templates/**)",
+      "Read(docs/**)", "Read(.claude/**)",
+      "Read(*.md)", "Read(*.json)", "Read(*.js)",
 
       "// -- Edit Permissions --",
       "Edit(.claude/**)", "Edit(docs/**)",

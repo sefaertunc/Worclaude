@@ -131,6 +131,16 @@
   - [x] Updated Session Protocol in CLAUDE.md and template claude-md.md
   - [x] All 4 files updated: project commands + shipped templates
 
+- [x] Versioning & permissions cleanup (2026-03-27)
+  - [x] Added versioning policy to git-conventions.md (semver rules, publish-from-main rule)
+  - [x] Added critical rule #13 to CLAUDE.md (version bump + publish rules)
+  - [x] Replaced 16 individual git subcommand permissions with single `Bash(git:*)` wildcard
+  - [x] Added `Bash(rm:*)` to common dev tools
+  - [x] Added Read permissions for src, tests, templates, docs, .claude, and common file types
+  - [x] Added compound command patterns: `Bash(npm test:*)`, `Bash(npm run:*)`, `Bash(cd:*)`
+  - [x] Added gotchas for git wildcard permissions and pipe/redirect prompt behavior
+  - [x] All changes applied to both `.claude/settings.json` and `templates/settings/base.json`
+
 ## Stats
 
 - 6 CLI commands: init, upgrade, status, backup, restore, diff
