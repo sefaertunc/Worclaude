@@ -140,6 +140,7 @@
   - [x] Added compound command patterns: `Bash(npm test:*)`, `Bash(npm run:*)`, `Bash(cd:*)`
   - [x] Added gotchas for git wildcard permissions and pipe/redirect prompt behavior
   - [x] All changes applied to both `.claude/settings.json` and `templates/settings/base.json`
+  - [x] Integrated version bump into /commit-push-pr as step 2 (eliminates separate bump-commit-push cycle)
 
 ## Stats
 
