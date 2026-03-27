@@ -107,3 +107,4 @@ cd /tmp/test-fresh && node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 - Tiered merge is strict: Tier 1 only when file doesn't exist, Tier 2 always saves alongside (even if identical), Tier 3 only for CLAUDE.md and hooks
 - Settings merge is append-only for permissions — never removes or replaces existing user rules
 - `merger.js` is the one exception to "core/ never prompts" — it calls `promptHookConflict()` directly
+- Use `Bash(git:*)` wildcard for git permissions, never list subcommands individually — new subcommands will trigger approval prompts
