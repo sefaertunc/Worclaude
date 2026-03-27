@@ -676,6 +676,14 @@ export async function initCommand() {
   const version = await getPackageVersion();
   display.banner(version);
 
+  // Windows guidance: hooks require Git Bash
+  if (process.platform === 'win32') {
+    display.info(
+      'Windows detected \u2014 hooks require Git for Windows (Git Bash). See: https://gitforwindows.org'
+    );
+    display.newline();
+  }
+
   // Step 3: If existing project, show detection report and confirm
   let existingScan = null;
   let backupPath = null;

@@ -657,6 +657,8 @@ See `.claude/skills/` — load only what's relevant:
 | macOS | `osascript -e 'display notification "Session needs attention" with title "Claude Code"' 2>/dev/null \|\| true` |
 | Windows | `powershell -command "New-BurntToastNotification -Text 'Claude Code','Session needs attention'" 2>/dev/null \|\| true` |
 
+> **Windows note:** Claude Code runs hooks in bash (Git Bash / WSL) on all platforms. All hook commands use Unix shell syntax and require [Git for Windows](https://gitforwindows.org) to be installed.
+
 ---
 
 ## Universal Agents

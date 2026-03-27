@@ -48,6 +48,46 @@ describe('merger', () => {
     });
   });
 
+  describe('buildSettingsJson - Windows platform', () => {
+    let platformSpy;
+
+    beforeEach(() => {
+      platformSpy = vi.spyOn(os, 'platform').mockReturnValue('win32');
+    });
+
+    afterEach(() => {
+      platformSpy.mockRestore();
+    });
+
+    it('uses win32 notification command on Windows', async () => {
+      const { settingsStr } = await buildSettingsJson(['node'], false);
+      expect(settingsStr).toContain('powershell -command');
+      expect(settingsStr).toContain('New-BurntToastNotification');
+    });
+
+    it('formatter commands are identical on Windows (hooks run in bash)', async () => {
+      const { settingsStr } = await buildSettingsJson(['python'], false);
+      expect(settingsStr).toContain('ruff format . || true');
+    });
+
+    it('PostCompact command is identical on Windows (hooks run in bash)', async () => {
+      const { settingsStr } = await buildSettingsJson(['node'], false);
+      expect(settingsStr).toContain(
+        'cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true'
+      );
+    });
+
+    it('chains multiple formatters identically on Windows', async () => {
+      const { settingsStr } = await buildSettingsJson(['python', 'node'], false);
+      expect(settingsStr).toContain('ruff format . || true && npx prettier --write . || true');
+    });
+
+    it('handles "other" language fallback on Windows', async () => {
+      const { settingsStr } = await buildSettingsJson(['other'], false);
+      expect(settingsStr).toContain("echo 'No formatter configured'");
+    });
+  });
+
   describe('performMerge', () => {
     const baseSelections = {
       projectName: 'test-merge',

@@ -217,24 +217,6 @@ export const TECH_STACKS = [
   { name: 'Other / None', value: 'other' },
 ];
 
-export const FORMATTER_COMMANDS = {
-  python: 'ruff format . || true',
-  node: 'npx prettier --write . || true',
-  java: "google-java-format -i $(find . -name '*.java' 2>/dev/null) || true",
-  csharp: 'dotnet format || true',
-  cpp: "find . -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i || true",
-  go: 'gofmt -w . || true',
-  php: 'php-cs-fixer fix . || true',
-  ruby: 'rubocop -A || true',
-  kotlin: 'ktlint -F || true',
-  swift: 'swift-format format -r . -i || true',
-  rust: 'cargo fmt || true',
-  dart: 'dart format . || true',
-  scala: 'scalafmt || true',
-  elixir: 'mix format || true',
-  zig: 'zig fmt . || true',
-};
-
 export const PROJECT_TYPE_DESCRIPTIONS = {
   'Full-stack web application': 'Frontend + backend in one repo',
   'Backend / API': 'Server, REST/GraphQL, no frontend',

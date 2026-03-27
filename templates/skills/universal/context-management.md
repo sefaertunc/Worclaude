@@ -56,6 +56,8 @@ The workflow installs a PostCompact hook that runs:
 cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true
 ```
 
+> On Windows, this command runs in Git Bash (installed with [Git for Windows](https://gitforwindows.org)).
+
 This ensures you never lose your bearings after compaction. The hook fires
 automatically — you don't need to re-read these files manually.
 

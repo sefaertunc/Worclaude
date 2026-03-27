@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.3.5
+**Version:** 1.5.0
 **Last Updated:** 2026-03-27
 
 ## Completed
@@ -147,6 +147,15 @@
   - [x] Added 3 missing universal skill references to claude-md.md template (claude-md-maintenance, prompt-engineering, subagent-usage)
   - [x] All 9 universal skills now listed in CLAUDE.md template
 
+- [x] Windows compatibility (v1.5.0, 2026-03-27)
+  - [x] Confirmed Claude Code runs hooks in bash (Git Bash / WSL) on Windows — Unix shell commands work without modification
+  - [x] Added Windows platform notice during `worclaude init` (Git Bash requirement)
+  - [x] Removed dead `FORMATTER_COMMANDS` export from agents.js (templates are the runtime source)
+  - [x] Added Windows Compatibility section to hooks.md documentation
+  - [x] Added Windows note to SPEC.md notification commands table
+  - [x] Added Windows note to context-management.md skill template
+  - [x] Added 5 cross-platform tests (Windows platform mock in merger.test.js)
+
 ## Stats
 
 - 6 CLI commands: init, upgrade, status, backup, restore, diff
@@ -155,7 +164,7 @@
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 184 tests across 19 test files
+- 189 tests across 19 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

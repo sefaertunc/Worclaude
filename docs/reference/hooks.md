@@ -98,6 +98,18 @@ This hook works in tandem with the `/compact-safe` slash command, which triggers
 
 ---
 
+## Windows Compatibility
+
+Claude Code executes hook commands in **bash** on Windows, using Git Bash (from [Git for Windows](https://gitforwindows.org)) or WSL bash. All worclaude hook commands — including `cat`, `find`, `xargs`, and shell redirections — work without modification.
+
+**Prerequisites:**
+
+- Install [Git for Windows](https://gitforwindows.org) (includes Git Bash)
+- Ensure `bash` is in your system PATH (Git for Windows adds this by default)
+- If WSL is installed and Git Bash hooks fail, set the environment variable `CLAUDE_CODE_GIT_BASH_PATH` to the full path of your preferred bash (e.g., `C:\Program Files\Git\bin\bash.exe`)
+
+---
+
 ## Adding Custom Hooks
 
 Hooks are defined in `.claude/settings.json` under the `hooks` key. The structure is:

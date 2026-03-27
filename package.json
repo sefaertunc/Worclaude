@@ -1,6 +1,6 @@
 {
   "name": "worclaude",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "CLI tool that scaffolds a comprehensive Claude Code workflow into any project",
   "type": "module",
   "bin": {
