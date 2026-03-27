@@ -1,5 +1,5 @@
 ---
-description: "Branch naming, commit message format, PR workflow, worktree conventions"
+description: "Branch naming, commit message format, PR workflow, worktree conventions, versioning policy"
 ---
 
 # Git Conventions
@@ -96,6 +96,29 @@ When using `git worktree` for parallel work:
 
 Agents that use worktree isolation (code-simplifier, test-writer, ci-fixer, etc.)
 create and clean up their own worktrees automatically.
+
+## Versioning Policy
+
+Follow [semver](https://semver.org/) when the project publishes releases:
+
+| What changed | Bump | Example |
+|---|---|---|
+| Bug fix, patch to existing behavior | **patch** | Fixed edge case in date parser |
+| New feature, command, or API surface | **minor** | Added CSV export option |
+| Breaking change to public API or CLI | **major** | Renamed config key, removed flag |
+| Only docs, CI, tests, internal refactor | **no bump** | Updated README, added test |
+
+**Publish from the primary branch (usually `main`),** not from feature or development branches. What is published must always match what is on the release branch.
+
+**When to bump:** Include the version change in the same PR as the work — no separate "bump version" commits after the fact.
+
+**How to publish:**
+1. Merge the release PR into `main`
+2. Pull locally: `git checkout main && git pull`
+3. Publish using your ecosystem's tool (`npm publish`, `cargo publish`, `twine upload`, etc.)
+4. Sync develop: `git checkout develop && git merge main && git push origin develop`
+
+**Rule of thumb:** If the change affects what users see, install, or depend on, it needs a version bump. If it only affects the project's internal development workflow, it does not.
 
 ## Gotchas
 

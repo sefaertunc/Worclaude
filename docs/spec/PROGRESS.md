@@ -142,6 +142,11 @@
   - [x] All changes applied to both `.claude/settings.json` and `templates/settings/base.json`
   - [x] Integrated version bump into /commit-push-pr as step 2 (eliminates separate bump-commit-push cycle)
 
+- [x] Template improvements (2026-03-27)
+  - [x] Added generic Versioning Policy section to shipped git-conventions.md template (semver table, publish-from-primary-branch, ecosystem-agnostic steps)
+  - [x] Added 3 missing universal skill references to claude-md.md template (claude-md-maintenance, prompt-engineering, subagent-usage)
+  - [x] All 9 universal skills now listed in CLAUDE.md template
+
 ## Stats
 
 - 6 CLI commands: init, upgrade, status, backup, restore, diff

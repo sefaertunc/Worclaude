@@ -15,11 +15,14 @@
 ## Skills (read on demand, not upfront)
 See `.claude/skills/` — load only what's relevant:
 - context-management.md — Session lifecycle
-- git-conventions.md — Commits and branches
+- claude-md-maintenance.md — CLAUDE.md self-healing
+- git-conventions.md — Commits, branches, versioning
 - planning-with-files.md — Implementation planning
+- prompt-engineering.md — Prompting patterns and quality
 - review-and-handoff.md — Session endings
 - verification.md — How to verify work
 - testing.md — Test philosophy and patterns
+- subagent-usage.md — When and how to use subagents
 - agent-routing.md — When and how to use each installed agent (READ EVERY SESSION)
 {project_specific_skills}
 
