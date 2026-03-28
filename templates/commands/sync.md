@@ -45,5 +45,6 @@ and tell the user to run /conflict-resolver first.
 
 8. git add -A
 9. git commit -m "chore: sync progress, spec, and version to [new version]"
+   Use exactly this message format — no trailers or Co-Authored-By lines.
 10. git push origin develop
 11. gh pr create --base main with description of what was merged

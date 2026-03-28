@@ -36,5 +36,6 @@ If anything fails, fix it.
 
 - git add -A
 - git commit -m "merge: resolve conflicts on develop"
+  Use exactly this message format — no trailers or Co-Authored-By lines.
 
 Do NOT push. Do NOT create a PR. The user will run /sync next.
