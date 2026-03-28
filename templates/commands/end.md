@@ -13,4 +13,5 @@ Do NOT update PROGRESS.md — /sync handles that on develop after merging.
    - Files that were modified
 3. git add -A
 4. git commit -m "wip: handoff for [task description]"
+   Use exactly this message format — no trailers or Co-Authored-By lines.
 5. git push
