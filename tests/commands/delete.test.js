@@ -394,6 +394,19 @@ describe('delete command', () => {
       const result = await cleanGitignore(tmpDir);
       expect(result).toBe(false);
     });
+
+    it('handles CRLF line endings in .gitignore', async () => {
+      await fs.writeFile(
+        path.join(tmpDir, '.gitignore'),
+        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/\r\n.claude-backup-*/\r\n'
+      );
+      await cleanGitignore(tmpDir);
+      const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
+      expect(content).not.toContain('# Worclaude (generated workflow files)');
+      expect(content).not.toContain('.claude/');
+      expect(content).toContain('.claude-backup-*/');
+      expect(content).toContain('node_modules/');
+    });
   });
 
   // ── Integration: full delete flow ──

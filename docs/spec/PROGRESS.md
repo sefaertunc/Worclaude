@@ -168,6 +168,12 @@
   - [x] Added Windows note to context-management.md skill template
   - [x] Added 5 cross-platform tests (Windows platform mock in merger.test.js)
 
+- [x] Windows compatibility audit (2026-03-28)
+  - [x] Full codebase audit: path handling, shell commands, line endings, temp paths, file permissions
+  - [x] Fix: `cleanGitignore()` in remover.js now splits on `/\r?\n/` instead of `'\n'` (CRLF-safe)
+  - [x] Fix: file.test.js uses `os.tmpdir()` instead of hardcoded `/tmp/`
+  - [x] Added CRLF .gitignore test to delete.test.js
+
 ## Stats
 
 - 7 CLI commands: init, upgrade, status, backup, restore, diff, delete
@@ -176,7 +182,7 @@
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 228 tests across 20 test files
+- 229 tests across 20 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
