@@ -1,4 +1,5 @@
 Determine which branch you're on, then follow the appropriate flow.
+Do not add Co-Authored-By trailers or AI-generated footers to commits or PR descriptions.
 
 ## On a feature branch (feature/*, fix/*, chore/*, refactor/*)
 

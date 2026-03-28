@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.6.0
+**Version:** 1.6.1
 **Last Updated:** 2026-03-28
 
 ## Completed
@@ -181,6 +181,11 @@
   - [x] Fix: `cleanGitignore()` in remover.js now splits on `/\r?\n/` instead of `'\n'` (CRLF-safe)
   - [x] Fix: file.test.js uses `os.tmpdir()` instead of hardcoded `/tmp/`
   - [x] Added CRLF .gitignore test to delete.test.js
+
+- [x] Remove AI commit signatures (v1.6.1, 2026-03-28)
+  - [x] Added explicit rules to prevent Co-Authored-By trailers and "Generated with Claude Code" footers
+  - [x] Applied across three layers: CLAUDE.md critical rules, git-conventions skill, commit commands
+  - [x] Updated both project config and product templates (7 files total)
 
 ## Stats
 

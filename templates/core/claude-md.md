@@ -42,6 +42,7 @@ See `.claude/skills/` — load only what's relevant:
 6. Use subagents to keep main context clean.
 7. Mediocre fix → scrap it, implement elegantly.
 8. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
+9. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
 
 ## Gotchas
 [Grows during development]

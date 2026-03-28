@@ -46,6 +46,7 @@ Rules:
 - No period at the end of the subject line
 - Blank line between subject and body
 - Body explains motivation, not mechanics
+- Never append Co-Authored-By trailers, AI attribution lines, or "Generated with" footers
 
 ## When to Commit
 
@@ -76,6 +77,7 @@ All feature/bugfix branches are created from and merged back into `develop`. Nev
 4. PR title follows same format as commit subject: `type(scope): description`
 5. PR body includes: what changed, why, how to test, anything reviewers should know
 6. Request review if the project has reviewers configured
+7. Do not add AI-generated footers (e.g., "Generated with Claude Code") to PR descriptions
 
 ## Squash vs Merge
 

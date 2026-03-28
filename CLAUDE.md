@@ -68,6 +68,7 @@ See `.claude/skills/` for project-specific guidance.
 12. Always handle the "Other / None" language edge case in stack-related code.
 13. Version bump required when templates or CLI behavior change. No bump for docs/CI/tests only. Always publish from `main`, never from `develop`. See git-conventions.md Versioning Policy.
 14. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
+15. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
 
 ## Key Directories
 
