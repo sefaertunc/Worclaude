@@ -1,23 +1,27 @@
-1. Update docs/spec/PROGRESS.md with what was completed this session
-2. **Version bump (only when on `develop` targeting `main`):**
-   - Check what changed since last version using the versioning policy in git-conventions.md
-   - Template or CLI behavior changes → patch bump
-   - New command/feature → minor bump
-   - Breaking change → major bump
-   - Only docs/CI/tests/PROGRESS.md → no bump needed
-   - If bump needed: update `version` in package.json
-3. Stage all changes: git add -A
-4. Write a clear, conventional commit message
-5. Push to the current branch
-6. Create a PR with:
-   - Clear title matching conventional commit format
-   - Description of changes
-   - Testing done
-   - Any notes for reviewers
+Determine which branch you're on, then follow the appropriate flow.
 
-Branch targeting rules:
+## On a feature branch (feature/*, fix/*, chore/*, refactor/*)
 
-- Feature/bugfix branches → PR targets `develop` (`gh pr create --base develop`)
-- When on `develop` → PR targets `main` (`gh pr create --base main`) — release merges only
+Feature branches contain ONLY the task changes. Do NOT touch shared-state
+files (see git-conventions.md for the canonical list).
 
-Use `gh pr create` for PR creation.
+1. Stage all changes: git add -A
+2. Write a clear, conventional commit message
+3. Push to the current branch
+4. Create a PR targeting develop: gh pr create --base develop
+5. Include in PR description: title, changes, testing done, reviewer notes
+
+## On develop
+
+Only used for release merges after /sync has been run.
+
+1. Stage all changes: git add -A
+2. Write a clear, conventional commit message
+3. Push to develop
+4. Create a PR targeting main: gh pr create --base main
+
+## On any other branch
+
+Ask the user which base branch to target before creating a PR.
+
+Use gh pr create for PR creation.

@@ -1,6 +1,6 @@
 # Slash Commands
 
-Worclaude installs 10 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
+Worclaude installs 12 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
 
 ## Command Reference
 
@@ -8,38 +8,38 @@ Worclaude installs 10 slash commands as Markdown files in `.claude/commands/`. T
 
 **Session kickoff.** Orients Claude at the beginning of a work session.
 
-|                  |                                                                                                                                                                                   |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/start.md`                                                                                                                                                       |
-| **When to use**  | At the start of every Claude Code session                                                                                                                                         |
-| **What it does** | Reads `docs/spec/PROGRESS.md` to understand project state. Reads the active implementation prompt if one exists. Reports what was last completed, what is next, and any blockers. |
-| **Key behavior** | Read-only. Does not modify files.                                                                                                                                                 |
+|                  |                                                                                                                                                                                                                                                     |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/start.md`                                                                                                                                                                                                                         |
+| **When to use**  | At the start of every Claude Code session                                                                                                                                                                                                           |
+| **What it does** | Reads `docs/spec/PROGRESS.md` and `agent-routing.md`. Checks `docs/handoffs/` for handoff files matching the current branch. Reads the active implementation prompt if one exists. Reports what was last completed, what is next, and any blockers. |
+| **Key behavior** | Read-only. Does not modify files.                                                                                                                                                                                                                   |
 
 ---
 
 ### /end
 
-**Session wrapdown.** Ensures clean session endings with proper state persistence.
+**Mid-task handoff.** Use ONLY when stopping work mid-task without committing.
 
-|                  |                                                                                                                                                                                                                                     |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/end.md`                                                                                                                                                                                                           |
-| **When to use**  | When finishing a work session                                                                                                                                                                                                       |
-| **What it does** | Updates `docs/spec/PROGRESS.md` with completed items, in-progress work, blockers, and next steps. If ending mid-task, writes a handoff document at `docs/handoffs/HANDOFF_{date}.md` with enough context for seamless continuation. |
-| **Key behavior** | Always commits working code before updating PROGRESS.md.                                                                                                                                                                            |
+|                  |                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **File**         | `.claude/commands/end.md`                                                                                                                        |
+| **When to use**  | When stopping mid-task (unfinished work)                                                                                                         |
+| **What it does** | Creates a handoff document at `docs/handoffs/HANDOFF-{branch-name}-{date}.md` with context for the next session. Commits and pushes the handoff. |
+| **Key behavior** | Does NOT update PROGRESS.md — that is handled by `/sync` on develop after merging.                                                               |
 
 ---
 
 ### /commit-push-pr
 
-**Full git workflow.** Stages, commits, pushes, and opens a pull request in one flow.
+**Branch-aware git workflow.** Stages, commits, pushes, and opens a pull request — with branch-specific behavior.
 
-|                  |                                                                                                                                                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/commit-push-pr.md`                                                                                                                                                                                 |
-| **When to use**  | When a feature or fix is ready for review                                                                                                                                                                            |
-| **What it does** | Stages all changes with `git add -A`. Writes a clear conventional commit message. Pushes to the current branch. Creates a PR with `gh pr create` including title, description, testing notes, and reviewer guidance. |
-| **Key behavior** | Uses `gh` CLI for PR creation.                                                                                                                                                                                       |
+|                  |                                                                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/commit-push-pr.md`                                                                                                                                                                          |
+| **When to use**  | When a feature or fix is ready for review                                                                                                                                                                     |
+| **What it does** | On feature branches: skips shared-state files (PROGRESS.md, SPEC.md, package.json version), stages, commits, pushes, PRs to develop. On develop: stages, commits, pushes, PRs to main (after `/sync` is run). |
+| **Key behavior** | Feature branches never touch shared-state files — that prevents merge conflicts during parallel work.                                                                                                         |
 
 ---
 
@@ -146,6 +146,32 @@ Worclaude installs 10 slash commands as Markdown files in `.claude/commands/`. T
 
 ---
 
+### /sync
+
+**Post-merge shared-state updater.** Updates PROGRESS.md, SPEC.md, and version after merging feature PRs.
+
+|                  |                                                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/sync.md`                                                                                                                                                                        |
+| **When to use**  | On the develop branch after merging feature PRs                                                                                                                                                   |
+| **What it does** | Checks for unresolved conflicts first. Updates PROGRESS.md (stats, completed items), SPEC.md (if features changed), bumps version in package.json. Runs tests/lint, commits, pushes, PRs to main. |
+| **Key behavior** | Refuses to run if conflict markers are detected — tells the user to run `/conflict-resolver` first.                                                                                               |
+
+---
+
+### /conflict-resolver
+
+**Merge conflict resolution.** Resolves merge conflicts from parallel branches.
+
+|                  |                                                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/conflict-resolver.md`                                                                                                                    |
+| **When to use**  | On develop after `git pull` when merge conflicts are present                                                                                               |
+| **What it does** | Detects conflicts, understands each side's intent, resolves them (keeping both sides where possible), verifies no markers remain, runs tests, and commits. |
+| **Key behavior** | ONLY resolves conflicts. Does not update PROGRESS.md, SPEC.md, or bump versions — that is `/sync`'s job. Does not push or create PRs.                      |
+
+---
+
 ## Command File Location
 
 ```
@@ -160,6 +186,8 @@ Worclaude installs 10 slash commands as Markdown files in `.claude/commands/`. T
   status.md
   update-claude-md.md
   setup.md
+  sync.md
+  conflict-resolver.md
 ```
 
 Commands can be customized after installation. Additional custom commands can be added to the same directory.

@@ -29,7 +29,9 @@ See `.claude/skills/` — load only what's relevant:
 ## Session Protocol
 **Start:** Read PROGRESS.md → Read `.claude/skills/agent-routing.md` → Read active implementation prompt if any.
 **During:** One task at a time. Commit after each. Use subagents per routing guide.
-**End:** Use /commit-push-pr (updates PROGRESS.md, commits, pushes, creates PR). Use /end only if stopping mid-task.
+**Feature branch:** /start → work → /verify → /commit-push-pr
+**After merging PRs:** git checkout develop → git pull → /conflict-resolver (if needed) → /sync
+**Mid-task stop:** /end (writes handoff file)
 
 ## Critical Rules
 1. SPEC.md is source of truth. Do not invent features.
@@ -39,6 +41,7 @@ See `.claude/skills/` — load only what's relevant:
 5. Self-healing: same mistake twice → update CLAUDE.md.
 6. Use subagents to keep main context clean.
 7. Mediocre fix → scrap it, implement elegantly.
+8. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
 
 ## Gotchas
 [Grows during development]

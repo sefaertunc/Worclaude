@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.5.0
-**Last Updated:** 2026-03-27
+**Version:** 1.6.0
+**Last Updated:** 2026-03-28
 
 ## Completed
 
@@ -159,6 +159,14 @@
   - [x] 39 tests covering pre-flight, cancellation, classification, removal, edge cases
   - [x] SPEC.md Delete Command section added
 
+- [x] Multi-terminal workflow commands (2026-03-28)
+  - [x] Branch-aware /commit-push-pr (skips shared-state files on feature branches)
+  - [x] /sync command for post-merge updates (PROGRESS.md, SPEC.md, version)
+  - [x] /conflict-resolver command for merge conflict resolution
+  - [x] /end updated to mid-task handoff only
+  - [x] /start updated to check for handoff files
+  - [x] Session Protocol updated in CLAUDE.md and claude-md.md template
+
 - [x] Windows compatibility (v1.5.0, 2026-03-27)
   - [x] Confirmed Claude Code runs hooks in bash (Git Bash / WSL) on Windows — Unix shell commands work without modification
   - [x] Added Windows platform notice during `worclaude init` (Git Bash requirement)
@@ -172,7 +180,7 @@
 
 - 7 CLI commands: init, upgrade, status, backup, restore, diff, delete
 - 5 universal agents + 18 optional agents (6 categories)
-- 10 slash commands
+- 12 slash commands
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates

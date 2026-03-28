@@ -296,7 +296,7 @@ const scaffoldItems = computed(() => [
   '.claude/settings.json',
   '.claude/workflow-meta.json',
   `.claude/agents/ (5 universal + ${selectedAgentCount.value} selected)`,
-  '.claude/commands/ (10 commands)',
+  '.claude/commands/ (12 commands)',
   '.claude/skills/ (9 universal + 3 templates)',
   '.mcp.json',
   'docs/spec/PROGRESS.md',

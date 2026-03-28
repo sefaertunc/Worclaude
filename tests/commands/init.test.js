@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs-extra';
 import path from 'node:path';
 import os from 'node:os';
+import { COMMAND_FILES } from '../../src/data/agents.js';
 
 // Mock inquirer before importing init
 vi.mock('inquirer', () => ({
@@ -114,21 +115,9 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'doc-writer.md'))).toBe(true);
   });
 
-  it('creates all 10 commands including setup', async () => {
+  it('creates all commands from COMMAND_FILES', async () => {
     await initCommand();
-    const commands = [
-      'start',
-      'end',
-      'commit-push-pr',
-      'review-plan',
-      'techdebt',
-      'verify',
-      'compact-safe',
-      'status',
-      'update-claude-md',
-      'setup',
-    ];
-    for (const cmd of commands) {
+    for (const cmd of COMMAND_FILES) {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'commands', `${cmd}.md`));
       expect(exists, `${cmd}.md should exist`).toBe(true);
     }

@@ -22,6 +22,7 @@ vi.spyOn(console, 'log').mockImplementation(() => {});
 
 import { performMerge, buildSettingsJson } from '../../src/core/merger.js';
 import { promptHookConflict } from '../../src/prompts/conflict-resolution.js';
+import { COMMAND_FILES } from '../../src/data/agents.js';
 
 describe('merger', () => {
   let tmpDir;
@@ -209,7 +210,7 @@ describe('merger', () => {
       };
 
       const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
-      expect(report.added.commands).toHaveLength(10);
+      expect(report.added.commands).toHaveLength(COMMAND_FILES.length);
 
       const setupPath = path.join(tmpDir, '.claude', 'commands', 'setup.md');
       expect(await fs.pathExists(setupPath)).toBe(true);

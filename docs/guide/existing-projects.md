@@ -143,7 +143,7 @@ When the merge completes, you see a full report:
 
   Added automatically:
   ✓ 9 agents added
-  ✓ 10 commands added
+  ✓ 12 commands added
   ✓ 6 skills added (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended to settings.json
   ✓ 3 hooks added to settings.json
