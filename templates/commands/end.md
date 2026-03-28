@@ -1,11 +1,16 @@
-Use this command ONLY when stopping mid-task (unfinished work).
-If the task is complete, use /commit-push-pr instead — it handles PROGRESS.md updates.
+Use this ONLY when stopping work mid-task without committing.
 
-When stopping mid-task:
-1. Update docs/spec/PROGRESS.md with:
-   - What's in progress
-   - Any blockers or decisions needed
-   - Next steps to resume
-2. Write a handoff document at docs/handoffs/HANDOFF_{date}.md
-   with enough context for a fresh session to continue seamlessly.
-3. Stage and commit the progress update: git add -A && git commit
+Do NOT update PROGRESS.md — /sync handles that on develop after merging.
+
+## Mid-task handoff
+
+1. Create docs/handoffs/HANDOFF-{branch-name}-{date}.md
+2. Include:
+   - What was being worked on
+   - What is done so far
+   - What is left to do
+   - Decisions or context the next session needs
+   - Files that were modified
+3. git add -A
+4. git commit -m "wip: handoff for [task description]"
+5. git push

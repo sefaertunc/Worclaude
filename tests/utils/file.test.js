@@ -27,7 +27,7 @@ describe('file utils', () => {
   });
 
   it('fileExists returns false for non-existing file', async () => {
-    expect(await fileExists('/tmp/does-not-exist-12345.txt')).toBe(false);
+    expect(await fileExists(path.join(os.tmpdir(), 'does-not-exist-12345.txt'))).toBe(false);
   });
 
   it('dirExists returns true for existing directory', async () => {

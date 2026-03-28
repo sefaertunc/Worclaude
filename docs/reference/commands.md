@@ -38,7 +38,7 @@ Creates all of the following:
 - `CLAUDE.md` -- populated with project name, description, tech stack, and commands
 - `.claude/settings.json` -- permissions and hooks for the selected stack
 - `.claude/agents/` -- 5 universal + selected optional agents
-- `.claude/commands/` -- 10 slash commands
+- `.claude/commands/` -- 12 slash commands
 - `.claude/skills/` -- 9 universal + 3 template + 1 generated skills
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration

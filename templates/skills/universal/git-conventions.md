@@ -97,6 +97,17 @@ When using `git worktree` for parallel work:
 Agents that use worktree isolation (code-simplifier, test-writer, ci-fixer, etc.)
 create and clean up their own worktrees automatically.
 
+## Shared-State Files
+
+These files are modified ONLY on the develop branch (via /sync), never on feature branches:
+
+- `docs/spec/PROGRESS.md` — project progress tracker
+- `docs/spec/SPEC.md` — feature specification
+- `README.md` — project documentation
+- `package.json` version field — release versioning
+
+This prevents merge conflicts when running parallel feature branches.
+
 ## Versioning Policy
 
 Follow [semver](https://semver.org/) when the project publishes releases:

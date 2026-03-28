@@ -10,7 +10,7 @@
 
 [Full Documentation](https://sefaertunc.github.io/Worclaude/) · [Interactive Demo](https://sefaertunc.github.io/Worclaude/demo/) · [npm](https://www.npmjs.com/package/worclaude)
 
-Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [53 tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 23 agents, 10 slash commands, 13 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
+Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [53 tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 23 agents, 12 slash commands, 13 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
 
 ---
 
@@ -23,8 +23,8 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 - 5 universal: plan-reviewer, code-simplifier, test-writer, build-validator, verify-app
 - 18 optional across 6 categories: Backend, Frontend, DevOps, Quality, Documentation, Data/AI
 
-**Slash Commands (10)**
-`/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/setup`
+**Slash Commands (12)**
+`/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/setup` `/sync` `/conflict-resolver`
 
 **Skills (13)**
 

@@ -168,6 +168,8 @@ export const COMMAND_FILES = [
   'status',
   'update-claude-md',
   'setup',
+  'sync',
+  'conflict-resolver',
 ];
 
 export const UNIVERSAL_SKILLS = [

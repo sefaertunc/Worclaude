@@ -246,7 +246,7 @@ Same interactive prompts as Scenario A.
 
 - Missing skills → add
 - Missing agents → add (universal + selected optional)
-- Missing commands → add all 9
+- Missing commands → add all 12
 - settings.json permissions → append new ones to existing list
 - settings.json hooks → append new hooks (only if matcher doesn't conflict)
 - .mcp.json → add missing servers
@@ -291,7 +291,7 @@ Default: keep user's, generate suggestions file.
 
   Added:
   ✓ 5 universal agents + 4 selected optional agents
-  ✓ 9 slash commands
+  ✓ 12 slash commands
   ✓ 6 universal skills (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
@@ -908,12 +908,21 @@ Each agent follows the same frontmatter format. Full content for each agent is i
 
 ## Universal Slash Commands
 
-All 10 slash commands are installed in every project. Files live in `.claude/commands/`.
+All 12 slash commands are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 
 ```markdown
 Read docs/spec/PROGRESS.md to understand current state.
+Read .claude/skills/agent-routing.md for agent usage guidance.
+
+Check for handoff files from previous sessions:
+
+- Look in docs/handoffs/ for any HANDOFF\*.md files
+  (both HANDOFF-{branch}-{date}.md and legacy HANDOFF\_{date}.md)
+- Prioritize files matching the current branch name
+- If found, read them for context and report what was handed off
+
 If an active implementation prompt exists, read it.
 Report: what was last completed, what's next, any blockers.
 ```
@@ -921,30 +930,37 @@ Report: what was last completed, what's next, any blockers.
 ### /end (end.md)
 
 ```markdown
-Update docs/spec/PROGRESS.md with:
+Use this ONLY when stopping work mid-task without committing.
 
-- What was completed this session
-- What's in progress
-- Any blockers or decisions needed
-- Next steps
+Do NOT update PROGRESS.md — /sync handles that on develop after merging.
 
-If ending mid-task, write a handoff document at
-docs/handoffs/HANDOFF\_{date}.md with enough context
-for a fresh session to continue seamlessly.
+Mid-task handoff:
+
+1. Create docs/handoffs/HANDOFF-{branch-name}-{date}.md
+2. Include: what was being worked on, what is done, what is left,
+   decisions/context needed, files modified
+3. git add -A
+4. git commit -m "wip: handoff for [task description]"
+5. git push
 ```
 
 ### /commit-push-pr (commit-push-pr.md)
 
 ```markdown
-1. Stage all changes: git add -A
-2. Write a clear, conventional commit message
-3. Push to the current branch
-4. Create a PR with:
-   - Clear title
-   - Description of changes
-   - Testing done
-   - Any notes for reviewers
-     Use `gh pr create` for PR creation.
+Determine which branch you're on, then follow the appropriate flow.
+
+On a feature branch (feature/\*, fix/\*, chore/\*, refactor/\*):
+
+- Do NOT touch shared-state files (see git-conventions.md)
+- Stage, commit, push, PR targeting develop
+
+On develop (after /sync has been run):
+
+- Stage, commit, push, PR targeting main
+
+On any other branch: ask user which base branch to target.
+
+Use gh pr create for PR creation.
 ```
 
 ### /review-plan (review-plan.md)
@@ -1043,6 +1059,33 @@ Development Workflow, Coding Conventions, and Verification Strategy.
 After the interview, writes/updates: CLAUDE.md, SPEC.md, backend-conventions.md,
 frontend-design-system.md, project-patterns.md, and PROGRESS.md with real,
 project-specific content from the interview answers.
+```
+
+### /sync (sync.md)
+
+```markdown
+Update shared-state files after merging feature PRs into develop.
+Run on the develop branch AFTER all PRs are merged and conflicts resolved.
+
+Pre-check: confirm on develop, check for conflict markers, check if
+anything was merged since last sync (early exit if nothing to do).
+Updates: PROGRESS.md (stats, completed items), SPEC.md (if features changed),
+version bump per git-conventions.md Versioning Policy.
+Verify via /verify. Commit, push, PR to main.
+```
+
+### /conflict-resolver (conflict-resolver.md)
+
+```markdown
+ONLY resolves merge conflicts — does not update PROGRESS.md, SPEC.md,
+or bump versions (that is /sync's job).
+
+1. Detect conflicts via git status
+2. Understand each side's intent from git log
+3. Resolve: keep both if different areas, combine if same lines, ask if contradictory
+4. Verify no conflict markers remain
+5. Run tests and lint
+6. Commit resolution only — do not push or create PR
 ```
 
 ---
@@ -1219,7 +1262,7 @@ worclaude/
 │   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer)
 │   │       ├── docs/ (doc-writer, changelog-generator)
 │   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
-│   ├── commands/ (10 slash commands)
+│   ├── commands/ (12 slash commands)
 │   └── skills/
 │       ├── universal/ (9 files)
 │       └── templates/ (3 files)
@@ -1298,6 +1341,6 @@ This spec is derived from 53 tips by Boris Cherny (creator of Claude Code). Key 
 5. **Concise output style default.** Explanatory when exploring.
 6. **Auto-naming for sessions.** Manual --name only when user wants it.
 7. **Three universal hooks.** Format on write, PostCompact re-injection, notification on stop.
-8. **All slash commands universal.** They're lightweight — include all 9 everywhere.
+8. **All slash commands universal.** They're lightweight — include all 12 everywhere.
 9. **Skills use progressive disclosure.** CLAUDE.md points to skills, skills load on demand.
 10. **The pipeline: Design → Review → Execute → Quality → Verify → PR.**
