@@ -1,17 +1,14 @@
 ---
 layout: page
-title: Interactive Demo
+title: Workflow Demo
+pageClass: demo-page
 ---
 
 <script setup>
-import TerminalDemo from '../.vitepress/theme/components/TerminalDemo.vue'
+import WorkflowDemo from '../.vitepress/theme/components/WorkflowDemo.vue'
 </script>
 
-# Try Worclaude
-
-Experience the `worclaude init` flow right in your browser. Click through the prompts to see how Worclaude scaffolds a professional Claude Code workflow.
-
-<TerminalDemo />
+<WorkflowDemo />
 
 <div class="vp-doc" style="max-width: 688px; margin: 2rem auto; padding: 0 24px;">
 
@@ -24,3 +21,15 @@ npm install -g worclaude
 Check out the [Getting Started guide](/guide/getting-started) for a full walkthrough.
 
 </div>
+
+<style>
+.demo-page .VPDoc .content-container,
+.demo-page .VPContent .content,
+.demo-page.VPPage {
+  background: #060606;
+}
+.demo-page .VPDoc .content-container {
+  max-width: 100%;
+  padding: 0;
+}
+</style>
