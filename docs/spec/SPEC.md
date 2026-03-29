@@ -4,7 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 1.6.1
+**Version:** 1.6.2
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
