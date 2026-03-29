@@ -1,6 +1,6 @@
 # Workflow Tips
 
-After Worclaude has scaffolded your project, these are the best practices for getting the most out of Claude Code. These tips are drawn from Boris Cherny's 53 recommendations and the patterns built into the Worclaude workflow.
+After Worclaude has scaffolded your project, these are the best practices for getting the most out of Claude Code. These tips are drawn from Boris Cherny's recommendations and the patterns built into the Worclaude workflow.
 
 ## Launch Patterns
 

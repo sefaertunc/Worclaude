@@ -4,11 +4,11 @@
 
 **Phase:** All phases complete — published on npm as `worclaude`
 **Version:** 1.6.1
-**Last Updated:** 2026-03-28
+**Last Updated:** 2026-03-30
 
 ## Completed
 
-- [x] Workflow design (53 tips analyzed, all decisions made)
+- [x] Workflow design (tips analyzed, all decisions made)
 - [x] SPEC.md written
 - [x] CLAUDE.md written
 - [x] Project structure defined
@@ -187,6 +187,14 @@
   - [x] Applied across three layers: CLAUDE.md critical rules, git-conventions skill, commit commands
   - [x] Updated both project config and product templates (7 files total)
 
+- [x] Docs improvements (2026-03-30)
+  - [x] Removed hardcoded "53" from Boris Cherny tip references across docs, README, SPEC, PROGRESS
+  - [x] Synced package-lock.json version (1.5.0 → 1.6.1)
+  - [x] Replaced TerminalDemo.vue with WorkflowDemo.vue — multi-terminal workflow visualization
+    - [x] 5 levels: Level 2 (2 terminals) → Level 5 (6 terminals) + Boris Mode
+    - [x] Click-through step navigation with realistic Claude Code terminal output
+    - [x] Keyboard navigation, arrow badges, mode badges, responsive layout
+
 ## Stats
 
 - 7 CLI commands: init, upgrade, status, backup, restore, diff, delete
@@ -195,11 +203,11 @@
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 229 tests across 20 test files
+- 687 tests across 20 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
 
-- Derived from 53 tips by Boris Cherny (howborisusesclaudecode.com)
+- Derived from tips by Boris Cherny (howborisusesclaudecode.com)
 - Published: npm as `worclaude`
 - Docs: VitePress site deployed via GitHub Pages

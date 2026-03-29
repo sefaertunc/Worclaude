@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Worclaude
   text: Professional Claude Code Workflows
-  tagline: 53 best practices from Boris Cherny, installed with one command.
+  tagline: Best practices from Boris Cherny, installed with one command.
   actions:
     - theme: brand
       text: Get Started
