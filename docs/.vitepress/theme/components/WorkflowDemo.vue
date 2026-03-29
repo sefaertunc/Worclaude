@@ -57,7 +57,14 @@
               <div class="terminal-card">
                 <div class="terminal-header">
                   <div class="terminal-header-left">
-                    <svg class="pixel-mascot" width="16" height="16" viewBox="0 0 8 8" style="image-rendering: pixelated" v-html="mascotRects"></svg>
+                    <svg
+                      class="pixel-mascot"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 8 8"
+                      style="image-rendering: pixelated"
+                      v-html="mascotRects"
+                    ></svg>
                     <div class="header-text">
                       <div class="header-title-row">
                         <span class="app-name">Claude Code</span>
@@ -74,7 +81,8 @@
                     class="tline"
                     :class="'tline-' + line.type"
                   >
-                    <span v-if="line.type === 'user'" class="prompt-char">&gt; </span>{{ line.text }}
+                    <span v-if="line.type === 'user'" class="prompt-char">&gt; </span
+                    >{{ line.text }}
                   </div>
                   <div v-if="isActive(tid) && currentStep.stage !== 'done'" class="cursor-line">
                     <span class="blinking-cursor">█</span>
@@ -117,7 +125,14 @@
               <div class="terminal-card">
                 <div class="terminal-header">
                   <div class="terminal-header-left">
-                    <svg class="pixel-mascot" width="16" height="16" viewBox="0 0 8 8" style="image-rendering: pixelated" v-html="mascotRects"></svg>
+                    <svg
+                      class="pixel-mascot"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 8 8"
+                      style="image-rendering: pixelated"
+                      v-html="mascotRects"
+                    ></svg>
                     <div class="header-text">
                       <div class="header-title-row">
                         <span class="app-name">Claude Code</span>
@@ -134,7 +149,8 @@
                     class="tline"
                     :class="'tline-' + line.type"
                   >
-                    <span v-if="line.type === 'user'" class="prompt-char">&gt; </span>{{ line.text }}
+                    <span v-if="line.type === 'user'" class="prompt-char">&gt; </span
+                    >{{ line.text }}
                   </div>
                   <div v-if="isActive(tid) && currentStep.stage !== 'done'" class="cursor-line">
                     <span class="blinking-cursor">█</span>
