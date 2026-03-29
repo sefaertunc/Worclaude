@@ -2,9 +2,9 @@
 
 ## Product Overview
 
-**worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from 53 tips by Boris Cherny (creator of Claude Code at Anthropic).
+**worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 1.3.5
+**Version:** 1.6.1
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -20,6 +20,7 @@
 | `worclaude backup`  | Manual backup of current Claude setup                |
 | `worclaude restore` | Restore from a backup                                |
 | `worclaude diff`    | Compare current setup vs latest workflow version     |
+| `worclaude delete`  | Remove worclaude workflow from project               |
 
 ---
 
@@ -1332,7 +1333,7 @@ worclaude/
 
 ## Design Decisions Reference
 
-This spec is derived from 53 tips by Boris Cherny (creator of Claude Code). Key design decisions:
+This spec is derived from tips by Boris Cherny (creator of Claude Code). Key design decisions:
 
 1. **Agents are task-specific, not role-based.** No "backend-engineer" agents. Domain knowledge lives in skills.
 2. **CLAUDE.md must be lean.** Under 50 lines. Progressive disclosure via skills.
