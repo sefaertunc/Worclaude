@@ -4,11 +4,11 @@
 
 Claude Code is incredibly powerful, but getting the most out of it requires a lot of up-front configuration. You need agents for different review tasks, skills that teach Claude your project's conventions, slash commands for session management, hooks for auto-formatting, and a carefully structured `CLAUDE.md` that keeps Claude focused without overwhelming its context.
 
-Most people skip all of this. They open Claude Code, type a prompt, and get decent results. But "decent" leaves a lot on the table. Boris Cherny, the creator of Claude Code at Anthropic, published [53 tips](https://www.howborisusesclaudecode.com) for using Claude Code professionally. Those tips cover everything from session lifecycle to subagent orchestration to context management. Implementing all 53 by hand takes hours of careful setup work.
+Most people skip all of this. They open Claude Code, type a prompt, and get decent results. But "decent" leaves a lot on the table. Boris Cherny, the creator of Claude Code at Anthropic, published [a collection of tips](https://www.howborisusesclaudecode.com) for using Claude Code professionally. Those tips cover everything from session lifecycle to subagent orchestration to context management. Implementing them all by hand takes hours of careful setup work.
 
 ## The Solution
 
-Worclaude automates that setup. Run one command, answer a few questions about your project, and you get a complete professional workflow installed in your repository. Every file it generates is derived from Boris Cherny's 53 tips.
+Worclaude automates that setup. Run one command, answer a few questions about your project, and you get a complete professional workflow installed in your repository. Every file it generates is derived from Boris Cherny's tips.
 
 Worclaude is a Node.js CLI tool (v1.1.0) that you install globally and run in any project directory. It examines your project, asks what kind of software you are building, and scaffolds the right combination of agents, skills, commands, hooks, and permissions.
 

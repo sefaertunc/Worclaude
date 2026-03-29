@@ -47,7 +47,7 @@ export default defineConfig({
     socialLinks: [{ icon: 'github', link: 'https://github.com/sefaertunc/Worclaude' }],
 
     footer: {
-      message: "Built with best practices from Boris Cherny's 53 Claude Code tips.",
+      message: "Built with best practices from Boris Cherny's Claude Code tips.",
       copyright: 'MIT License',
     },
 

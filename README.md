@@ -1,6 +1,6 @@
 # Worclaude
 
-> One command. 53 best practices. Your Claude Code environment, production-ready.
+> One command. Best practices baked in. Your Claude Code environment, production-ready.
 
 [![npm version](https://img.shields.io/npm/v/worclaude.svg)](https://www.npmjs.com/package/worclaude)
 [![license](https://img.shields.io/npm/l/worclaude.svg)](LICENSE)
@@ -10,7 +10,7 @@
 
 [Full Documentation](https://sefaertunc.github.io/Worclaude/) · [Interactive Demo](https://sefaertunc.github.io/Worclaude/demo/) · [npm](https://www.npmjs.com/package/worclaude)
 
-Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [53 tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 23 agents, 12 slash commands, 13 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
+Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 23 agents, 12 slash commands, 13 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
 
 ---
 
