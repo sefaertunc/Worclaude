@@ -1,6 +1,6 @@
 # Slash Commands
 
-Worclaude installs 12 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
+Worclaude installs 13 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
 
 ## Command Reference
 
@@ -172,6 +172,19 @@ Worclaude installs 12 slash commands as Markdown files in `.claude/commands/`. T
 
 ---
 
+### /review-changes
+
+**Read-only code review.** Analyzes recent changes and reports findings without modifying files.
+
+|                  |                                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/review-changes.md`                                                                                                                                |
+| **When to use**  | After implementing changes, before committing                                                                                                                       |
+| **What it does** | Reads recent git diff. Checks for duplication, complexity, pattern inconsistency, CLAUDE.md compliance. Reports as prioritized table with Fix/Skip recommendations. |
+| **Key behavior** | Strictly read-only. Never edits, stages, or commits. For automated fixes, use `/simplify` which runs the code-simplifier agent in an isolated worktree.             |
+
+---
+
 ## Command File Location
 
 ```
@@ -188,6 +201,7 @@ Worclaude installs 12 slash commands as Markdown files in `.claude/commands/`. T
   setup.md
   sync.md
   conflict-resolver.md
+  review-changes.md
 ```
 
 Commands can be customized after installation. Additional custom commands can be added to the same directory.
