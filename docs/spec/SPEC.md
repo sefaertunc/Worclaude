@@ -4,7 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 1.6.2
+**Version:** 1.7.0
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -292,7 +292,7 @@ Default: keep user's, generate suggestions file.
 
   Added:
   ✓ 5 universal agents + 4 selected optional agents
-  ✓ 12 slash commands
+  ✓ 13 slash commands
   ✓ 6 universal skills (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
@@ -909,7 +909,7 @@ Each agent follows the same frontmatter format. Full content for each agent is i
 
 ## Universal Slash Commands
 
-All 12 slash commands are installed in every project. Files live in `.claude/commands/`.
+All 13 slash commands are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 
@@ -1089,6 +1089,31 @@ or bump versions (that is /sync's job).
 6. Commit resolution only — do not push or create PR
 ```
 
+### /review-changes (review-changes.md)
+
+```markdown
+Review changed code for reuse, quality, and efficiency.
+
+CRITICAL: This is a READ-ONLY review. You MUST NOT edit any files.
+You MUST NOT make any commits. You MUST NOT stage changes.
+Only analyze and report.
+
+1. Read recent changes (git diff HEAD~1 or staged changes)
+2. Check for:
+   - Duplicated code or missed reuse opportunities
+   - Unnecessary complexity or abstraction
+   - Inconsistency with project patterns
+   - CLAUDE.md compliance issues
+3. Report findings as a prioritized table:
+
+| Finding | Category | Action                |
+| ------- | -------- | --------------------- |
+| [what]  | [type]   | Fix / Skip — [reason] |
+
+The user will decide which findings to act on and apply fixes themselves.
+Do NOT apply any fixes. Do NOT touch any files. REPORT ONLY.
+```
+
 ---
 
 ## Universal Skills
@@ -1263,7 +1288,7 @@ worclaude/
 │   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer)
 │   │       ├── docs/ (doc-writer, changelog-generator)
 │   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
-│   ├── commands/ (12 slash commands)
+│   ├── commands/ (13 slash commands)
 │   └── skills/
 │       ├── universal/ (9 files)
 │       └── templates/ (3 files)
@@ -1342,6 +1367,6 @@ This spec is derived from tips by Boris Cherny (creator of Claude Code). Key des
 5. **Concise output style default.** Explanatory when exploring.
 6. **Auto-naming for sessions.** Manual --name only when user wants it.
 7. **Three universal hooks.** Format on write, PostCompact re-injection, notification on stop.
-8. **All slash commands universal.** They're lightweight — include all 12 everywhere.
+8. **All slash commands universal.** They're lightweight — include all 13 everywhere.
 9. **Skills use progressive disclosure.** CLAUDE.md points to skills, skills load on demand.
 10. **The pipeline: Design → Review → Execute → Quality → Verify → PR.**

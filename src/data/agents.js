@@ -170,6 +170,7 @@ export const COMMAND_FILES = [
   'setup',
   'sync',
   'conflict-resolver',
+  'review-changes',
 ];
 
 export const UNIVERSAL_SKILLS = [

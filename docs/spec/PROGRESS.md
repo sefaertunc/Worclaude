@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.6.2
+**Version:** 1.7.0
 **Last Updated:** 2026-03-30
 
 ## Completed
@@ -195,15 +195,20 @@
     - [x] Click-through step navigation with realistic Claude Code terminal output
     - [x] Keyboard navigation, arrow badges, mode badges, responsive layout
 
+- [x] /review-changes command (v1.7.0, 2026-03-30)
+  - [x] New read-only code review command — reports findings as prioritized table without modifying files
+  - [x] Separate from /simplify (which triggers code-simplifier agent for automated fixes)
+  - [x] Registered in COMMAND_FILES, template created, VitePress docs updated
+
 ## Stats
 
 - 7 CLI commands: init, upgrade, status, backup, restore, diff, delete
 - 5 universal agents + 18 optional agents (6 categories)
-- 12 slash commands
+- 13 slash commands
 - 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 687 tests across 20 test files
+- 229 tests across 20 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
