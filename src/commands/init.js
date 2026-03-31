@@ -3,13 +3,13 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import { scaffoldFile, updateGitignore } from '../core/scaffolder.js';
 import {
+  computeFileHashes,
   createWorkflowMeta,
   getPackageVersion,
   readWorkflowMeta,
   writeWorkflowMeta,
 } from '../core/config.js';
-import { fileExists, writeFile, listFilesRecursive } from '../utils/file.js';
-import { hashFile } from '../utils/hash.js';
+import { fileExists, writeFile } from '../utils/file.js';
 import * as display from '../utils/display.js';
 import { promptProjectType } from '../prompts/project-type.js';
 import { promptTechStack } from '../prompts/tech-stack.js';
@@ -349,21 +349,7 @@ function buildTemplateVariables(selections) {
 }
 
 async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
-  const fileHashes = {};
-  const claudeFiles = await listFilesRecursive(path.join(projectRoot, '.claude'));
-  for (const filePath of claudeFiles) {
-    const relativePath = path
-      .relative(path.join(projectRoot, '.claude'), filePath)
-      .split(path.sep)
-      .join('/');
-    if (
-      relativePath !== 'workflow-meta.json' &&
-      relativePath !== 'settings.json' &&
-      !relativePath.startsWith('sessions/')
-    ) {
-      fileHashes[relativePath] = await hashFile(filePath);
-    }
-  }
+  const fileHashes = await computeFileHashes(projectRoot);
 
   const meta = createWorkflowMeta({
     version,
