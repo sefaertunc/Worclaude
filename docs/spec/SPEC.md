@@ -189,7 +189,7 @@ Create all files. Show progress.
   ✓ .claude/settings.json (permissions, hooks, sandbox)
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 selected)
-  ✓ .claude/commands/ (10 universal)
+  ✓ .claude/commands/ (16 universal)
   ✓ .claude/skills/ (9 universal + 3 templates + 1 generated)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
@@ -292,7 +292,7 @@ Default: keep user's, generate suggestions file.
 
   Added:
   ✓ 5 universal agents + 4 selected optional agents
-  ✓ 13 slash commands
+  ✓ 16 slash commands
   ✓ 6 universal skills (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
@@ -870,15 +870,15 @@ Report results with specific pass/fail for each verification step.
 
 ### Category Recommendations Map
 
-| Project Type            | Recommended Agents                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------- |
-| Full-stack web          | ui-reviewer, api-designer, database-analyst, security-reviewer, bug-fixer, doc-writer           |
-| Backend / API           | api-designer, database-analyst, security-reviewer, auth-auditor, bug-fixer, performance-auditor |
-| Frontend / UI           | ui-reviewer, style-enforcer, performance-auditor, bug-fixer                                     |
-| CLI tool                | bug-fixer, doc-writer, dependency-manager                                                       |
-| Data / ML / AI          | data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer, database-analyst                |
-| Library / Package       | doc-writer, dependency-manager, performance-auditor, refactorer, changelog-generator            |
-| DevOps / Infrastructure | ci-fixer, docker-helper, deploy-validator, dependency-manager                                   |
+| Project Type            | Recommended Agents                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Full-stack web          | ui-reviewer, api-designer, database-analyst, security-reviewer, bug-fixer, doc-writer, e2e-runner            |
+| Backend / API           | api-designer, database-analyst, security-reviewer, auth-auditor, bug-fixer, performance-auditor, build-fixer |
+| Frontend / UI           | ui-reviewer, style-enforcer, performance-auditor, bug-fixer, e2e-runner                                      |
+| CLI tool                | bug-fixer, doc-writer, dependency-manager, build-fixer                                                       |
+| Data / ML / AI          | data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer, database-analyst                             |
+| Library / Package       | doc-writer, dependency-manager, performance-auditor, refactorer, changelog-generator                         |
+| DevOps / Infrastructure | ci-fixer, docker-helper, deploy-validator, dependency-manager                                                |
 
 ### All Optional Agents
 
@@ -899,6 +899,8 @@ Each agent follows the same frontmatter format. Full content for each agent is i
 | security-reviewer      | opus   | none      | quality  |
 | performance-auditor    | sonnet | none      | quality  |
 | refactorer             | sonnet | worktree  | quality  |
+| build-fixer            | sonnet | worktree  | quality  |
+| e2e-runner             | sonnet | worktree  | quality  |
 | doc-writer             | sonnet | worktree  | docs     |
 | changelog-generator    | haiku  | none      | docs     |
 | data-pipeline-reviewer | sonnet | none      | data     |
@@ -909,7 +911,7 @@ Each agent follows the same frontmatter format. Full content for each agent is i
 
 ## Universal Slash Commands
 
-All 13 slash commands are installed in every project. Files live in `.claude/commands/`.
+All 16 slash commands are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 
@@ -1114,11 +1116,46 @@ The user will decide which findings to act on and apply fixes themselves.
 Do NOT apply any fixes. Do NOT touch any files. REPORT ONLY.
 ```
 
+### /build-fix (build-fix.md)
+
+```markdown
+Fix the current build failures. Delegates to the build-fixer agent
+for diagnosis and resolution.
+
+Process: Run full validation suite, categorize errors (build → type → test → lint),
+fix one category at a time, re-run after each fix, confirm all green.
+
+Rules: Never silence tests, never weaken lint rules, report unresolvable errors after 3 attempts.
+```
+
+### /refactor-clean (refactor-clean.md)
+
+```markdown
+Run a focused cleanup pass on the codebase. Delegates to the code-simplifier agent.
+
+Cleans: dead code, duplication, complexity (>30 lines, >3 nesting levels), consistency.
+Process: Focus on recent files first, one improvement at a time, test after every change.
+
+Rules: Never change behavior, never combine with feature work, skip low-coverage files.
+```
+
+### /test-coverage (test-coverage.md)
+
+```markdown
+Analyze test coverage and fill gaps in critical areas. Delegates to the test-writer agent.
+
+Process: Measure coverage, identify gaps in business logic and error paths,
+prioritize by risk (HIGH: auth/validation, MEDIUM: business rules, LOW: getters),
+write missing tests, report before/after coverage table.
+
+Rules: Test behavior not implementation, no trivial tests, independent tests, report bugs don't fix.
+```
+
 ---
 
 ## Universal Skills
 
-All 9 universal skills live in `.claude/skills/`. Full content for each is in `templates/skills/universal/`. They follow Thariq's skill authoring standards:
+All 10 universal skills live in `.claude/skills/`. Full content for each is in `templates/skills/universal/`. They follow Thariq's skill authoring standards:
 
 - Skip the obvious
 - Build a Gotchas section
@@ -1129,17 +1166,18 @@ All 9 universal skills live in `.claude/skills/`. Full content for each is in `t
 
 ### Skill Summaries
 
-| Skill                    | Core Content                                                                                        |
-| ------------------------ | --------------------------------------------------------------------------------------------------- |
-| context-management.md    | Context budget awareness, when to /compact, when to /clear, subagent offloading for context hygiene |
-| git-conventions.md       | Branch naming, commit message format, PR workflow, worktree conventions                             |
-| planning-with-files.md   | How to structure implementation plans as files, progressive implementation, plan review process     |
-| review-and-handoff.md    | Session ending protocol, HANDOFF document format, what to include for seamless continuation         |
-| prompt-engineering.md    | Effective prompting patterns, challenge Claude, demand elegance, write detailed specs               |
-| verification.md          | Domain-specific verification beyond tests: browser, API, data, CLI. How to close the feedback loop  |
-| testing.md               | Test philosophy, coverage strategy, test-first patterns, what to test vs what not to                |
-| claude-md-maintenance.md | How Claude writes rules for itself, when to update, how to keep CLAUDE.md lean                      |
-| subagent-usage.md        | When to use subagents, how many, context hygiene, worktree isolation patterns                       |
+| Skill                    | Core Content                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| context-management.md    | Context budget awareness, when to /compact, when to /clear, subagent offloading for context hygiene     |
+| git-conventions.md       | Branch naming, commit message format, PR workflow, worktree conventions                                 |
+| planning-with-files.md   | How to structure implementation plans as files, progressive implementation, plan review process         |
+| review-and-handoff.md    | Session ending protocol, HANDOFF document format, what to include for seamless continuation             |
+| prompt-engineering.md    | Effective prompting patterns, challenge Claude, demand elegance, write detailed specs                   |
+| verification.md          | Domain-specific verification beyond tests: browser, API, data, CLI. How to close the feedback loop      |
+| testing.md               | Test philosophy, coverage strategy, test-first patterns, what to test vs what not to                    |
+| claude-md-maintenance.md | How Claude writes rules for itself, when to update, how to keep CLAUDE.md lean                          |
+| subagent-usage.md        | When to use subagents, how many, context hygiene, worktree isolation patterns                           |
+| security-checklist.md    | OWASP Top 10 reference checklist any agent can consult when reviewing or writing security-relevant code |
 
 ### Template Skills (project-specific placeholders)
 
@@ -1285,12 +1323,12 @@ worclaude/
 │   │       ├── frontend/ (ui-reviewer, style-enforcer)
 │   │       ├── backend/ (api-designer, database-analyst, auth-auditor)
 │   │       ├── devops/ (ci-fixer, docker-helper, deploy-validator, dependency-manager)
-│   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer)
+│   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer, e2e-runner)
 │   │       ├── docs/ (doc-writer, changelog-generator)
 │   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
-│   ├── commands/ (13 slash commands)
+│   ├── commands/ (16 slash commands)
 │   └── skills/
-│       ├── universal/ (9 files)
+│       ├── universal/ (10 files)
 │       └── templates/ (3 files)
 └── tests/
     ├── commands/ (init, upgrade, status, backup, restore, diff)
@@ -1367,6 +1405,6 @@ This spec is derived from tips by Boris Cherny (creator of Claude Code). Key des
 5. **Concise output style default.** Explanatory when exploring.
 6. **Auto-naming for sessions.** Manual --name only when user wants it.
 7. **Three universal hooks.** Format on write, PostCompact re-injection, notification on stop.
-8. **All slash commands universal.** They're lightweight — include all 13 everywhere.
+8. **All slash commands universal.** They're lightweight — include all 16 everywhere.
 9. **Skills use progressive disclosure.** CLAUDE.md points to skills, skills load on demand.
 10. **The pipeline: Design → Review → Execute → Quality → Verify → PR.**
