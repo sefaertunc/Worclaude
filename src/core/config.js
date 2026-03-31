@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { readFile, writeFile, fileExists } from '../utils/file.js';
+import { readFile, writeFile, fileExists, listFilesRecursive } from '../utils/file.js';
+import { hashFile } from '../utils/hash.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkgPath = path.resolve(__dirname, '..', '..', 'package.json');
@@ -56,4 +57,21 @@ export async function workflowMetaExists(projectRoot) {
 export async function writeWorkflowMeta(projectRoot, meta) {
   const metaPath = path.join(projectRoot, '.claude', 'workflow-meta.json');
   await writeFile(metaPath, JSON.stringify(meta, null, 2));
+}
+
+export async function computeFileHashes(projectRoot) {
+  const claudeDir = path.join(projectRoot, '.claude');
+  const allFiles = await listFilesRecursive(claudeDir);
+  const fileHashes = {};
+  for (const filePath of allFiles) {
+    const relKey = path.relative(claudeDir, filePath).split(path.sep).join('/');
+    if (
+      relKey !== 'workflow-meta.json' &&
+      relKey !== 'settings.json' &&
+      !relKey.startsWith('sessions/')
+    ) {
+      fileHashes[relKey] = await hashFile(filePath);
+    }
+  }
+  return fileHashes;
 }
