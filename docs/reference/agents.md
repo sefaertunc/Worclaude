@@ -87,7 +87,7 @@ Tests the actual running application behavior, not just unit tests. Starts the a
 
 ## Optional Agents
 
-18 optional agents organized into 6 categories. During `worclaude init`, categories are recommended based on the selected project type.
+20 optional agents organized into 6 categories. During `worclaude init`, categories are recommended based on the selected project type.
 
 ### Backend
 
@@ -121,6 +121,8 @@ Tests the actual running application behavior, not just unit tests. Starts the a
 | `security-reviewer`   | opus   | none      | Reviews code for security vulnerabilities, injection risks, and unsafe patterns. |
 | `performance-auditor` | sonnet | none      | Analyzes code for performance bottlenecks, memory leaks, and inefficiencies.     |
 | `refactorer`          | sonnet | worktree  | Refactors code to improve maintainability, readability, and structure.           |
+| `build-fixer`         | sonnet | worktree  | Diagnoses and fixes build failures, test failures, lint errors, and type errors. |
+| `e2e-runner`          | sonnet | worktree  | Writes and runs end-to-end tests for critical user journeys.                     |
 
 ### Documentation
 
@@ -157,19 +159,19 @@ During `worclaude init`, agent categories are pre-selected based on the chosen p
 
 The following table shows the specific agents recommended for each project type:
 
-| Project Type               | Recommended Agents                                                                              |
-| -------------------------- | ----------------------------------------------------------------------------------------------- |
-| Full-stack web application | ui-reviewer, api-designer, database-analyst, security-reviewer, bug-fixer, doc-writer           |
-| Backend / API              | api-designer, database-analyst, security-reviewer, auth-auditor, bug-fixer, performance-auditor |
-| Frontend / UI              | ui-reviewer, style-enforcer, performance-auditor, bug-fixer                                     |
-| CLI tool                   | bug-fixer, doc-writer, dependency-manager                                                       |
-| Data / ML / AI             | data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer, database-analyst                |
-| Library / Package          | doc-writer, dependency-manager, performance-auditor, refactorer, changelog-generator            |
-| DevOps / Infrastructure    | ci-fixer, docker-helper, deploy-validator, dependency-manager                                   |
+| Project Type               | Recommended Agents                                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Full-stack web application | ui-reviewer, api-designer, database-analyst, security-reviewer, bug-fixer, doc-writer, e2e-runner            |
+| Backend / API              | api-designer, database-analyst, security-reviewer, auth-auditor, bug-fixer, performance-auditor, build-fixer |
+| Frontend / UI              | ui-reviewer, style-enforcer, performance-auditor, bug-fixer, e2e-runner                                      |
+| CLI tool                   | bug-fixer, doc-writer, dependency-manager, build-fixer                                                       |
+| Data / ML / AI             | data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer, database-analyst                             |
+| Library / Package          | doc-writer, dependency-manager, performance-auditor, refactorer, changelog-generator                         |
+| DevOps / Infrastructure    | ci-fixer, docker-helper, deploy-validator, dependency-manager                                                |
 
 ---
 
-## Summary Table (All 23 Agents)
+## Summary Table (All 25 Agents)
 
 | Agent                  | Category      | Model  | Isolation | Description                                      |
 | ---------------------- | ------------- | ------ | --------- | ------------------------------------------------ |
@@ -191,6 +193,8 @@ The following table shows the specific agents recommended for each project type:
 | security-reviewer      | Quality       | opus   | none      | Reviews code for security vulnerabilities        |
 | performance-auditor    | Quality       | sonnet | none      | Analyzes code for performance issues             |
 | refactorer             | Quality       | sonnet | worktree  | Refactors code to improve maintainability        |
+| build-fixer            | Quality       | sonnet | worktree  | Diagnoses and fixes build failures               |
+| e2e-runner             | Quality       | sonnet | worktree  | Writes and runs end-to-end tests                 |
 | doc-writer             | Documentation | sonnet | worktree  | Writes and updates documentation                 |
 | changelog-generator    | Documentation | haiku  | none      | Generates changelog from commits                 |
 | data-pipeline-reviewer | Data / AI     | sonnet | none      | Reviews data pipeline correctness                |

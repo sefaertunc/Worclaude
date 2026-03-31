@@ -26,11 +26,11 @@ describe('buildAgentRoutingSkill', () => {
     expect(result).toContain('### auth-auditor');
   });
 
-  it('generates all 23 agents when all optional agents selected', () => {
+  it('generates all 25 agents when all optional agents selected', () => {
     const allOptional = Object.keys(AGENT_CATALOG);
     const result = buildAgentRoutingSkill(allOptional, []);
 
-    // Check all 23 agents are present
+    // Check all 25 agents are present
     for (const agent of UNIVERSAL_AGENTS) {
       expect(result).toContain(`### ${agent}`);
     }
@@ -50,7 +50,7 @@ describe('buildAgentRoutingSkill', () => {
       );
     expect(universalRows).toHaveLength(UNIVERSAL_AGENTS.length);
 
-    // All agents = 23 rows
+    // All agents = 25 rows
     const allOptional = Object.keys(AGENT_CATALOG);
     const resultAll = buildAgentRoutingSkill(allOptional, []);
     const allRows = resultAll
@@ -243,7 +243,7 @@ describe('AGENT_REGISTRY completeness', () => {
     }
   });
 
-  it('has exactly 23 agents (5 universal + 18 optional)', () => {
-    expect(Object.keys(AGENT_REGISTRY)).toHaveLength(23);
+  it('has exactly 25 agents (5 universal + 20 optional)', () => {
+    expect(Object.keys(AGENT_REGISTRY)).toHaveLength(25);
   });
 });
