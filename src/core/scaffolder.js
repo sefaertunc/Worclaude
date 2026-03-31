@@ -46,7 +46,7 @@ export async function scaffoldDirectory(templateDir, destDir, variables, project
 
 export async function updateGitignore(projectDir) {
   const gitignorePath = path.join(projectDir, '.gitignore');
-  const entries = ['.claude/', '.claude-backup-*/'];
+  const entries = ['.claude/sessions/', '.claude/workflow-meta.json', '.claude-backup-*/'];
   const header = '# Worclaude (generated workflow files)';
 
   let content = '';
@@ -56,12 +56,27 @@ export async function updateGitignore(projectDir) {
     if (err.code !== 'ENOENT') throw err;
   }
 
-  const missing = entries.filter((entry) => !content.includes(entry));
-  if (missing.length === 0) return false;
+  // Migrate: remove old blanket .claude/ entry (and its header) if present
+  const lines = content.split(/\r?\n/);
+  const hasBlanketEntry = lines.some((l) => l.trim() === '.claude/');
+  if (hasBlanketEntry) {
+    const filtered = lines.filter((l) => {
+      const t = l.trim();
+      return t !== '.claude/' && t !== header;
+    });
+    content = filtered.join('\n');
+  }
 
-  const needsNewline = content.length > 0 && !content.endsWith('\n');
-  const addition = (needsNewline ? '\n' : '') + '\n' + header + '\n' + missing.join('\n') + '\n';
-  await fs.appendFile(gitignorePath, addition);
+  const missing = entries.filter((entry) => !content.includes(entry));
+  if (missing.length === 0 && !hasBlanketEntry) return false;
+
+  if (missing.length > 0) {
+    const needsNewline = content.length > 0 && !content.endsWith('\n');
+    const addition = (needsNewline ? '\n' : '') + '\n' + header + '\n' + missing.join('\n') + '\n';
+    content += addition;
+  }
+
+  await fs.writeFile(gitignorePath, content);
   return true;
 }
 

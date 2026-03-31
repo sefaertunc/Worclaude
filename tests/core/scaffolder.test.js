@@ -126,7 +126,8 @@ describe('updateGitignore', () => {
     const result = await updateGitignore(tmpDir);
     expect(result).toBe(true);
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
-    expect(content).toContain('.claude/');
+    expect(content).toContain('.claude/sessions/');
+    expect(content).toContain('.claude/workflow-meta.json');
     expect(content).toContain('.claude-backup-*/');
     expect(content).toContain('# Worclaude');
   });
@@ -138,26 +139,52 @@ describe('updateGitignore', () => {
     expect(result).toBe(true);
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
     expect(content).toContain('node_modules/');
-    expect(content).toContain('.claude/');
+    expect(content).toContain('.claude/sessions/');
+    expect(content).toContain('.claude/workflow-meta.json');
     expect(content).toContain('.claude-backup-*/');
   });
 
   it('is idempotent when entries already present', async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
-    await fs.writeFile(path.join(tmpDir, '.gitignore'), '.claude/\n.claude-backup-*/\n');
+    await fs.writeFile(
+      path.join(tmpDir, '.gitignore'),
+      '.claude/sessions/\n.claude/workflow-meta.json\n.claude-backup-*/\n'
+    );
     const result = await updateGitignore(tmpDir);
     expect(result).toBe(false);
   });
 
   it('adds only missing entries', async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
-    await fs.writeFile(path.join(tmpDir, '.gitignore'), '.claude/\n');
+    await fs.writeFile(path.join(tmpDir, '.gitignore'), '.claude/sessions/\n');
     const result = await updateGitignore(tmpDir);
     expect(result).toBe(true);
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(content).toContain('.claude/workflow-meta.json');
     expect(content).toContain('.claude-backup-*/');
-    // Should not duplicate .claude/
-    const matches = content.match(/\.claude\//g);
+    // Should not duplicate .claude/sessions/
+    const matches = content.match(/\.claude\/sessions\//g);
     expect(matches.length).toBe(1);
+  });
+
+  it('migrates old .claude/ blanket entry to granular entries', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
+    await fs.writeFile(
+      path.join(tmpDir, '.gitignore'),
+      'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/\n.claude-backup-*/\n'
+    );
+    const result = await updateGitignore(tmpDir);
+    expect(result).toBe(true);
+    const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    // Old blanket entry removed
+    const lines = content.split('\n').map((l) => l.trim());
+    expect(lines).not.toContain('.claude/');
+    // New granular entries present
+    expect(content).toContain('.claude/sessions/');
+    expect(content).toContain('.claude/workflow-meta.json');
+    expect(content).toContain('.claude-backup-*/');
+    // Header present once
+    const headerMatches = content.match(/# Worclaude/g);
+    expect(headerMatches.length).toBe(1);
   });
 });
