@@ -422,6 +422,10 @@ export async function performMerge(
   if (spinner) spinner.start();
 
   await mergeMcpJson(projectRoot, existingScan);
+
+  // Ensure sessions directory exists for session persistence
+  await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
+
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
 
   // Stop spinner before CLAUDE.md merge — interactive prompts for section selection

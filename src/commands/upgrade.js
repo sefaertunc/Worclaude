@@ -211,13 +211,20 @@ export async function upgradeCommand() {
       spinner.text = 'Settings merged...';
     }
 
+    // Ensure sessions directory exists for session persistence
+    await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
+
     // Recompute file hashes
     const fileHashes = {};
     const claudeDir = path.join(projectRoot, '.claude');
     const allFiles = await listFilesRecursive(claudeDir);
     for (const filePath of allFiles) {
       const relKey = path.relative(claudeDir, filePath).split(path.sep).join('/');
-      if (relKey !== 'workflow-meta.json' && relKey !== 'settings.json') {
+      if (
+        relKey !== 'workflow-meta.json' &&
+        relKey !== 'settings.json' &&
+        !relKey.startsWith('sessions/')
+      ) {
         fileHashes[relKey] = await hashFile(filePath);
       }
     }
