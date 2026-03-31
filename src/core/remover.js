@@ -181,7 +181,12 @@ export async function cleanGitignore(projectRoot) {
   const content = await readFile(gitignorePath);
   const lines = content.split(/\r?\n/);
 
-  const REMOVE_LINES = new Set(['# Worclaude (generated workflow files)', '.claude/']);
+  const REMOVE_LINES = new Set([
+    '# Worclaude (generated workflow files)',
+    '.claude/',
+    '.claude/sessions/',
+    '.claude/workflow-meta.json',
+  ]);
 
   const filtered = lines.filter((line) => !REMOVE_LINES.has(line.trim()));
 

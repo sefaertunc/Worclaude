@@ -104,7 +104,7 @@ describe('delete command', () => {
     if (opts.withGitignore !== false) {
       await fs.writeFile(
         path.join(tmpDir, '.gitignore'),
-        'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/\n.claude-backup-*/\n'
+        'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/sessions/\n.claude/workflow-meta.json\n.claude-backup-*/\n'
       );
     }
 
@@ -367,12 +367,13 @@ describe('delete command', () => {
   // ── .gitignore cleanup ──
 
   describe('cleanGitignore', () => {
-    it('removes worclaude header and .claude/ entry', async () => {
+    it('removes worclaude header and gitignore entries', async () => {
       await scaffoldMinimal();
       await cleanGitignore(tmpDir);
       const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
       expect(content).not.toContain('# Worclaude (generated workflow files)');
-      expect(content).not.toContain('.claude/');
+      expect(content).not.toContain('.claude/sessions/');
+      expect(content).not.toContain('.claude/workflow-meta.json');
     });
 
     it('keeps .claude-backup-*/ entry', async () => {
@@ -398,12 +399,13 @@ describe('delete command', () => {
     it('handles CRLF line endings in .gitignore', async () => {
       await fs.writeFile(
         path.join(tmpDir, '.gitignore'),
-        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/\r\n.claude-backup-*/\r\n'
+        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/sessions/\r\n.claude/workflow-meta.json\r\n.claude-backup-*/\r\n'
       );
       await cleanGitignore(tmpDir);
       const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
       expect(content).not.toContain('# Worclaude (generated workflow files)');
-      expect(content).not.toContain('.claude/');
+      expect(content).not.toContain('.claude/sessions/');
+      expect(content).not.toContain('.claude/workflow-meta.json');
       expect(content).toContain('.claude-backup-*/');
       expect(content).toContain('node_modules/');
     });

@@ -356,7 +356,11 @@ async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
       .relative(path.join(projectRoot, '.claude'), filePath)
       .split(path.sep)
       .join('/');
-    if (relativePath !== 'workflow-meta.json' && relativePath !== 'settings.json') {
+    if (
+      relativePath !== 'workflow-meta.json' &&
+      relativePath !== 'settings.json' &&
+      !relativePath.startsWith('sessions/')
+    ) {
       fileHashes[relativePath] = await hashFile(filePath);
     }
   }
@@ -478,6 +482,10 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     }
     spinner.text = 'Created docs/spec/';
 
+    // Create sessions directory for session persistence
+    await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
+    spinner.text = 'Created .claude/sessions/';
+
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -501,6 +509,7 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/agents/${display.dimColor(`        ${totalAgents} agents`)}`);
   display.success(`.claude/commands/${display.dimColor(`      ${COMMAND_FILES.length} commands`)}`);
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
+  display.success('.claude/sessions/');
   display.success('.mcp.json');
   display.success('.gitignore');
   if (skipped.progressMd) {

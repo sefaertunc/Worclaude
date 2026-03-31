@@ -38,5 +38,6 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 
 # Worclaude (generated workflow files)
-.claude/
+.claude/sessions/
+.claude/workflow-meta.json
 .claude-backup-*/

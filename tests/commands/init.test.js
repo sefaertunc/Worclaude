@@ -199,6 +199,12 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'))).toBe(true);
   });
 
+  it('creates .claude/sessions/ with .gitkeep', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'sessions'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'sessions', '.gitkeep'))).toBe(true);
+  });
+
   it('uses project-type-specific SPEC.md template', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'), 'utf-8');
