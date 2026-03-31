@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.7.0
-**Last Updated:** 2026-03-30
+**Version:** 1.8.0
+**Last Updated:** 2026-03-31
 
 ## Completed
 
@@ -200,12 +200,21 @@
   - [x] Separate from /simplify (which triggers code-simplifier agent for automated fixes)
   - [x] Registered in COMMAND_FILES, template created, VitePress docs updated
 
+- [x] Agent enrichment & new commands (v1.8.0, 2026-03-31)
+  - [x] Phase A: Enriched all 5 universal agent templates with structured guidance, output formats, and decision frameworks
+  - [x] Phase B: Added 2 new optional agents — build-fixer (quality) and e2e-runner (quality), polished optional agent templates
+  - [x] Phase C: Added 3 new command templates — build-fix, refactor-clean, test-coverage
+  - [x] Phase C: Added 1 new universal skill — security-checklist (OWASP-based reference checklist)
+  - [x] Updated COMMAND_FILES (13→16) and UNIVERSAL_SKILLS (9→10) in agents.js
+  - [x] Updated agent-registry.js with routing metadata for build-fixer and e2e-runner
+  - [x] Updated CATEGORY_RECOMMENDATIONS to include new agents
+
 ## Stats
 
 - 7 CLI commands: init, upgrade, status, backup, restore, diff, delete
-- 5 universal agents + 18 optional agents (6 categories)
-- 13 slash commands
-- 9 universal skills + 3 template skills + 1 generated skill (agent-routing)
+- 5 universal agents + 20 optional agents (6 categories)
+- 16 slash commands
+- 10 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 229 tests across 20 test files

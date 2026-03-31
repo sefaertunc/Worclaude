@@ -31,7 +31,7 @@ node src/index.js backup        # Test backup command
 node src/index.js restore       # Test restore command
 node src/index.js diff          # Test diff command
 node src/index.js delete        # Test delete command
-npm test                        # Run tests (230 tests, 20 files)
+npm test                        # Run tests (229 tests, 20 files)
 npm run lint                    # Lint
 npm run format                  # Format
 npm run docs:dev                # VitePress dev server
@@ -73,7 +73,7 @@ See `.claude/skills/` for project-specific guidance.
 ## Key Directories
 
 - `src/data/agents.js` — All catalogs, tech stacks, formatters, categories
-- `src/data/agent-registry.js` — Routing metadata for all 23 agents (used by generator)
+- `src/data/agent-registry.js` — Routing metadata for all 25 agents (used by generator)
 - `src/generators/agent-routing.js` — Builds agent-routing.md dynamically from selected agents
 - `src/utils/display.js` — Bold + Badges visual system for CLI output
 - `src/utils/npm.js` — Shared npm registry check (used by upgrade + status)

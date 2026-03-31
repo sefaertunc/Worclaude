@@ -54,6 +54,25 @@ separately so that any individual change can be reverted.
 - Describe what structural improvement was made and why
 - Example: `refactor: extract validation logic from UserController into UserValidator`
 
+## Phasing Large Refactors
+
+When a refactoring is too large for a single pass, break it into independently-mergeable phases:
+
+**Phase 1 — Foundation**: Create the new structure alongside the old one. Both coexist. No behavior changes. Tests pass.
+Example: create `src/validation/` module with new validators, but don't change any call sites yet.
+
+**Phase 2 — Migration**: Move call sites from old to new, one file at a time. Each file is a separate commit. Tests pass after every commit.
+Example: update `src/api/users.js` to import from `src/validation/` instead of inline validation.
+
+**Phase 3 — Cleanup**: Remove the old code that is now unused. Delete dead imports, remove empty files.
+Example: delete the inline validation functions from `src/api/users.js` that are now in `src/validation/`.
+
+**Rules for phased refactoring:**
+- Each phase must be mergeable independently — if Phase 2 is abandoned, Phase 1 still adds value (new module exists, old code still works)
+- Never combine phases into one commit — the point is that each step is revertible
+- If the refactor reveals that the new structure doesn't work, revert and redesign before continuing
+- Estimate: if a refactor would touch more than 10 files, it must be phased
+
 ## What You Do NOT Do
 - Do not add features or fix bugs — those are separate tasks
 - Do not refactor code that has no tests unless you write tests first
