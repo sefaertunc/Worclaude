@@ -44,6 +44,17 @@ in a worktree to draft documentation changes independently.
 - **Scannable**: use headings, bullet points, and code blocks — walls of text are not documentation
 - **Audience-aware**: write for the developer who will read this in 6 months, not for yourself today
 
+## What NOT to Document
+
+Equally important is knowing what to skip:
+- **Unstable internals**: if the implementation will change in the next sprint, don't write docs that will immediately be wrong — add a TODO instead
+- **Self-explanatory code**: `getUserById(id)` doesn't need a JSDoc comment saying "gets a user by ID"
+- **Framework defaults**: don't document that Express listens on port 3000 unless you've changed it
+- **Aspirational features**: only document what exists now, not what's planned — link to the spec/roadmap instead
+- **Duplicated from upstream**: if the library has good docs, link to them — don't copy-paste and maintain a fork
+
+Before writing documentation, ask: "will this still be accurate in 3 months?" If the answer is "probably not," write a short note linking to the code instead of detailed prose.
+
 ## Process
 
 1. Read the existing documentation to understand the current state and conventions

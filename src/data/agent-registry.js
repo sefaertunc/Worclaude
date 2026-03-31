@@ -1,5 +1,5 @@
 /**
- * Agent routing metadata for all 23 agents.
+ * Agent routing metadata for all 25 agents.
  * Used by the agent-routing generator to produce the routing skill file.
  * Separate from agents.js because this data is only consumed by the generator,
  * not by CLI prompts or display logic.
@@ -196,7 +196,7 @@ export const AGENT_REGISTRY = {
     situationLabel: 'Preparing for deployment',
   },
 
-  // --- Quality agents (4) ---
+  // --- Quality agents (6) ---
 
   'bug-fixer': {
     category: 'quality',
@@ -249,6 +249,32 @@ export const AGENT_REGISTRY = {
       'Handles large-scale refactoring in worktree isolation. Renames, architectural changes, pattern migrations with full test verification.',
     expectBack: 'Refactored code on worktree branch with all tests passing.',
     situationLabel: 'Need large-scale refactoring',
+  },
+  'build-fixer': {
+    category: 'quality',
+    model: 'Sonnet',
+    isolation: 'worktree',
+    triggerType: 'manual',
+    triggerCommand: null,
+    whenToUse:
+      'Build is broken. Tests failing. Lint errors blocking commit. Type errors after a merge or dependency update.',
+    whatItDoes:
+      'Reads error output, categorizes failures (build/test/lint/type), fixes in priority order, verifies each fix. Works in worktree isolation.',
+    expectBack: 'All checks passing, with a summary of what was fixed and why.',
+    situationLabel: 'Build or tests are broken',
+  },
+  'e2e-runner': {
+    category: 'quality',
+    model: 'Sonnet',
+    isolation: 'worktree',
+    triggerType: 'manual',
+    triggerCommand: null,
+    whenToUse:
+      'After implementing user-facing features. Before releases. When unit tests pass but integration is suspect.',
+    whatItDoes:
+      'Writes and runs end-to-end tests for critical user journeys. Detects E2E framework (Playwright/Cypress) or recommends setup. Tests web, API, or CLI flows.',
+    expectBack: 'E2E test results with pass/fail per journey and reproduction steps for failures.',
+    situationLabel: 'Need end-to-end testing of user flows',
   },
 
   // --- Documentation agents (2) ---

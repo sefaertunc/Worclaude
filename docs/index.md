@@ -17,7 +17,7 @@ hero:
       link: https://github.com/sefaertunc/Worclaude
 
 features:
-  - title: 23 Specialized Agents
+  - title: 25 Specialized Agents
     details: From plan-reviewer (Opus) to build-validator (Haiku). Each agent has a dedicated model and purpose.
   - title: 12 Slash Commands
     details: /start, /end, /commit-push-pr, /verify — session lifecycle management built in.

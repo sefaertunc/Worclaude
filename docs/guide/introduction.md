@@ -16,7 +16,7 @@ Worclaude is a Node.js CLI tool (v1.1.0) that you install globally and run in an
 
 When you run `worclaude init`, the following components are installed into your project:
 
-### Agents (23 total)
+### Agents (25 total)
 
 Agents are specialized Claude instances, each with a specific model and purpose. You always get the 5 **universal agents**:
 
@@ -26,7 +26,7 @@ Agents are specialized Claude instances, each with a specific model and purpose.
 - **build-validator** (Haiku) -- Runs the build, tests, and linter. Reports failures without fixing them.
 - **verify-app** (Sonnet, worktree) -- Tests the running application end-to-end against the specification.
 
-On top of these, you choose from 18 **optional agents** across 6 categories (Backend, Frontend, DevOps, Quality, Documentation, Data/AI). Worclaude recommends agents based on your project type, so you do not have to guess.
+On top of these, you choose from 20 **optional agents** across 6 categories (Backend, Frontend, DevOps, Quality, Documentation, Data/AI). Worclaude recommends agents based on your project type, so you do not have to guess.
 
 ### Skills (13 total)
 
