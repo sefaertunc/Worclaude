@@ -191,6 +191,9 @@ export const COMMAND_FILES = [
   'sync',
   'conflict-resolver',
   'review-changes',
+  'build-fix',
+  'refactor-clean',
+  'test-coverage',
 ];
 
 export const UNIVERSAL_SKILLS = [
@@ -203,6 +206,7 @@ export const UNIVERSAL_SKILLS = [
   'testing',
   'claude-md-maintenance',
   'subagent-usage',
+  'security-checklist',
 ];
 
 export const TEMPLATE_SKILLS = [
