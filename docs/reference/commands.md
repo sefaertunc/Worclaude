@@ -38,8 +38,8 @@ Creates all of the following:
 - `CLAUDE.md` -- populated with project name, description, tech stack, and commands
 - `.claude/settings.json` -- permissions and hooks for the selected stack
 - `.claude/agents/` -- 5 universal + selected optional agents
-- `.claude/commands/` -- 13 slash commands
-- `.claude/skills/` -- 9 universal + 3 template + 1 generated skills
+- `.claude/commands/` -- 16 slash commands
+- `.claude/skills/` -- 10 universal + 3 template + 1 generated skills
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
 - `docs/spec/PROGRESS.md` -- if not already present
@@ -273,6 +273,97 @@ worclaude diff
 
 - Only files inside `.claude/` are tracked. CLAUDE.md and `.mcp.json` are not part of the hash comparison.
 - The diff is read-only; it never modifies files.
+
+---
+
+## worclaude delete
+
+Removes the worclaude workflow from the current project.
+
+**Syntax**
+
+```bash
+worclaude delete
+```
+
+**Prerequisites**
+
+Requires `workflow-meta.json`. Exits with guidance if not found.
+
+**Behavior**
+
+1. Creates a backup before any deletions.
+2. Classifies every tracked file using hash comparison:
+
+| Classification | Meaning                               | Action                       |
+| -------------- | ------------------------------------- | ---------------------------- |
+| **Unmodified** | File matches installed hash           | Deleted automatically        |
+| **Modified**   | User has customized the file          | Prompts user (default: keep) |
+| **User-owned** | Root files (CLAUDE.md, settings.json) | Prompts user (default: keep) |
+
+3. Handles root files individually: `CLAUDE.md`, `.claude/settings.json`, `.mcp.json`, and `docs/spec/` files.
+4. Removes `.claude/` directory contents (preserving Claude Code system dirs: `projects/`, `worktrees/`, `todos/`, `memory/`).
+5. Cleans worclaude entries from `.gitignore`.
+6. Shows global uninstall hint (`npm uninstall -g worclaude`).
+
+**Examples**
+
+```bash
+worclaude delete
+# → Creates backup, classifies files, prompts for modified files, removes workflow
+```
+
+**Notes**
+
+- A backup is always created before deletion.
+- Modified files default to "keep" when prompted.
+- Claude Code system directories under `.claude/` are never touched.
+
+---
+
+## worclaude doctor
+
+Validates the health of the current workflow installation.
+
+**Syntax**
+
+```bash
+worclaude doctor
+```
+
+**Prerequisites**
+
+Requires `workflow-meta.json`. Reports failure if not found.
+
+**Checks performed**
+
+| Section           | What it checks                                                                                                                                                               |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Files**    | `workflow-meta.json` (valid JSON, required fields), `CLAUDE.md` (exists, not a stub), `settings.json` (permissions, hooks, PostCompact, SessionStart), `sessions/` directory |
+| **Components**    | All 5 universal agents present, selected optional agents present, all slash commands present, all skills (universal + template + agent-routing) present                      |
+| **Documentation** | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                     |
+| **Integrity**     | File hash verification against `workflow-meta.json`, pending `.workflow-ref.md` or `.workflow-suggestions` files                                                             |
+
+**Output**
+
+Each check shows a status indicator:
+
+- ✓ (green) — pass
+- ⚠ (yellow) — warning (non-blocking)
+- ✗ (red) — failure (action required)
+
+**Examples**
+
+```bash
+worclaude doctor
+# → Runs all checks and reports status per item
+```
+
+**Notes**
+
+- Uses dynamic counts from `agents.js` — no hardcoded numbers.
+- Customized files are reported as "intact" or "customized" (both are fine).
+- Run after `worclaude init` or `worclaude upgrade` to verify installation.
 
 ---
 

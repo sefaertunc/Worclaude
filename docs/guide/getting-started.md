@@ -184,8 +184,8 @@ Once you confirm, Worclaude creates all the files:
   ✓ .claude/settings.json
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 optional)
-  ✓ .claude/commands/ (10)
-  ✓ .claude/skills/ (9 universal + 3 templates + 1 generated)
+  ✓ .claude/commands/ (16)
+  ✓ .claude/skills/ (10 universal + 3 templates + 1 generated)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
   ✓ docs/spec/SPEC.md

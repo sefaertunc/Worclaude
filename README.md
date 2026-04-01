@@ -10,7 +10,7 @@
 
 [Full Documentation](https://sefaertunc.github.io/Worclaude/) · [Interactive Demo](https://sefaertunc.github.io/Worclaude/demo/) · [npm](https://www.npmjs.com/package/worclaude)
 
-Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 23 agents, 12 slash commands, 13 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
+Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 25 agents, 16 slash commands, 14 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
 
 ---
 
@@ -18,25 +18,27 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 
 `worclaude init` installs a production-ready Claude Code workflow:
 
-**Agents (23 total)**
+**Agents (25 total)**
 
 - 5 universal: plan-reviewer, code-simplifier, test-writer, build-validator, verify-app
-- 18 optional across 6 categories: Backend, Frontend, DevOps, Quality, Documentation, Data/AI
+- 20 optional across 6 categories: Backend, Frontend, DevOps, Quality, Documentation, Data/AI
 
-**Slash Commands (12)**
-`/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/setup` `/sync` `/conflict-resolver`
+**Slash Commands (16)**
+`/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/setup` `/sync` `/conflict-resolver` `/review-changes` `/build-fix` `/refactor-clean` `/test-coverage`
 
-**Skills (13)**
+**Skills (14)**
 
-- 9 universal knowledge files (testing, git conventions, context management, and more)
+- 10 universal knowledge files (testing, git conventions, context management, security, and more)
 - 3 project-specific templates filled in by `/setup`
 - 1 generated agent routing guide (dynamically built from your agent selection)
 
 **Hooks**
 
+- SessionStart context injection (auto-loads CLAUDE.md, PROGRESS.md, and last session on launch)
 - PostToolUse formatter (auto-formats on every write)
 - PostCompact re-injection (re-reads key files after compaction)
 - Stop notifications (desktop alert when Claude finishes)
+- Hook profiles (`WORCLAUDE_HOOK_PROFILE`) — minimal, standard, or strict
 
 **Configuration**
 
@@ -70,6 +72,8 @@ For parallel tasks, run Claude with worktrees: `claude --worktree --tmux`
 | `worclaude backup`  | Create timestamped backup of workflow files    |
 | `worclaude restore` | Restore from a previous backup                 |
 | `worclaude diff`    | Compare current setup vs latest version        |
+| `worclaude delete`  | Remove worclaude workflow from project         |
+| `worclaude doctor`  | Validate workflow installation health          |
 
 The `init` command detects existing setups and merges intelligently — no data is overwritten without your confirmation. Use `upgrade` to pull in new features while preserving your customizations.
 

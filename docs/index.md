@@ -19,10 +19,10 @@ hero:
 features:
   - title: 25 Specialized Agents
     details: From plan-reviewer (Opus) to build-validator (Haiku). Each agent has a dedicated model and purpose.
-  - title: 12 Slash Commands
-    details: /start, /end, /commit-push-pr, /verify — session lifecycle management built in.
-  - title: 13 Skills
-    details: Knowledge files that teach Claude your project's patterns, conventions, and agent routing.
+  - title: 16 Slash Commands
+    details: /start, /end, /commit-push-pr, /verify, /build-fix — session lifecycle and quality tools built in.
+  - title: 14 Skills
+    details: Knowledge files covering testing, security, git conventions, context management, and agent routing.
   - title: Smart Merge
     details: Already have a Claude Code setup? Worclaude detects it and merges intelligently — no overwrites.
 ---

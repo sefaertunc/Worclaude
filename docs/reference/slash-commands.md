@@ -1,6 +1,6 @@
 # Slash Commands
 
-Worclaude installs 13 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
+Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
 
 ## Command Reference
 
@@ -181,7 +181,46 @@ Worclaude installs 13 slash commands as Markdown files in `.claude/commands/`. T
 | **File**         | `.claude/commands/review-changes.md`                                                                                                                                |
 | **When to use**  | After implementing changes, before committing                                                                                                                       |
 | **What it does** | Reads recent git diff. Checks for duplication, complexity, pattern inconsistency, CLAUDE.md compliance. Reports as prioritized table with Fix/Skip recommendations. |
-| **Key behavior** | Strictly read-only. Never edits, stages, or commits. For automated fixes, use `/simplify` which runs the code-simplifier agent in an isolated worktree.             |
+| **Key behavior** | Strictly read-only. Never edits, stages, or commits. For automated fixes, use `/refactor-clean` which runs a focused inline cleanup pass.                           |
+
+---
+
+### /build-fix
+
+**Build failure resolution.** Delegates to the build-fixer agent for diagnosis and repair.
+
+|                  |                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **File**         | `.claude/commands/build-fix.md`                                                                                                                                                |
+| **When to use**  | Build is broken after a merge, rebase, or dependency update                                                                                                                    |
+| **What it does** | Runs the full validation suite (build, tests, linter, type checker, formatter). Categorizes errors by type and fixes one category at a time, re-running checks after each fix. |
+| **Key behavior** | Never silences tests or weakens lint rules. If an error persists after 3 attempts, reports it as unresolvable with a diagnosis.                                                |
+
+---
+
+### /refactor-clean
+
+**Inline cleanup pass.** Improves recently changed code without changing behavior.
+
+|                  |                                                                                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/refactor-clean.md`                                                                                                                             |
+| **When to use**  | After implementing a feature, before `/verify` and `/commit-push-pr`                                                                                             |
+| **What it does** | Reads uncommitted changes. Removes dead code, extracts duplicated logic, reduces complexity, and enforces naming consistency. Runs tests after every change.     |
+| **Key behavior** | Runs inline (not in a worktree). Leaves changes uncommitted for `/commit-push-pr`. Reverts immediately if tests fail. Only changes with >80% confidence applied. |
+
+---
+
+### /test-coverage
+
+**Coverage analysis and gap filling.** Delegates to the test-writer agent.
+
+|                  |                                                                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/test-coverage.md`                                                                                                                            |
+| **When to use**  | Before a release, after a large feature, or when coverage drops below project threshold                                                                        |
+| **What it does** | Measures current coverage, identifies gaps prioritized by risk (auth > business logic > formatting), writes missing tests following existing project patterns. |
+| **Key behavior** | Reports a before/after table per file. Tests behavior, not implementation. Flags bugs found during testing without fixing them in this pass.                   |
 
 ---
 
@@ -202,6 +241,9 @@ Worclaude installs 13 slash commands as Markdown files in `.claude/commands/`. T
   sync.md
   conflict-resolver.md
   review-changes.md
+  build-fix.md
+  refactor-clean.md
+  test-coverage.md
 ```
 
 Commands can be customized after installation. Additional custom commands can be added to the same directory.
