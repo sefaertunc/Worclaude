@@ -52,6 +52,14 @@ See `.claude/skills/` for project-specific guidance.
 **After merging PRs:** git checkout develop → git pull → /conflict-resolver (if needed) → /sync
 **Mid-task stop:** /end (writes handoff file)
 
+## Hook Profiles
+
+Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
+
+- `minimal` — only session context hooks
+- `standard` — all hooks (default)
+- `strict` — all hooks + TypeScript checking on every edit
+
 ## Critical Rules
 
 1. SPEC.md is source of truth. Every feature must match the spec exactly.

@@ -91,6 +91,31 @@ Session 2: SessionStart hook → reads summary → knows what happened → /star
 If the session summary is missing or stale, /start still reads PROGRESS.md
 and handoff files as fallback. The system degrades gracefully.
 
+## Hook Profiles
+
+Control which hooks fire via the `WORCLAUDE_HOOK_PROFILE` environment variable:
+
+| Profile | Hooks Active | Use When |
+|---------|-------------|----------|
+| `minimal` | SessionStart, PostCompact only | Exploring, learning, minimal overhead |
+| `standard` | All hooks (default) | Normal development |
+| `strict` | All hooks + TypeScript checking | Pre-release, team CI, maximum safety |
+
+Set in your shell:
+```bash
+export WORCLAUDE_HOOK_PROFILE=minimal   # lightweight
+export WORCLAUDE_HOOK_PROFILE=standard  # default (same as unset)
+export WORCLAUDE_HOOK_PROFILE=strict    # maximum enforcement
+```
+
+Or per-session:
+```bash
+WORCLAUDE_HOOK_PROFILE=strict claude
+```
+
+The default is `standard` if the variable is not set. You don't need to do
+anything for normal development — the default just works.
+
 ## Gotchas
 
 - Compacting doesn't free as much context as you think. If you've read 20 large files,

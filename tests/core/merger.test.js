@@ -310,6 +310,127 @@ describe('merger', () => {
       expect(promptHookConflict).toHaveBeenCalled();
     });
 
+    it('handles duplicate matchers without collapsing entries', async () => {
+      // Two Write|Edit hooks with different commands (formatter + typecheck)
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify({
+          permissions: { allow: [] },
+          hooks: {
+            PostToolUse: [
+              {
+                matcher: 'Write|Edit',
+                hooks: [{ type: 'command', command: 'old-formatter' }],
+              },
+              {
+                matcher: 'Write|Edit',
+                hooks: [{ type: 'command', command: 'old-typecheck' }],
+              },
+            ],
+          },
+        })
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      promptHookConflict.mockResolvedValue('replace');
+      await performMerge(tmpDir, scan, baseSelections, baseVariables);
+
+      const settings = JSON.parse(
+        await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      // Both Write|Edit entries should still exist (not collapsed by Map)
+      const writeEditHooks = settings.hooks.PostToolUse.filter((h) => h.matcher === 'Write|Edit');
+      expect(writeEditHooks.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('skips identical duplicate-matcher hooks without conflict prompt', async () => {
+      const { settingsObject } = await buildSettingsJson(['node'], false);
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify(settingsObject)
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      promptHookConflict.mockClear();
+      const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
+
+      // No hook conflicts when existing matches workflow exactly
+      expect(report.hookConflicts).toHaveLength(0);
+      expect(promptHookConflict).not.toHaveBeenCalled();
+    });
+
+    it('appends new workflow hook when all same-matcher existing hooks are matched', async () => {
+      // One Write|Edit hook — workflow has two (formatter + typecheck)
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      const { settingsObject } = await buildSettingsJson(['node'], false);
+      const formatterCmd = settingsObject.hooks.PostToolUse[0].hooks[0].command;
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify({
+          permissions: { allow: [] },
+          hooks: {
+            PostToolUse: [
+              {
+                matcher: 'Write|Edit',
+                hooks: [{ type: 'command', command: formatterCmd }],
+              },
+            ],
+          },
+        })
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      promptHookConflict.mockResolvedValue('keep');
+      await performMerge(tmpDir, scan, baseSelections, baseVariables);
+
+      const settings = JSON.parse(
+        await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      // Typecheck hook should be appended (no existing match for it)
+      const writeEditHooks = settings.hooks.PostToolUse.filter((h) => h.matcher === 'Write|Edit');
+      expect(writeEditHooks.length).toBe(2);
+      const hasTypecheck = writeEditHooks.some((h) => h.hooks[0].command.includes('tsc --noEmit'));
+      expect(hasTypecheck).toBe(true);
+    });
+
     it('falls back to fresh settings when existing settings.json has invalid JSON', async () => {
       await fs.ensureDir(path.join(tmpDir, '.claude'));
       await fs.writeFile(path.join(tmpDir, '.claude', 'settings.json'), 'BROKEN JSON');
