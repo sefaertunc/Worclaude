@@ -264,6 +264,7 @@ After `/setup` completes, verify the workflow is functioning:
 2. Run `/verify` to confirm your build and tests pass
 3. Check that `CLAUDE.md` contains your actual project details
 4. Check that auto-formatting works by making a small edit
+5. Run `worclaude doctor` to validate that all workflow files are correctly installed and no components are missing
 
 If everything looks good, you are ready to start building. See the [Workflow Tips](/guide/workflow-tips) guide for best practices on working with Claude Code after setup.
 
