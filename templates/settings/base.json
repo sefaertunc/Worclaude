@@ -43,14 +43,21 @@
         "matcher": "Write|Edit",
         "hooks": [{
           "type": "command",
-          "command": "{formatter_command}"
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {formatter_command}"
         }]
       },
       {
         "matcher": "Stop",
         "hooks": [{
           "type": "command",
-          "command": "{notification_command}"
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {notification_command}"
+        }]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in strict) ;; *) exit 0;; esac; npx tsc --noEmit 2>/dev/null || echo '[Hook] TypeScript errors detected' >&2"
         }]
       }
     ],
