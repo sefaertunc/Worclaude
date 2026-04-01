@@ -4,7 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 1.7.0
+**Version:** 1.9.0
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -21,6 +21,7 @@
 | `worclaude restore` | Restore from a backup                                |
 | `worclaude diff`    | Compare current setup vs latest workflow version     |
 | `worclaude delete`  | Remove worclaude workflow from project               |
+| `worclaude doctor`  | Check installation health and file integrity         |
 
 ---
 
@@ -525,6 +526,113 @@ After file removal:
 
 ---
 
+## Doctor Command
+
+Checks installation health across four categories with PASS/WARN/FAIL status per check.
+
+### Core Files
+
+- `workflow-meta.json` — exists with version, projectTypes, techStack
+- `CLAUDE.md` — exists and is substantive (min 10 lines)
+- `settings.json` — has permissions array and critical hooks (PostCompact, SessionStart)
+- `.claude/sessions/` — directory exists for session persistence
+
+### Components
+
+- Universal agents (all 5 present)
+- Selected optional agents (per workflow-meta)
+- Command files (all 16 present)
+- Skills (universal + template + agent-routing.md)
+
+### Documentation
+
+- `docs/spec/PROGRESS.md` — exists (required by /start and /sync)
+- `docs/spec/SPEC.md` — exists (referenced by plan-reviewer)
+
+### Integrity
+
+- File hash comparison vs `workflow-meta.json` fileHashes — detects customizations or deletions
+- Pending `.workflow-ref.md` files — flags unresolved merge conflicts
+
+```
+$ worclaude doctor
+
+  ▌ WORCLAUDE DOCTOR
+  │
+  │ Core Files
+  │   ✓ workflow-meta.json
+  │   ✓ CLAUDE.md (42 lines)
+  │   ✓ settings.json (3 hooks, 47 permissions)
+  │   ✓ .claude/sessions/
+  │
+  │ Components
+  │   ✓ 5/5 universal agents
+  │   ✓ 6/6 optional agents
+  │   ✓ 16/16 commands
+  │   ✓ 14/14 skills
+  │
+  │ Documentation
+  │   ✓ docs/spec/PROGRESS.md
+  │   ✓ docs/spec/SPEC.md
+  │
+  │ Integrity
+  │   ✓ 28 files match installed hashes
+  │   ⚠ 3 files customized
+  │   ✓ No pending review files
+  │
+  │ Result: HEALTHY (1 warning)
+```
+
+---
+
+## Session Persistence
+
+### SessionStart Hook
+
+Fires at the beginning of every Claude Code session. Loads four pieces of context:
+
+1. `CLAUDE.md` — project rules and conventions
+2. `docs/spec/PROGRESS.md` — completed work and next steps
+3. Most recent `.claude/sessions/*.md` — previous session summary
+4. Current git branch name
+
+The SessionStart hook has **no profile gate** — it always fires because losing project context is never acceptable.
+
+### Session Summaries
+
+Written automatically by `/commit-push-pr` (after committing) and `/end` (mid-task handoff). Stored in `.claude/sessions/` with naming: `YYYY-MM-DD-HHMM-{short-branch-name}.md`.
+
+### Drift Detection
+
+The `/start` command supplements SessionStart with git history drift:
+
+- Extracts session date from the most recent session file
+- Counts commits since that date (max 15 one-liners)
+- Reports as non-interpreted signals (no warnings or analysis)
+
+---
+
+## Hook Profiles
+
+Set `WORCLAUDE_HOOK_PROFILE` to control which hooks execute:
+
+| Hook                           | minimal | standard (default) | strict |
+| ------------------------------ | ------- | ------------------ | ------ |
+| SessionStart: Context          | always  | always             | always |
+| PostToolUse: Formatter         | skip    | run                | run    |
+| PostToolUse: Stop Notification | skip    | run                | run    |
+| PostToolUse: TypeScript Check  | skip    | skip               | run    |
+| PostCompact: Context           | always  | always             | always |
+
+SessionStart and PostCompact always fire (no profile gate). Formatter and notification hooks gate via shell `case` statement. TypeScript check is strict-only.
+
+```bash
+WORCLAUDE_HOOK_PROFILE=minimal claude          # Per-session
+export WORCLAUDE_HOOK_PROFILE=strict           # Persistent
+```
+
+---
+
 ## File Templates
 
 ### CLAUDE.md Template
@@ -686,6 +794,17 @@ See `.claude/skills/` — load only what's relevant:
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== CLAUDE.md ==='; cat CLAUDE.md 2>/dev/null; ... (loads CLAUDE.md, PROGRESS.md, last session summary, current branch)"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
@@ -925,6 +1044,9 @@ Check for handoff files from previous sessions:
   (both HANDOFF-{branch}-{date}.md and legacy HANDOFF\_{date}.md)
 - Prioritize files matching the current branch name
 - If found, read them for context and report what was handed off
+
+Drift detection: extract date from most recent .claude/sessions/\*.md,
+count commits since that date (max 15), report as non-interpreted signals.
 
 If an active implementation prompt exists, read it.
 Report: what was last completed, what's next, any blockers.
@@ -1271,7 +1393,9 @@ worclaude/
 │   │   ├── status.js
 │   │   ├── backup.js
 │   │   ├── restore.js
-│   │   └── diff.js
+│   │   ├── diff.js
+│   │   ├── delete.js
+│   │   └── doctor.js
 │   ├── core/
 │   │   ├── detector.js             # Scenario A/B/C detection
 │   │   ├── merger.js               # Tiered merge logic
@@ -1331,8 +1455,9 @@ worclaude/
 │       ├── universal/ (10 files)
 │       └── templates/ (3 files)
 └── tests/
-    ├── commands/ (init, upgrade, status, backup, restore, diff)
-    ├── core/ (detector, merger, scaffolder, backup, file-categorizer)
+    ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor)
+    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles)
+    ├── generators/ (agent-routing)
     ├── prompts/ (claude-md-merge)
     └── utils/ (display, file, hash, time)
 ```
@@ -1392,6 +1517,17 @@ worclaude/
 - Shared `getLatestNpmVersion()` utility with 5s timeout for graceful offline degradation
 - Numerous UX improvements and bug fixes (see PROGRESS.md for full list)
 
+### Post-release (v1.3.0–v1.9.0)
+
+- Delete command: safe workflow removal with hash-based file classification
+- Agent enrichment: structured guidance, output formats, decision frameworks for all agent templates
+- New agents: build-fixer, e2e-runner; new commands: build-fix, refactor-clean, test-coverage; new skill: security-checklist
+- Session persistence: SessionStart hook auto-loads CLAUDE.md, PROGRESS.md, last session summary, and branch
+- Drift detection: /start command detects commits since last session
+- Doctor command: 4-category health check (core files, components, docs, integrity)
+- Hook profiles: WORCLAUDE_HOOK_PROFILE environment variable (minimal/standard/strict)
+- CI & branching strategy, Windows compatibility, comprehensive documentation
+
 ---
 
 ## Design Decisions Reference
@@ -1404,7 +1540,8 @@ This spec is derived from tips by Boris Cherny (creator of Claude Code). Key des
 4. **High effort default.** Max escalated per session for complex tasks.
 5. **Concise output style default.** Explanatory when exploring.
 6. **Auto-naming for sessions.** Manual --name only when user wants it.
-7. **Three universal hooks.** Format on write, PostCompact re-injection, notification on stop.
+7. **Four hook events.** SessionStart context loading, format on write, PostCompact re-injection, notification on stop.
 8. **All slash commands universal.** They're lightweight — include all 16 everywhere.
 9. **Skills use progressive disclosure.** CLAUDE.md points to skills, skills load on demand.
 10. **The pipeline: Design → Review → Execute → Quality → Verify → PR.**
+11. **Hook profiles for flexibility.** Three levels (minimal/standard/strict) via environment variable — never break session context.
