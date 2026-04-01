@@ -23,6 +23,7 @@ See `.claude/skills/` — load only what's relevant:
 - verification.md — How to verify work
 - testing.md — Test philosophy and patterns
 - subagent-usage.md — When and how to use subagents
+- security-checklist.md — Security review checklist
 - agent-routing.md — When and how to use each installed agent (READ EVERY SESSION)
 {project_specific_skills}
 

@@ -28,21 +28,24 @@ Agents are specialized Claude instances, each with a specific model and purpose.
 
 On top of these, you choose from 20 **optional agents** across 6 categories (Backend, Frontend, DevOps, Quality, Documentation, Data/AI). Worclaude recommends agents based on your project type, so you do not have to guess.
 
-### Skills (13 total)
+### Skills (14 total)
 
-Skills are knowledge files that Claude loads on demand. They teach Claude how your project works without bloating the main context. You get 9 **universal skills** covering context management, git conventions, planning, session handoffs, prompt engineering, verification, testing, CLAUDE.md maintenance, and subagent usage. You also get 3 **template skills** (backend-conventions, frontend-design-system, project-patterns) that serve as placeholders for your project-specific details. Finally, you get 1 **generated skill** — `agent-routing.md` — a dynamic routing guide that tells Claude exactly when and how to use each installed agent, built from your specific agent selections.
+Skills are knowledge files that Claude loads on demand. They teach Claude how your project works without bloating the main context. You get 10 **universal skills** covering context management, git conventions, planning, session handoffs, prompt engineering, verification, testing, CLAUDE.md maintenance, subagent usage, and security. You also get 3 **template skills** (backend-conventions, frontend-design-system, project-patterns) that serve as placeholders for your project-specific details. Finally, you get 1 **generated skill** — `agent-routing.md` — a dynamic routing guide that tells Claude exactly when and how to use each installed agent, built from your specific agent selections.
 
-### Slash Commands (10 total)
+### Slash Commands (16 total)
 
-Commands give you a session lifecycle. `/start` reads your progress file and orients Claude. `/end` updates progress and writes a handoff document. `/commit-push-pr` stages, commits, pushes, and opens a pull request. `/verify` runs your full test and build pipeline. `/setup` interviews you about your project and fills in all the template files automatically. The full set: `/start`, `/end`, `/commit-push-pr`, `/review-plan`, `/techdebt`, `/verify`, `/compact-safe`, `/status`, `/update-claude-md`, `/setup`.
+Commands give you a session lifecycle. `/start` reads your progress file, detects drift since the last session, and orients Claude. `/end` writes a handoff document for mid-task stops. `/commit-push-pr` stages, commits, pushes, and opens a pull request. `/verify` runs your full test and build pipeline. `/setup` interviews you about your project and fills in all the template files automatically. The full set: `/start`, `/end`, `/commit-push-pr`, `/review-plan`, `/techdebt`, `/verify`, `/compact-safe`, `/status`, `/update-claude-md`, `/setup`, `/sync`, `/conflict-resolver`, `/review-changes`, `/build-fix`, `/refactor-clean`, `/test-coverage`.
 
 ### Hooks
 
-Three hooks are installed automatically:
+Hooks are installed automatically:
 
+- **SessionStart** -- Auto-loads CLAUDE.md, PROGRESS.md, last session summary, and branch name when Claude starts.
 - **PostToolUse (Write/Edit)** -- Auto-formats code after every file change, using the right formatter for your tech stack.
 - **PostCompact** -- Re-reads `CLAUDE.md` and `PROGRESS.md` after context compaction, so Claude never loses orientation.
 - **Stop** -- Sends an OS notification when Claude finishes and needs your attention.
+
+Hook profiles (`WORCLAUDE_HOOK_PROFILE`) let you control strictness: `minimal` (session context only), `standard` (all hooks, the default), or `strict` (all hooks plus TypeScript checking on every edit).
 
 ### Permissions and Sandbox
 

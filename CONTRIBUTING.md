@@ -40,7 +40,7 @@ node src/index.js status
 
 If you have [Claude Code](https://claude.com/claude-code), this project includes a 6-stage workflow pipeline to guide contributions:
 
-`/start` → `/review-plan` → implement → `/simplify` → `/verify` → `/commit-push-pr`
+`/start` → `/review-plan` → implement → `/review-changes` → `/verify` → `/commit-push-pr`
 
 Run these as slash commands in Claude Code for a guided experience.
 
