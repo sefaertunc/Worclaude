@@ -8,12 +8,12 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 **Session kickoff.** Orients Claude at the beginning of a work session.
 
-|                  |                                                                                                                                                                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/start.md`                                                                                                                                                                                                                         |
-| **When to use**  | At the start of every Claude Code session                                                                                                                                                                                                           |
-| **What it does** | Reads `docs/spec/PROGRESS.md` and `agent-routing.md`. Checks `docs/handoffs/` for handoff files matching the current branch. Reads the active implementation prompt if one exists. Reports what was last completed, what is next, and any blockers. |
-| **Key behavior** | Read-only. Does not modify files.                                                                                                                                                                                                                   |
+|                  |                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/start.md`                                                                                                                                                                                                                                                                                                                         |
+| **When to use**  | At the start of every Claude Code session                                                                                                                                                                                                                                                                                                           |
+| **What it does** | The SessionStart hook has already loaded CLAUDE.md, PROGRESS.md, and the last session summary. This command supplements that with drift detection (commits since last session), handoff file checks matching the current branch, active implementation prompts, and agent routing. Reports what was last completed, what is next, and any blockers. |
+| **Key behavior** | Read-only. Does not modify files.                                                                                                                                                                                                                                                                                                                   |
 
 ---
 
@@ -21,12 +21,12 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 **Mid-task handoff.** Use ONLY when stopping work mid-task without committing.
 
-|                  |                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **File**         | `.claude/commands/end.md`                                                                                                                        |
-| **When to use**  | When stopping mid-task (unfinished work)                                                                                                         |
-| **What it does** | Creates a handoff document at `docs/handoffs/HANDOFF-{branch-name}-{date}.md` with context for the next session. Commits and pushes the handoff. |
-| **Key behavior** | Does NOT update PROGRESS.md — that is handled by `/sync` on develop after merging.                                                               |
+|                  |                                                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/end.md`                                                                                                                                                                         |
+| **When to use**  | When stopping mid-task (unfinished work)                                                                                                                                                          |
+| **What it does** | Creates a handoff document at `docs/handoffs/HANDOFF-{branch-name}-{date}.md` with context for the next session. Writes a session summary to `.claude/sessions/`. Commits and pushes the handoff. |
+| **Key behavior** | Does NOT update PROGRESS.md — that is handled by `/sync` on develop after merging.                                                                                                                |
 
 ---
 
@@ -34,12 +34,12 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 **Branch-aware git workflow.** Stages, commits, pushes, and opens a pull request — with branch-specific behavior.
 
-|                  |                                                                                                                                                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/commit-push-pr.md`                                                                                                                                                                          |
-| **When to use**  | When a feature or fix is ready for review                                                                                                                                                                     |
-| **What it does** | On feature branches: skips shared-state files (PROGRESS.md, SPEC.md, package.json version), stages, commits, pushes, PRs to develop. On develop: stages, commits, pushes, PRs to main (after `/sync` is run). |
-| **Key behavior** | Feature branches never touch shared-state files — that prevents merge conflicts during parallel work.                                                                                                         |
+|                  |                                                                                                                                                                                                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/commit-push-pr.md`                                                                                                                                                                                                                                 |
+| **When to use**  | When a feature or fix is ready for review                                                                                                                                                                                                                            |
+| **What it does** | Writes a session summary to `.claude/sessions/` first. On feature branches: skips shared-state files (PROGRESS.md, SPEC.md, package.json version), stages, commits, pushes, PRs to develop. On develop: stages, commits, pushes, PRs to main (after `/sync` is run). |
+| **Key behavior** | Feature branches never touch shared-state files — that prevents merge conflicts during parallel work.                                                                                                                                                                |
 
 ---
 

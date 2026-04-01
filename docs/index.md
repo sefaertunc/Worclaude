@@ -25,4 +25,8 @@ features:
     details: Knowledge files covering testing, security, git conventions, context management, and agent routing.
   - title: Smart Merge
     details: Already have a Claude Code setup? Worclaude detects it and merges intelligently — no overwrites.
+  - title: Session Persistence
+    details: SessionStart hook auto-loads context. Session summaries bridge sessions. Drift detection shows what changed.
+  - title: Doctor & Health Checks
+    details: Run worclaude doctor to validate your installation — agents, commands, hooks, and file integrity.
 ---
