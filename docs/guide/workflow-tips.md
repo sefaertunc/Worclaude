@@ -51,7 +51,7 @@ Worclaude installs a session lifecycle through slash commands. The pattern is:
 > /start
 ```
 
-This reads `docs/spec/PROGRESS.md` and reports what was last completed, what is next, and any blockers. It gives Claude (and you) full context on where things stand.
+The SessionStart hook has already loaded CLAUDE.md, PROGRESS.md, and the last session summary into context. The `/start` command supplements this with drift detection -- it shows commits since the last session so you can spot changes from merged branches or other contributors. It also checks for handoff files and active implementation prompts. The result is a complete orientation report: what was last completed, what is next, and any blockers.
 
 ### Working During a Session
 
@@ -79,7 +79,13 @@ This sends your implementation plan to the plan-reviewer agent (Opus model), whi
 > /end
 ```
 
-This updates `docs/spec/PROGRESS.md` with what was completed, what is in progress, any blockers, and next steps. If you are ending mid-task, it also writes a handoff document at `docs/handoffs/HANDOFF_{date}.md` so a fresh session can pick up exactly where you left off.
+This creates a handoff document at `docs/handoffs/HANDOFF-{branch}-{date}.md` with context for the next session. It also writes a session summary to `.claude/sessions/` so the SessionStart hook can automatically load it in the next session. Use `/end` only for mid-task stops -- it does NOT update PROGRESS.md (that is handled by `/sync` on develop after merging).
+
+### Session Persistence
+
+Session summaries are written automatically to `.claude/sessions/` by both `/commit-push-pr` and `/end`. Each file is named `YYYY-MM-DD-HHMM-{short-branch-name}.md` and contains a compact record of what was worked on, what was completed, files modified, and notes for the next session.
+
+The SessionStart hook reads the most recent session file, so when you start a new Claude Code session it automatically picks up context about what was done previously. This means even if you close your terminal and come back the next day, Claude starts oriented.
 
 ### Committing and Creating PRs
 
@@ -108,6 +114,24 @@ If you are switching to a completely different task, it is often better to start
 ### Subagent Context Hygiene
 
 Heavy tasks like writing tests, refactoring code, or reviewing documentation should go to subagents. This keeps your main session's context clean and focused on the primary task. The agents installed by Worclaude (test-writer, code-simplifier, refactorer, doc-writer) are all configured for this pattern.
+
+## Hook Profiles
+
+Worclaude installs several hooks (formatter, notification, context injection, and more). You can control which hooks fire by setting the `WORCLAUDE_HOOK_PROFILE` environment variable:
+
+- **`minimal`** -- Only context hooks fire (SessionStart, PostCompact). Useful in CI environments, low-powered machines, or when the auto-formatter is too slow.
+- **`standard`** -- All hooks except TypeScript checking. This is the default.
+- **`strict`** -- Everything plus TypeScript type checking after every file edit. Best for TypeScript projects where you want immediate feedback on type errors.
+
+Set the profile per-session:
+
+```bash
+WORCLAUDE_HOOK_PROFILE=minimal claude --worktree --tmux
+```
+
+Or make it persistent by adding `export WORCLAUDE_HOOK_PROFILE=strict` to your shell profile.
+
+See [Hooks reference](/reference/hooks#hook-profiles) for the full profile matrix showing which hooks fire at each level.
 
 ## Effort and Output
 
@@ -196,12 +220,12 @@ The verify command runs your full pipeline and reports any failures. Do not proc
 
 ## The Full Pipeline
 
-The workflow installed by Worclaude follows a pipeline: **Design -> Review -> Execute -> Quality -> Verify -> PR**.
+The workflow installed by Worclaude follows a pipeline: **Design -> Review -> Execute -> Clean -> Verify -> PR**.
 
 1. **Design** -- Write a plan or spec for what you are building
 2. **Review** -- Run `/review-plan` to have the plan-reviewer agent critique it
 3. **Execute** -- Implement the plan, one task at a time
-4. **Quality** -- Dispatch code-simplifier and test-writer to clean up and test
+4. **Clean** -- Run `/refactor-clean` for an inline cleanup pass (runs in your session, not a worktree), or `/build-fix` if the build is broken
 5. **Verify** -- Run `/verify` to confirm everything passes
 6. **PR** -- Run `/commit-push-pr` to ship it
 

@@ -31,16 +31,23 @@ The Claude Code settings file. Controls what tools Claude can use without confir
         "matcher": "",
         "hooks": [{ "type": "command", "command": "re-read context" }]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "context injection" }]
+      }
     ]
   }
 }
 ```
 
-| Section             | Purpose                             | Details                                   |
-| ------------------- | ----------------------------------- | ----------------------------------------- |
-| `permissions.allow` | Pre-approved tool invocations       | See [Permissions](/reference/permissions) |
-| `hooks.PostToolUse` | Commands triggered after tool use   | See [Hooks](/reference/hooks)             |
-| `hooks.PostCompact` | Commands triggered after compaction | See [Hooks](/reference/hooks)             |
+| Section              | Purpose                             | Details                                   |
+| -------------------- | ----------------------------------- | ----------------------------------------- |
+| `permissions.allow`  | Pre-approved tool invocations       | See [Permissions](/reference/permissions) |
+| `hooks.SessionStart` | Commands triggered at session start | See [Hooks](/reference/hooks)             |
+| `hooks.PostToolUse`  | Commands triggered after tool use   | See [Hooks](/reference/hooks)             |
+| `hooks.PostCompact`  | Commands triggered after compaction | See [Hooks](/reference/hooks)             |
 
 **Built from:** Base permissions (`templates/settings/base.json`) merged with per-stack permissions (e.g., `templates/settings/python.json`, `templates/settings/node.json`) based on selected tech stack. Formatter and notification commands are substituted from stack and OS detection.
 
@@ -129,6 +136,16 @@ This file is a placeholder. MCP servers can be added to give Claude access to ex
 
 ---
 
+## Environment Variables
+
+| Variable                 | Values                          | Default    | Description                                                                                                 |
+| ------------------------ | ------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `WORCLAUDE_HOOK_PROFILE` | `minimal`, `standard`, `strict` | `standard` | Controls which hooks fire. See [Hook Profiles](/reference/hooks#hook-profiles) for the full profile matrix. |
+
+This is the only environment variable used by worclaude at runtime. It is read by hook commands in `settings.json`, not by the CLI itself.
+
+---
+
 ## File Relationships
 
 ```
@@ -141,6 +158,7 @@ project-root/
     agents/                     ← agent definitions
     commands/                   ← slash commands
     skills/                     ← knowledge files
+    sessions/                   ← session summary files
 ```
 
 ---
@@ -148,5 +166,5 @@ project-root/
 ## See Also
 
 - [Permissions](/reference/permissions) -- details on the permissions allow list
-- [Hooks](/reference/hooks) -- details on the three installed hooks
+- [Hooks](/reference/hooks) -- details on the installed hooks and hook profiles
 - [CLI Commands](/reference/commands) -- `worclaude status` reads workflow-meta.json, `worclaude diff` uses file hashes

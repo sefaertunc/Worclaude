@@ -238,36 +238,50 @@ export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSett
     if (!existing.hooks[category]) existing.hooks[category] = [];
 
     const existingEntries = existing.hooks[category];
-    const existingMatchers = new Map(existingEntries.map((h) => [h.matcher, h]));
+    const existingByMatcher = new Map();
+    for (const entry of existingEntries) {
+      if (!existingByMatcher.has(entry.matcher)) {
+        existingByMatcher.set(entry.matcher, []);
+      }
+      existingByMatcher.get(entry.matcher).push(entry);
+    }
+    const matched = new Set();
 
     for (const workflowEntry of workflowHooks[category]) {
-      if (existingMatchers.has(workflowEntry.matcher)) {
-        const existingEntry = existingMatchers.get(workflowEntry.matcher);
+      const candidates = existingByMatcher.get(workflowEntry.matcher) || [];
+      const workflowCmd = workflowEntry.hooks?.[0]?.command || '';
 
-        // If hooks are identical, skip — no conflict to resolve
-        const existingCmd = existingEntry.hooks?.[0]?.command || '';
-        const workflowCmd = workflowEntry.hooks?.[0]?.command || '';
-        if (existingCmd === workflowCmd) {
-          continue;
-        }
+      // Try exact match first (identical command = skip)
+      const exactMatch = candidates.find(
+        (c) => !matched.has(c) && (c.hooks?.[0]?.command || '') === workflowCmd
+      );
+      if (exactMatch) {
+        matched.add(exactMatch);
+        continue;
+      }
+
+      // Try unmatched candidate with same matcher (conflict)
+      const conflictCandidate = candidates.find((c) => !matched.has(c));
+      if (conflictCandidate) {
+        matched.add(conflictCandidate);
 
         // Tier 3: conflict — ask user
-        const resolution = await promptHookConflict(category, existingEntry, workflowEntry);
+        const resolution = await promptHookConflict(category, conflictCandidate, workflowEntry);
 
         if (resolution === 'replace') {
-          const idx = existingEntries.indexOf(existingEntry);
+          const idx = existingEntries.indexOf(conflictCandidate);
           existingEntries[idx] = workflowEntry;
           report.hookConflicts.push(
             `${category} "${workflowEntry.matcher}": replaced with workflow hook`
           );
         } else if (resolution === 'chain') {
-          const idx = existingEntries.indexOf(existingEntry);
+          const idx = existingEntries.indexOf(conflictCandidate);
           existingEntries[idx] = {
-            matcher: existingEntry.matcher,
+            matcher: conflictCandidate.matcher,
             hooks: [
               {
                 type: 'command',
-                command: `${existingEntry.hooks[0].command} && ${workflowEntry.hooks[0].command}`,
+                command: `${conflictCandidate.hooks[0].command} && ${workflowEntry.hooks[0].command}`,
               },
             ],
           };
@@ -276,7 +290,7 @@ export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSett
           report.hookConflicts.push(`${category} "${workflowEntry.matcher}": kept existing hook`);
         }
       } else {
-        // Tier 1: no conflict — append
+        // Tier 1: no match — append
         existingEntries.push(workflowEntry);
         report.added.hooks++;
       }
@@ -422,6 +436,10 @@ export async function performMerge(
   if (spinner) spinner.start();
 
   await mergeMcpJson(projectRoot, existingScan);
+
+  // Ensure sessions directory exists for session persistence
+  await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
+
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
 
   // Stop spinner before CLAUDE.md merge — interactive prompts for section selection

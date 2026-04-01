@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import {
+  computeFileHashes,
   readWorkflowMeta,
   workflowMetaExists,
   writeWorkflowMeta,
@@ -12,8 +13,7 @@ import { createBackup } from '../core/backup.js';
 import { categorizeFiles } from '../core/file-categorizer.js';
 import { buildSettingsJson, mergeSettingsPermissionsAndHooks } from '../core/merger.js';
 import { readTemplate, updateGitignore } from '../core/scaffolder.js';
-import { hashFile } from '../utils/hash.js';
-import { writeFile, fileExists, listFilesRecursive } from '../utils/file.js';
+import { writeFile, fileExists } from '../utils/file.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
 import * as display from '../utils/display.js';
 
@@ -211,16 +211,11 @@ export async function upgradeCommand() {
       spinner.text = 'Settings merged...';
     }
 
+    // Ensure sessions directory exists for session persistence
+    await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
+
     // Recompute file hashes
-    const fileHashes = {};
-    const claudeDir = path.join(projectRoot, '.claude');
-    const allFiles = await listFilesRecursive(claudeDir);
-    for (const filePath of allFiles) {
-      const relKey = path.relative(claudeDir, filePath).split(path.sep).join('/');
-      if (relKey !== 'workflow-meta.json' && relKey !== 'settings.json') {
-        fileHashes[relKey] = await hashFile(filePath);
-      }
-    }
+    const fileHashes = await computeFileHashes(projectRoot);
 
     // Ensure .gitignore has worclaude entries
     await updateGitignore(projectRoot);

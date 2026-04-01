@@ -3,13 +3,13 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import { scaffoldFile, updateGitignore } from '../core/scaffolder.js';
 import {
+  computeFileHashes,
   createWorkflowMeta,
   getPackageVersion,
   readWorkflowMeta,
   writeWorkflowMeta,
 } from '../core/config.js';
-import { fileExists, writeFile, listFilesRecursive } from '../utils/file.js';
-import { hashFile } from '../utils/hash.js';
+import { fileExists, writeFile } from '../utils/file.js';
 import * as display from '../utils/display.js';
 import { promptProjectType } from '../prompts/project-type.js';
 import { promptTechStack } from '../prompts/tech-stack.js';
@@ -349,17 +349,7 @@ function buildTemplateVariables(selections) {
 }
 
 async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
-  const fileHashes = {};
-  const claudeFiles = await listFilesRecursive(path.join(projectRoot, '.claude'));
-  for (const filePath of claudeFiles) {
-    const relativePath = path
-      .relative(path.join(projectRoot, '.claude'), filePath)
-      .split(path.sep)
-      .join('/');
-    if (relativePath !== 'workflow-meta.json' && relativePath !== 'settings.json') {
-      fileHashes[relativePath] = await hashFile(filePath);
-    }
-  }
+  const fileHashes = await computeFileHashes(projectRoot);
 
   const meta = createWorkflowMeta({
     version,
@@ -478,6 +468,10 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     }
     spinner.text = 'Created docs/spec/';
 
+    // Create sessions directory for session persistence
+    await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
+    spinner.text = 'Created .claude/sessions/';
+
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -501,6 +495,7 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/agents/${display.dimColor(`        ${totalAgents} agents`)}`);
   display.success(`.claude/commands/${display.dimColor(`      ${COMMAND_FILES.length} commands`)}`);
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
+  display.success('.claude/sessions/');
   display.success('.mcp.json');
   display.success('.gitignore');
   if (skipped.progressMd) {

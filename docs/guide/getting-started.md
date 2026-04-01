@@ -184,8 +184,8 @@ Once you confirm, Worclaude creates all the files:
   ✓ .claude/settings.json
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 optional)
-  ✓ .claude/commands/ (10)
-  ✓ .claude/skills/ (9 universal + 3 templates + 1 generated)
+  ✓ .claude/commands/ (16)
+  ✓ .claude/skills/ (10 universal + 3 templates + 1 generated)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
   ✓ docs/spec/SPEC.md
@@ -264,6 +264,7 @@ After `/setup` completes, verify the workflow is functioning:
 2. Run `/verify` to confirm your build and tests pass
 3. Check that `CLAUDE.md` contains your actual project details
 4. Check that auto-formatting works by making a small edit
+5. Run `worclaude doctor` to validate that all workflow files are correctly installed and no components are missing
 
 If everything looks good, you are ready to start building. See the [Workflow Tips](/guide/workflow-tips) guide for best practices on working with Claude Code after setup.
 

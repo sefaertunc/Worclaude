@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.8.0
-**Last Updated:** 2026-03-31
+**Version:** 1.9.0
+**Last Updated:** 2026-04-01
 
 ## Completed
 
@@ -209,15 +209,61 @@
   - [x] Updated agent-registry.js with routing metadata for build-fixer and e2e-runner
   - [x] Updated CATEGORY_RECOMMENDATIONS to include new agents
 
+- [x] Session persistence & hooks (v1.9.0, 2026-04-01)
+  - [x] SessionStart hook: auto-loads CLAUDE.md, PROGRESS.md, last session summary, and current branch at session start
+  - [x] PostCompact hook: re-injects CLAUDE.md and PROGRESS.md after context compaction
+  - [x] Session summaries written by /commit-push-pr and /end to `.claude/sessions/`
+  - [x] `.claude/sessions/` directory created during init and upgrade
+  - [x] fix: .gitignore only ignores .claude/sessions/ and workflow-meta, not entire .claude directory
+
+- [x] Drift detection in /start (v1.9.0, 2026-04-01)
+  - [x] /start command detects commits since last session using session file timestamps
+  - [x] Reports commit count and one-liners (max 15) as non-interpreted signals
+  - [x] Supplements SessionStart hook context with git history drift
+  - [x] refactor: extracted duplicated hash computation into shared `computeFileHashes()`
+  - [x] fix: restored blanket .claude/ gitignore for worclaude repo
+
+- [x] Doctor command (v1.9.0, 2026-04-01)
+  - [x] `worclaude doctor` command: 4-category health check (core files, components, docs, integrity)
+  - [x] Core files: workflow-meta.json, CLAUDE.md, settings.json (hooks + permissions), sessions/ directory
+  - [x] Components: universal + optional agents, commands, skills, agent-routing.md
+  - [x] Documentation: PROGRESS.md and SPEC.md existence
+  - [x] Integrity: file hash comparison vs workflow-meta, pending .workflow-ref.md detection
+  - [x] PASS/WARN/FAIL status badges per check
+  - [x] fix: refactor-clean runs inline instead of spawning worktree subagent
+
+- [x] Hook profile system (v1.9.0, 2026-04-01)
+  - [x] `WORCLAUDE_HOOK_PROFILE` environment variable: minimal, standard (default), strict
+  - [x] minimal: only SessionStart and PostCompact hooks (context loading)
+  - [x] standard: all hooks (formatter, notification, context)
+  - [x] strict: all hooks + TypeScript type checking after every edit
+  - [x] Profile gates via shell case statement in hook commands
+  - [x] SessionStart and PostCompact always fire (no profile gate)
+
+- [x] End-to-end audit (v1.9.0, 2026-04-01)
+  - [x] Fixed count references across templates and source
+  - [x] Synced templates with current feature set
+  - [x] Cleaned stale files
+
+- [x] Documentation update (v1.9.0, 2026-04-01)
+  - [x] SessionStart hook documentation in hooks.md (full section with JSON, explanation, profile behavior)
+  - [x] TypeScript strict-only hook documentation in hooks.md
+  - [x] Hook Profiles section in hooks.md with profile matrix table
+  - [x] SessionStart in configuration.md (settings structure, table row, environment variables)
+  - [x] Updated /start, /end, /commit-push-pr descriptions in slash-commands.md
+  - [x] Session Persistence and Hook Profiles sections in workflow-tips.md
+  - [x] Session Persistence and Doctor feature cards on docs landing page
+  - [x] `worclaude doctor` verification step in getting-started.md
+
 ## Stats
 
-- 7 CLI commands: init, upgrade, status, backup, restore, diff, delete
+- 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
 - 5 universal agents + 20 optional agents (6 categories)
 - 16 slash commands
 - 10 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 229 tests across 20 test files
+- 247 tests across 22 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

@@ -15,11 +15,11 @@ Every agent file includes a YAML frontmatter block with three fields:
 
 Each agent is assigned a model based on the complexity and nature of its task:
 
-| Model      | Token Cost | Best For                                                  | Agents Using It                                                                                                                                                                                                           |
-| ---------- | ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Opus**   | Highest    | Deep judgment, architectural decisions, security analysis | plan-reviewer, api-designer, auth-auditor, security-reviewer, prompt-engineer                                                                                                                                             |
-| **Sonnet** | Medium     | Implementation, code changes, testing, documentation      | code-simplifier, test-writer, verify-app, database-analyst, ui-reviewer, ci-fixer, docker-helper, deploy-validator, performance-auditor, bug-fixer, refactorer, doc-writer, data-pipeline-reviewer, ml-experiment-tracker |
-| **Haiku**  | Lowest     | Narrow validation, formatting, simple checks              | build-validator, style-enforcer, dependency-manager, changelog-generator                                                                                                                                                  |
+| Model      | Token Cost | Best For                                                  | Agents Using It                                                                                                                                                                                                                                    |
+| ---------- | ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Opus**   | Highest    | Deep judgment, architectural decisions, security analysis | plan-reviewer, api-designer, auth-auditor, security-reviewer, prompt-engineer                                                                                                                                                                      |
+| **Sonnet** | Medium     | Implementation, code changes, testing, documentation      | code-simplifier, test-writer, verify-app, database-analyst, ui-reviewer, ci-fixer, docker-helper, deploy-validator, performance-auditor, bug-fixer, refactorer, build-fixer, e2e-runner, doc-writer, data-pipeline-reviewer, ml-experiment-tracker |
+| **Haiku**  | Lowest     | Narrow validation, formatting, simple checks              | build-validator, style-enforcer, dependency-manager, changelog-generator                                                                                                                                                                           |
 
 ### Isolation Modes
 
@@ -28,7 +28,7 @@ Each agent is assigned a model based on the complexity and nature of its task:
 | **none**     | Agent works in the current working directory alongside the user. Changes are made directly to the working tree.                                | Read-only review tasks, validation, analysis. No risk of conflicting with user changes.                                                                            |
 | **worktree** | Agent creates an isolated git worktree from the current branch. All changes happen in the worktree. User reviews and merges results afterward. | Code modification tasks (writing tests, fixing bugs, refactoring). Prevents conflicts with uncommitted user work. Requires clean git state to create the worktree. |
 
-Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fixer, bug-fixer, refactorer, doc-writer.
+Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fixer, bug-fixer, refactorer, build-fixer, e2e-runner, doc-writer.
 
 ---
 
