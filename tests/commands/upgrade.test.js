@@ -34,6 +34,7 @@ vi.mock('node:child_process', () => ({
 vi.mock('ora', () => ({
   default: () => ({
     start: vi.fn().mockReturnThis(),
+    stop: vi.fn().mockReturnThis(),
     succeed: vi.fn().mockReturnThis(),
     fail: vi.fn().mockReturnThis(),
     text: '',
@@ -216,6 +217,57 @@ describe('upgrade command', () => {
     expect(
       await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.workflow-ref.md'))
     ).toBe(true);
+  });
+
+  it('runs v2.0.0 migrations when upgrading from pre-2.0.0', async () => {
+    // Set up a v1.9.0 project with flat skill and agent without description
+    const skillContent = '# Testing skill content';
+    const agentContent = '---\nname: plan-reviewer\nmodel: opus\n---\n\n# Plan Reviewer';
+
+    const meta = {
+      version: '0.9.0',
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: ['CLI tool'],
+      techStack: ['node'],
+      universalAgents: ['plan-reviewer'],
+      optionalAgents: [],
+      useDocker: false,
+      fileHashes: {
+        'skills/testing.md': hashContent(skillContent),
+        'agents/plan-reviewer.md': hashContent(agentContent),
+      },
+    };
+
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'agents'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing.md'), skillContent);
+    await fs.writeFile(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'), agentContent);
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'settings.json'),
+      JSON.stringify({ permissions: { allow: [] }, hooks: {} })
+    );
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    // Verify skill was migrated to directory format
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.md'))).toBe(
+      true
+    );
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'testing.md'))).toBe(false);
+
+    // Verify agent was patched with description
+    const updatedAgent = await fs.readFile(
+      path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'),
+      'utf-8'
+    );
+    expect(updatedAgent).toContain('description:');
   });
 
   it('cancels when user declines', async () => {
