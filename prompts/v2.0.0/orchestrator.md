@@ -26,7 +26,7 @@ Check status before starting work. Mark items ✅ after phase PR is merged.
 | 17  | Upgrade `verify-app` agent (production patterns) | 6     | ⬜     |
 | 18  | Worktree safety in cleanup commands              | 6     | ⬜     |
 | 19  | Scaffold coordinator-mode skill                  | 6     | ⬜     |
-| 20  | Optimize permission presets per tech stack       | 6     | ⬜     |
+| 20  | Optimize permission presets per tech stack        | 6     | ⬜     |
 | 21  | E2E audit across all changes                     | 7     | ⬜     |
 | 22  | Documentation site update + deploy               | 8     | ⬜     |
 
@@ -94,6 +94,21 @@ After ALL phase PRs are merged:
 | 8     | #22    | Documentation update + deploy                      | Phases 1–7 merged |
 
 **Note:** Phases 2, 3, 4, 6 can run in parallel after Phase 1 merges (they don't conflict). Phase 5 depends on 1–4. Phase 7 depends on all. Phase 8 is last.
+
+## Deferred Fixes (for Phase 7 E2E Audit)
+
+These items were discovered during planning and should be included in the Phase 7 audit:
+
+- **`updateGitignore()` in `src/core/scaffolder.js`**: Add `.claude/settings.local.json` and `.claude/worktrees/` to the `entries` array. Current entries only ignore `sessions/`, `workflow-meta.json`, and `.claude-backup-*/`. The full list should be:
+  ```javascript
+  const entries = [
+    '.claude/sessions/',
+    '.claude/settings.local.json',
+    '.claude/workflow-meta.json',
+    '.claude/worktrees/',
+    '.claude-backup-*/',
+  ];
+  ```
 
 ## Background
 

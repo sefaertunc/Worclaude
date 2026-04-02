@@ -1,0 +1,146 @@
+{
+  "permissions": {
+    "allow": [
+      "// -- Read-only / Exploration --",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(which:*)",
+      "Bash(tree:*)",
+      "Bash(diff:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(awk:*)",
+      "Bash(sed:*)",
+      "Bash(cut:*)",
+      "Bash(jq:*)",
+      "Bash(xargs:*)",
+      "Bash(ps:*)",
+      "Bash(du:*)",
+      "Bash(df:*)",
+      "Bash(env:*)",
+      "Bash(printenv:*)",
+      "// -- Git --",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "// -- Common Dev Tools --",
+      "Bash(echo:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(tar:*)",
+      "Bash(zip:*)",
+      "Bash(unzip:*)",
+      "Bash(rm:*)",
+      "Bash(make:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(cd:*)",
+      "// -- Read Permissions --",
+      "Read(src/**)",
+      "Read(tests/**)",
+      "Read(templates/**)",
+      "Read(docs/**)",
+      "Read(.claude/**)",
+      "Read(*.md)",
+      "Read(*.json)",
+      "Read(*.js)",
+      "// -- Edit Permissions --",
+      "Edit(.claude/**)",
+      "Edit(docs/**)",
+      "Edit(src/**)",
+      "Edit(tests/**)",
+      "Edit(test/**)",
+      "Edit(README*)",
+      "Edit(*.md)",
+      "Edit(package.json)",
+      "Edit(pyproject.toml)",
+      "Edit(.github/**)",
+      "// -- Node.js / TypeScript --",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(tsc:*)",
+      "Bash(tsx:*)",
+      "Bash(jest:*)",
+      "Bash(vitest:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
+      "Bash(pnpm:*)",
+      "Bash(yarn:*)",
+      "Bash(bun:*)",
+      "Edit(*.ts)",
+      "Edit(*.tsx)",
+      "Edit(*.js)",
+      "Edit(*.jsx)",
+      "Edit(*.json)",
+      "Edit(*.css)",
+      "Edit(*.scss)",
+      "Edit(tsconfig*.json)",
+      "Edit(.eslintrc*)",
+      "Edit(vite.config.*)",
+      "Edit(next.config.*)",
+      "Edit(webpack.config.*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; npx prettier --write . || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Stop",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; notify-send 'Claude Code' 'Session needs attention' 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in strict) ;; *) exit 0;; esac; npx tsc --noEmit 2>/dev/null || echo '[Hook] TypeScript errors detected' >&2"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat CLAUDE.md && cat docs/spec/PROGRESS.md 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== CLAUDE.md ==='; cat CLAUDE.md 2>/dev/null; echo; echo '=== PROGRESS ==='; cat docs/spec/PROGRESS.md 2>/dev/null; echo; echo '=== LAST SESSION ==='; f=$(ls -t .claude/sessions/*.md 2>/dev/null | head -1); if [ -n \"$f\" ]; then cat \"$f\"; else echo 'No previous session found'; fi; echo; echo '=== BRANCH ==='; git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'not a git repo'"
+          }
+        ]
+      }
+    ]
+  }
+}
