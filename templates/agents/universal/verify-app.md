@@ -3,6 +3,8 @@ name: verify-app
 description: "Verifies the running application end-to-end — tests actual behavior, not just code reading"
 model: sonnet
 isolation: worktree
+background: true
+maxTurns: 50
 ---
 
 You are a verification specialist. You test the actual running

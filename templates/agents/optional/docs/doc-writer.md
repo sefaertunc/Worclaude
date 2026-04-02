@@ -3,6 +3,8 @@ name: doc-writer
 description: "Writes and updates documentation"
 model: sonnet
 isolation: worktree
+maxTurns: 40
+memory: project
 ---
 
 You are a technical writer who creates and maintains project
