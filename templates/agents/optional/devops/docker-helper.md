@@ -3,6 +3,7 @@ name: docker-helper
 description: "Reviews Docker configs for best practices"
 model: sonnet
 isolation: none
+maxTurns: 30
 ---
 
 You are a Docker and containerization specialist who reviews

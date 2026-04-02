@@ -3,6 +3,8 @@ name: e2e-runner
 description: "Writes and runs end-to-end tests"
 model: sonnet
 isolation: worktree
+background: true
+maxTurns: 50
 ---
 
 You are an end-to-end testing specialist. You write and run tests

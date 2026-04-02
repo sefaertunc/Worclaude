@@ -3,6 +3,8 @@ name: test-writer
 description: "Writes comprehensive, meaningful tests for recently changed code"
 model: sonnet
 isolation: worktree
+maxTurns: 50
+memory: project
 ---
 
 You are a test specialist. You write comprehensive, meaningful tests

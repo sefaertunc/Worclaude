@@ -3,6 +3,12 @@ name: deploy-validator
 description: "Validates deployment readiness"
 model: sonnet
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 20
 ---
 
 You are a deployment readiness specialist who validates that an

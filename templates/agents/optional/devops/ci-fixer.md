@@ -3,6 +3,7 @@ name: ci-fixer
 description: "Diagnoses and fixes CI/CD failures"
 model: sonnet
 isolation: worktree
+maxTurns: 40
 ---
 
 You are a CI/CD specialist who diagnoses and fixes pipeline failures.
