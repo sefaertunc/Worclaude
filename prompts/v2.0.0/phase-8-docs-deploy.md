@@ -21,12 +21,14 @@ Execute
 ```
 
 After merge:
+
 ```
 git checkout develop && git pull
 /sync                           # Update PROGRESS.md, SPEC.md, version → v2.0.0
 ```
 
 Then merge develop → main and publish:
+
 ```
 git checkout main && git merge develop && git push
 npm publish
@@ -51,6 +53,7 @@ Update any existing feature cards that reference skill/agent counts to match cur
 ### 2. `docs/guide/getting-started.md` — Getting started
 
 Add verification steps after `worclaude init`:
+
 - Run `/skills` in Claude Code to verify skills loaded
 - Run `/agents` in Claude Code to verify agents loaded
 - Mention `worclaude doctor` as a health check
@@ -62,6 +65,7 @@ Add a note about the optional MEMORY.md template.
 Add a new section: **"Upgrading from v1.x to v2.0.0"**
 
 Content:
+
 - What changed: skill format (flat → directory), agent frontmatter (`description` required)
 - What `worclaude upgrade` does automatically: migrates skills, patches agents
 - How to verify: run `/skills` and `/agents` in Claude Code
@@ -72,18 +76,21 @@ Content:
 Add three new sections:
 
 **Conditional Skills:**
+
 - What they are (skills that load only when matching files are touched)
 - How `paths` frontmatter works
 - Which Worclaude skills are conditional vs always-loaded
 - How to make your own skills conditional
 
 **Coordinator Mode:**
+
 - When to use multi-agent coordination
 - Worker prompt best practices
 - Continue vs spawn decision framework
 - Link to the coordinator-mode skill
 
 **Memory System:**
+
 - What MEMORY.md is (optional index file)
 - Four memory types: user, feedback, project, reference
 - What NOT to store
@@ -92,6 +99,7 @@ Add three new sections:
 ### 5. `docs/guide/existing-projects.md` — Existing projects
 
 Update merge behavior description:
+
 - Skills now scaffolded in directory format
 - Backward compatibility: detects both flat files and directories
 - Conflict handling: `.workflow-ref.md` files go inside skill directories
@@ -99,6 +107,7 @@ Update merge behavior description:
 ### 6. `docs/reference/skills.md` — Skills reference
 
 Major update:
+
 - Explain the directory format requirement (`skill-name/SKILL.md`)
 - Document all frontmatter fields: `description`, `when_to_use`, `paths`
 - List which skills are conditional vs always-loaded with their path patterns
@@ -108,6 +117,7 @@ Major update:
 ### 7. `docs/reference/agents.md` — Agents reference
 
 Major update:
+
 - Document all frontmatter fields: `name`, `description` (required), `model`, `isolation`, `disallowedTools`, `background`, `maxTurns`, `omitClaudeMd`, `memory`
 - Note that `description` is required — without it, agents are invisible
 - Update the agent catalog table with new fields per agent
@@ -118,6 +128,7 @@ Major update:
 ### 8. `docs/reference/configuration.md` — Configuration
 
 Add:
+
 - MEMORY.md reference (optional, experimental)
 - Updated permission presets per tech stack
 - Note about `.gitignore` entries (all 5 entries)
@@ -129,6 +140,7 @@ Update command descriptions to match the new `description` frontmatter added in 
 ### 10. `docs/reference/commands.md` — CLI commands
 
 Update:
+
 - `worclaude doctor` — document the 3 new checks (CLAUDE.md size, skill format, agent description)
 - `worclaude upgrade` — document the v2.0.0 migration behavior (skill format migration, agent patching)
 - `worclaude init` — mention the optional MEMORY.md prompt
@@ -189,6 +201,7 @@ A new guide page explaining HOW Worclaude integrates with Claude Code's runtime 
 ### VitePress config
 
 Add the new page to `docs/.vitepress/config.mjs` sidebar:
+
 ```javascript
 // In the Guide section:
 { text: 'Claude Code Integration', link: '/guide/claude-code-integration' }
@@ -199,6 +212,7 @@ Add the new page to `docs/.vitepress/config.mjs` sidebar:
 ## Verification Checklist
 
 ### Build
+
 ```bash
 npm run docs:build    # Must pass — this is the primary check for this phase
 npm run docs:dev      # Verify locally — check each updated page
@@ -207,6 +221,7 @@ npm run lint          # Still passes
 ```
 
 ### Content review
+
 - [ ] All updated pages render correctly in VitePress dev server
 - [ ] New "Claude Code Integration" page is accessible from sidebar
 - [ ] Feature cards on landing page look correct
@@ -217,6 +232,7 @@ npm run lint          # Still passes
 - [ ] No references to old skill format (`skills/testing.md`) in docs
 
 ### Post-merge
+
 - [ ] `/sync` run on develop — PROGRESS.md, SPEC.md, version updated to v2.0.0
 - [ ] Merge develop → main
 - [ ] `npm publish` from main

@@ -74,6 +74,7 @@ Select: "Full-stack web application", Node.js + Python, pick all agents, opt int
 ### Checklist
 
 **Skills (Phase 1 + 2):**
+
 - [ ] All skills are in directory format: `.claude/skills/testing/SKILL.md` (NOT flat `.md`)
 - [ ] No flat `.md` files in `.claude/skills/` (only directories)
 - [ ] Every `SKILL.md` has `description` AND `when_to_use` in frontmatter
@@ -83,6 +84,7 @@ Select: "Full-stack web application", Node.js + Python, pick all agents, opt int
 - [ ] `agent-routing/SKILL.md` exists and is generated correctly
 
 **Agents (Phase 1 + 3):**
+
 - [ ] Every agent has `name` AND `description` in frontmatter
 - [ ] Read-only agents (plan-reviewer, security-reviewer, etc.) have `disallowedTools`
 - [ ] Async agents (verify-app, build-validator, e2e-runner) have `background: true`
@@ -92,15 +94,18 @@ Select: "Full-stack web application", Node.js + Python, pick all agents, opt int
 - [ ] verify-app has enhanced body with VERDICT format and anti-rationalization (Phase 6)
 
 **Commands (Phase 2):**
+
 - [ ] Every command in `.claude/commands/` has `description` frontmatter
 - [ ] Command body content is unchanged (only frontmatter added)
 
 **Settings (Phase 6):**
+
 - [ ] Settings include Python-specific permissions (pytest, pip, etc.)
 - [ ] Settings include Node-specific permissions (already in base)
 - [ ] Permissions from both selected stacks are merged correctly
 
 **Core files:**
+
 - [ ] `CLAUDE.md` exists and references skills
 - [ ] `MEMORY.md` exists (opted in)
 - [ ] `.mcp.json` exists
@@ -109,9 +114,11 @@ Select: "Full-stack web application", Node.js + Python, pick all agents, opt int
 - [ ] `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` exist
 
 **Doctor:**
+
 - [ ] `worclaude doctor` shows all PASS
 
 **Claude Code integration:**
+
 - [ ] `/skills` shows skills from `.claude/skills/` directories
 - [ ] `/agents` shows all scaffolded agents (not "No agents found")
 - [ ] Conditional skills only appear after touching matching files
@@ -178,16 +185,19 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js upgrade
 ## Part 5: Other Commands
 
 ### `worclaude status`
+
 ```bash
 cd /tmp/test-e2e-fresh
 node ~/SEFA/GIT/Claude-Workflow/src/index.js status
 ```
+
 - [ ] Shows correct version
 - [ ] Shows correct skill count (including coordinator-mode)
 - [ ] Shows correct agent count
 - [ ] Shows correct command count
 
 ### `worclaude backup` + `worclaude restore`
+
 ```bash
 cd /tmp/test-e2e-fresh
 node ~/SEFA/GIT/Claude-Workflow/src/index.js backup
@@ -195,22 +205,27 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js backup
 echo "extra" >> .claude/skills/testing/SKILL.md
 node ~/SEFA/GIT/Claude-Workflow/src/index.js restore
 ```
+
 - [ ] Backup captures directory-format skills correctly
 - [ ] Restore recreates directory-format skills correctly
 
 ### `worclaude diff`
+
 ```bash
 cd /tmp/test-e2e-fresh
 echo "extra" >> .claude/skills/testing/SKILL.md
 node ~/SEFA/GIT/Claude-Workflow/src/index.js diff
 ```
+
 - [ ] Shows `testing/SKILL.md` as modified (not `testing.md`)
 
 ### `worclaude delete`
+
 ```bash
 cd /tmp/test-e2e-fresh
 node ~/SEFA/GIT/Claude-Workflow/src/index.js delete
 ```
+
 - [ ] Correctly identifies directory-format skills for deletion
 - [ ] Doesn't leave orphaned empty skill directories
 
@@ -232,18 +247,18 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js delete
 
 This phase's output is fixes + confidence that everything works. Report:
 
-| Scenario | Result | Issues Found |
-|---|---|---|
-| A (fresh) | PASS/FAIL | list |
-| B (existing) | PASS/FAIL | list |
-| C (upgrade) | PASS/FAIL | list |
-| Status | PASS/FAIL | list |
-| Backup/Restore | PASS/FAIL | list |
-| Diff | PASS/FAIL | list |
-| Delete | PASS/FAIL | list |
-| Tests | PASS/FAIL | count |
-| Lint | PASS/FAIL | list |
-| Docs build | PASS/FAIL | list |
+| Scenario       | Result    | Issues Found |
+| -------------- | --------- | ------------ |
+| A (fresh)      | PASS/FAIL | list         |
+| B (existing)   | PASS/FAIL | list         |
+| C (upgrade)    | PASS/FAIL | list         |
+| Status         | PASS/FAIL | list         |
+| Backup/Restore | PASS/FAIL | list         |
+| Diff           | PASS/FAIL | list         |
+| Delete         | PASS/FAIL | list         |
+| Tests          | PASS/FAIL | count        |
+| Lint           | PASS/FAIL | list         |
+| Docs build     | PASS/FAIL | list         |
 
 ---
 
