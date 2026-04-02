@@ -31,6 +31,11 @@ export async function copyFile(src, dest) {
   await fs.copy(src, dest);
 }
 
+export async function moveFile(src, dest) {
+  await fs.ensureDir(path.dirname(dest));
+  await fs.move(src, dest);
+}
+
 export async function listFiles(dirPath) {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });

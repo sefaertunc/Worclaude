@@ -16,6 +16,7 @@ import { readTemplate, updateGitignore } from '../core/scaffolder.js';
 import { writeFile, fileExists } from '../utils/file.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
 import * as display from '../utils/display.js';
+import { semverLessThan, migrateSkillFormat, patchAgentDescriptions } from '../core/migration.js';
 
 function selfUpdate(latestVersion) {
   const spinner = ora(`Updating worclaude to v${latestVersion}...`).start();
@@ -181,6 +182,35 @@ export async function upgradeCommand() {
     const backupDir = await createBackup(projectRoot);
     spinner.text = 'Backup created, applying updates...';
 
+    // v2.0.0 migrations (version-gated)
+    let skillReport = { migrated: 0, skipped: 0, names: [] };
+    let agentReport = { autoPatched: 0, prompted: 0, declined: 0, skipped: [] };
+
+    if (semverLessThan(installedVersion, '2.0.0')) {
+      spinner.text = 'Running v2.0.0 migrations...';
+
+      // Item 14: Skill format migration (flat .md → skill-name/SKILL.md)
+      skillReport = await migrateSkillFormat(projectRoot, meta);
+
+      // Item 15: Agent frontmatter patch (add missing description)
+      spinner.stop();
+      agentReport = await patchAgentDescriptions(projectRoot, meta, async (agentName) => {
+        const { patch } = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'patch',
+            message: `Agent "${agentName}" has been customized. Add missing description field?`,
+            choices: [
+              { name: 'Yes', value: true },
+              { name: 'No, skip', value: false },
+            ],
+          },
+        ]);
+        return patch;
+      });
+      spinner.start('Applying updates...');
+    }
+
     // Auto-update files
     for (const { key, templatePath } of categories.autoUpdate) {
       const content = await readTemplate(templatePath);
@@ -245,6 +275,22 @@ export async function upgradeCommand() {
     if (categories.modified.length > 0) {
       display.barLine(
         `Customized:  ${categories.modified.length} files ${display.dimColor('(no updates needed)')}`
+      );
+    }
+    if (skillReport.migrated > 0) {
+      display.barLine(`Migrated:    ${skillReport.migrated} skills to directory format`);
+    }
+    const patchedTotal = agentReport.autoPatched + agentReport.prompted;
+    if (patchedTotal > 0) {
+      const detail =
+        agentReport.autoPatched > 0 && agentReport.prompted > 0
+          ? ` (${agentReport.autoPatched} auto, ${agentReport.prompted} confirmed)`
+          : '';
+      display.barLine(`Patched:     ${patchedTotal} agents with description${detail}`);
+    }
+    if (agentReport.skipped.length > 0) {
+      display.barLine(
+        `Skipped:     ${agentReport.skipped.length} user-created agents ${display.dimColor(`(${agentReport.skipped.join(', ')})`)}`
       );
     }
     display.newline();
