@@ -37,7 +37,9 @@ npm-debug.log*
 docs/.vitepress/dist
 docs/.vitepress/cache
 
-.claude-backup-*/
-
 # Worclaude (generated workflow files)
-.claude/
+.claude/sessions/
+.claude/settings.local.json
+.claude/workflow-meta.json
+.claude/worktrees/
+.claude-backup-*/
