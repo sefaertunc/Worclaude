@@ -23,21 +23,25 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 ## v1.8.0 Changes (Agent Enrichment & New Commands)
 
 ### Agents
+
 - [ ] `build-fixer` agent present in `.claude/agents/` when quality category selected
 - [ ] `e2e-runner` agent present in `.claude/agents/` when quality category selected
 - [ ] All 5 universal agent templates have structured guidance sections (not just basic prompts)
 - [ ] Agent routing includes `build-fixer` and `e2e-runner` in relevant categories
 
 ### Commands
+
 - [ ] `/build-fix` command exists in `.claude/commands/`
 - [ ] `/refactor-clean` command exists in `.claude/commands/`
 - [ ] `/test-coverage` command exists in `.claude/commands/`
 - [ ] All 3 new commands appear in `/skills` output in Claude Code
 
 ### Skills
+
 - [ ] `security-checklist` skill present (OWASP-based reference)
 
 ### Counts
+
 - [ ] 25 total agents (5 universal + 20 optional)
 - [ ] 16 commands in `.claude/commands/`
 - [ ] 11+ skills in `.claude/skills/` (10 universal + templates + agent-routing + coordinator-mode)
@@ -47,38 +51,45 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 ## v1.9.0 Changes (Session Persistence & Hooks)
 
 ### SessionStart Hook
+
 - [ ] Open Claude Code in the test project
 - [ ] Verify that CLAUDE.md content is in context (ask "what project is this?")
 - [ ] Verify that PROGRESS.md content is in context (ask "what's the project status?")
 - [ ] Verify current branch is shown
 
 ### PostCompact Hook
+
 - [ ] Run `/compact` in Claude Code
 - [ ] Verify CLAUDE.md is re-injected after compaction (ask "what project is this?" again)
 
 ### Session Summaries
+
 - [ ] Run `/commit-push-pr` (or `/end`) after making a small change
 - [ ] Verify a session summary file was written to `.claude/sessions/`
 - [ ] Start a new Claude Code session
 - [ ] Verify the previous session summary is loaded by SessionStart hook
 
 ### Drift Detection
+
 - [ ] Create a previous session file: `echo "# test" > .claude/sessions/2026-04-01-test.md`
 - [ ] Make some commits
 - [ ] Run `/start`
 - [ ] Verify drift detection shows commit count and one-liners
 
 ### Doctor
+
 - [ ] Run `worclaude doctor`
 - [ ] Verify 4 categories: core files, components, docs, integrity
 - [ ] All checks show PASS on a clean project
 
 ### Hook Profiles
+
 - [ ] `WORCLAUDE_HOOK_PROFILE=minimal claude` — only SessionStart and PostCompact fire
 - [ ] `WORCLAUDE_HOOK_PROFILE=standard claude` — all hooks fire (default)
 - [ ] `WORCLAUDE_HOOK_PROFILE=strict claude` — TypeScript checking hook fires on file edits (if applicable)
 
 ### Sessions Directory
+
 - [ ] `.claude/sessions/` directory created during init
 - [ ] `.gitignore` includes `.claude/sessions/`
 
@@ -87,27 +98,32 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 ## v2.0.0 Changes (Claude Code Runtime Integration)
 
 ### Skills — Format Fix (Phase 1)
+
 - [ ] All skills are directories: `.claude/skills/testing/SKILL.md` (NOT `.claude/skills/testing.md`)
 - [ ] No flat `.md` files in `.claude/skills/` (only directories)
 - [ ] `agent-routing/SKILL.md` exists in directory format
 - [ ] `/skills` in Claude Code shows skills from `.claude/skills/` (not just commands)
 
 ### Skills — Frontmatter (Phase 2)
+
 - [ ] Every `SKILL.md` has both `description` AND `when_to_use` in frontmatter
 - [ ] 6 conditional skills have `paths`: testing, verification, security-checklist, backend-conventions, frontend-design-system, project-patterns
 - [ ] 7+ always-loaded skills do NOT have `paths`: context-management, git-conventions, planning-with-files, review-and-handoff, prompt-engineering, claude-md-maintenance, subagent-usage
 - [ ] Conditional skill test: edit a test file, then check if `testing` skill appears in `/skills`
 
 ### Commands — Frontmatter (Phase 2)
+
 - [ ] Every `.claude/commands/*.md` file has `description` frontmatter
 - [ ] Command body content is unchanged (only frontmatter was added above it)
 - [ ] All commands still work: `/start`, `/verify`, `/commit-push-pr`
 
 ### Agents — Description (Phase 1)
+
 - [ ] Every agent in `.claude/agents/` has `description` in frontmatter
 - [ ] `/agents` in Claude Code shows all scaffolded agents (NOT "No agents found")
 
 ### Agents — Enrichment (Phase 3)
+
 - [ ] Read-only agents have `disallowedTools` (check `plan-reviewer`, `security-reviewer`)
 - [ ] Async agents have `background: true` (check `verify-app`, `build-validator`, `e2e-runner`)
 - [ ] Every agent has `maxTurns`
@@ -117,6 +133,7 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 - [ ] Test: trigger `verify-app` — should run as background task
 
 ### Doctor — New Checks (Phase 4)
+
 - [ ] `worclaude doctor` reports CLAUDE.md size vs 40K limit
 - [ ] Create a flat skill to test: `echo "# bad" > .claude/skills/broken.md`
 - [ ] `worclaude doctor` shows FAIL for flat `.md` skill file
@@ -125,6 +142,7 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 - [ ] Clean up test files, run doctor again — all PASS
 
 ### Upgrade — Migration (Phase 5)
+
 ```bash
 # Create a v1.9.0-style project to test upgrade
 rm -rf ~/SEFA/tmp/test-upgrade && mkdir -p ~/SEFA/tmp/test-upgrade && cd ~/SEFA/tmp/test-upgrade && git init
@@ -136,6 +154,7 @@ echo "# start" > .claude/commands/start.md
 echo "# CLAUDE" > CLAUDE.md
 node ~/SEFA/GIT/Claude-Workflow/src/index.js upgrade
 ```
+
 - [ ] Backup created before migration
 - [ ] Flat skills migrated to directory format
 - [ ] Agent frontmatter patched with `description`
@@ -145,6 +164,7 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js upgrade
 - [ ] Post-upgrade: `worclaude doctor` passes
 
 ### New Content (Phase 6)
+
 - [ ] `MEMORY.md` template offered during init (optional prompt, defaults to No)
 - [ ] When accepted: `MEMORY.md` exists with four-type taxonomy
 - [ ] `coordinator-mode/SKILL.md` scaffolded in universal skills
@@ -154,10 +174,12 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js upgrade
 - [ ] Node stack settings include `Bash(npm test:*)`, `Bash(npm run:*)` (already in base)
 
 ### Gitignore (Phase 7)
-- [ ] `.gitignore` has all 5 entries: sessions/, settings.local.json, workflow-meta.json, worktrees/, .claude-backup-*/
+
+- [ ] `.gitignore` has all 5 entries: sessions/, settings.local.json, workflow-meta.json, worktrees/, .claude-backup-\*/
 - [ ] Old blanket `.claude/` entry is removed if present (migration logic)
 
 ### Documentation (Phase 8)
+
 - [ ] `npm run docs:build` passes
 - [ ] New "Claude Code Integration" page exists in sidebar
 - [ ] Skills reference documents directory format requirement
@@ -183,22 +205,22 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js upgrade
 
 ## Sign-Off
 
-| Area | Status | Notes |
-|---|---|---|
-| Skills format | ☐ | |
-| Skills frontmatter | ☐ | |
-| Agents description | ☐ | |
-| Agents enrichment | ☐ | |
-| Commands frontmatter | ☐ | |
-| Doctor checks | ☐ | |
-| Upgrade migration | ☐ | |
-| New content | ☐ | |
-| Gitignore | ☐ | |
-| Documentation | ☐ | |
-| Tests pass | ☐ | |
-| Lint passes | ☐ | |
-| Docs build | ☐ | |
+| Area                 | Status | Notes |
+| -------------------- | ------ | ----- |
+| Skills format        | ☐      |       |
+| Skills frontmatter   | ☐      |       |
+| Agents description   | ☐      |       |
+| Agents enrichment    | ☐      |       |
+| Commands frontmatter | ☐      |       |
+| Doctor checks        | ☐      |       |
+| Upgrade migration    | ☐      |       |
+| New content          | ☐      |       |
+| Gitignore            | ☐      |       |
+| Documentation        | ☐      |       |
+| Tests pass           | ☐      |       |
+| Lint passes          | ☐      |       |
+| Docs build           | ☐      |       |
 
 **Version:** v2.0.0
-**Date:** ___________
-**Tested by:** ___________
+**Date:** \***\*\_\_\_\*\***
+**Tested by:** \***\*\_\_\_\*\***

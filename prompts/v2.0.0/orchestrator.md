@@ -26,7 +26,7 @@ Check status before starting work. Mark items ✅ after phase PR is merged.
 | 17  | Upgrade `verify-app` agent (production patterns) | 6     | ⬜     |
 | 18  | Worktree safety in cleanup commands              | 6     | ⬜     |
 | 19  | Scaffold coordinator-mode skill                  | 6     | ⬜     |
-| 20  | Optimize permission presets per tech stack        | 6     | ⬜     |
+| 20  | Optimize permission presets per tech stack       | 6     | ⬜     |
 | 21  | E2E audit across all changes                     | 7     | ⬜     |
 | 22  | Documentation site update + deploy               | 8     | ⬜     |
 
