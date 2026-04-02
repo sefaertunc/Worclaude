@@ -1,3 +1,4 @@
+import fs from 'fs-extra';
 import path from 'node:path';
 import { readWorkflowMeta, workflowMetaExists, getPackageVersion } from '../core/config.js';
 import { hashFile } from '../utils/hash.js';
@@ -72,6 +73,48 @@ async function checkClaudeMd(projectRoot) {
   }
 }
 
+async function checkClaudeMdSize(projectRoot) {
+  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
+  if (!(await fileExists(claudeMdPath))) {
+    return []; // Already covered by existing checkClaudeMd
+  }
+  try {
+    const content = await readFile(claudeMdPath);
+    const charCount = content.length;
+    const WARN_THRESHOLD = 30000;
+    const FAIL_THRESHOLD = 38000;
+    const HARD_LIMIT = 40000;
+
+    if (charCount > FAIL_THRESHOLD) {
+      return [
+        result(
+          FAIL,
+          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+          `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`
+        ),
+      ];
+    }
+    if (charCount > WARN_THRESHOLD) {
+      return [
+        result(
+          WARN,
+          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+          `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`
+        ),
+      ];
+    }
+    return [
+      result(
+        PASS,
+        `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`,
+        null
+      ),
+    ];
+  } catch {
+    return [];
+  }
+}
+
 async function checkSettingsJson(projectRoot) {
   const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
   if (!(await fileExists(settingsPath))) {
@@ -134,6 +177,62 @@ async function checkAgents(projectRoot, meta) {
   return results;
 }
 
+async function checkAgentDescription(projectRoot) {
+  const agentsDir = path.join(projectRoot, '.claude', 'agents');
+  const results = [];
+
+  try {
+    const entries = await fs.readdir(agentsDir, { withFileTypes: true });
+    const mdFiles = entries.filter((e) => e.isFile() && e.name.endsWith('.md'));
+
+    for (const file of mdFiles) {
+      const filePath = path.join(agentsDir, file.name);
+      const content = await readFile(filePath);
+
+      // Parse YAML frontmatter
+      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!frontmatterMatch) {
+        results.push(
+          result(
+            FAIL,
+            `agents/${file.name}`,
+            'No YAML frontmatter — agent is invisible to Claude Code'
+          )
+        );
+        continue;
+      }
+
+      const frontmatter = frontmatterMatch[1];
+      const hasName = /^name:\s*.+/m.test(frontmatter);
+      const hasDescription = /^description:\s*.+/m.test(frontmatter);
+
+      if (!hasName) {
+        results.push(
+          result(FAIL, `agents/${file.name}`, 'Missing required "name" field in frontmatter')
+        );
+      } else if (!hasDescription) {
+        results.push(
+          result(
+            FAIL,
+            `agents/${file.name}`,
+            'Missing required "description" field — agent is invisible to Claude Code\'s /agents and routing'
+          )
+        );
+      }
+    }
+
+    if (results.length === 0 && mdFiles.length > 0) {
+      results.push(
+        result(PASS, `agents/ frontmatter (${mdFiles.length} agents have required fields)`, null)
+      );
+    }
+  } catch {
+    // agents/ doesn't exist — covered by existing component checks
+  }
+
+  return results;
+}
+
 async function checkCommands(projectRoot) {
   const commandsDir = path.join(projectRoot, '.claude', 'commands');
   const missing = [];
@@ -167,6 +266,48 @@ async function checkSkills(projectRoot) {
     return [result(PASS, `skills/ (${allExpected.length} expected, all present)`, null)];
   }
   return missing.map((s) => result(WARN, `skills/${s}/SKILL.md`, 'Missing skill'));
+}
+
+async function checkSkillFormat(projectRoot) {
+  const skillsDir = path.join(projectRoot, '.claude', 'skills');
+  const results = [];
+
+  try {
+    const entries = await fs.readdir(skillsDir, { withFileTypes: true });
+    const flatMdFiles = entries
+      .filter((e) => e.isFile() && e.name.endsWith('.md'))
+      .map((e) => e.name);
+
+    if (flatMdFiles.length > 0) {
+      results.push(
+        result(
+          FAIL,
+          `skills/ has ${flatMdFiles.length} flat .md file(s)`,
+          `Flat .md files in .claude/skills/ are invisible to Claude Code. Expected format: skill-name/SKILL.md. Run \`worclaude upgrade\` to migrate. Files: ${flatMdFiles.join(', ')}`
+        )
+      );
+    }
+
+    // Also check directory-format skills exist
+    const skillDirs = entries.filter((e) => e.isDirectory());
+    let validDirSkills = 0;
+    for (const dir of skillDirs) {
+      const skillMd = path.join(skillsDir, dir.name, 'SKILL.md');
+      if (await fileExists(skillMd)) {
+        validDirSkills++;
+      }
+    }
+
+    if (validDirSkills > 0 && flatMdFiles.length === 0) {
+      results.push(
+        result(PASS, `skills/ format (${validDirSkills} directory-format skills)`, null)
+      );
+    }
+  } catch {
+    // skills/ doesn't exist — covered by existing component checks
+  }
+
+  return results;
 }
 
 async function checkHashIntegrity(projectRoot, meta) {
@@ -287,6 +428,7 @@ export async function doctorCommand() {
   const meta = await readWorkflowMeta(projectRoot);
 
   printResult(await checkClaudeMd(projectRoot));
+  for (const r of await checkClaudeMdSize(projectRoot)) printResult(r);
   printResult(await checkSettingsJson(projectRoot));
   printResult(await checkSessions(projectRoot));
   display.newline();
@@ -294,8 +436,10 @@ export async function doctorCommand() {
   // Components
   display.barLine(display.white('Components'));
   for (const r of await checkAgents(projectRoot, meta)) printResult(r);
+  for (const r of await checkAgentDescription(projectRoot)) printResult(r);
   for (const r of await checkCommands(projectRoot)) printResult(r);
   for (const r of await checkSkills(projectRoot)) printResult(r);
+  for (const r of await checkSkillFormat(projectRoot)) printResult(r);
   display.newline();
 
   // Docs
