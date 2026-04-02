@@ -15,9 +15,9 @@ describe('agent-routing integration', () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('should write valid agent-routing.md to disk', async () => {
+  it('should write valid agent-routing skill to disk', async () => {
     const content = buildAgentRoutingSkill([], []);
-    const filePath = path.join(tmpDir, '.claude', 'skills', 'agent-routing.md');
+    const filePath = path.join(tmpDir, '.claude', 'skills', 'agent-routing', 'SKILL.md');
 
     await fs.ensureDir(path.dirname(filePath));
     await fs.writeFile(filePath, content);

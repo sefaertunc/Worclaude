@@ -1,5 +1,6 @@
 ---
 name: style-enforcer
+description: "Ensures design system compliance"
 model: haiku
 isolation: none
 ---

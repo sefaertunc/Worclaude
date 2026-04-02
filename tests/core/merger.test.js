@@ -107,7 +107,7 @@ describe('merger', () => {
       tech_stack_table: 'Node.js / TypeScript',
       docker_row: '',
       commands_filled_during_init: '```bash\nnpm test\n```',
-      project_specific_skills: '- backend-conventions.md — Run /setup to fill automatically',
+      project_specific_skills: '- backend-conventions/SKILL.md — Run /setup to fill automatically',
       timestamp: new Date().toISOString(),
     };
 
@@ -120,6 +120,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -130,16 +131,16 @@ describe('merger', () => {
       expect(report.added.skills.length).toBeGreaterThan(0);
       expect(report.conflicts.skills).toEqual([]);
 
-      // Verify files created
-      const skillPath = path.join(tmpDir, '.claude', 'skills', 'context-management.md');
+      // Verify files created in directory format
+      const skillPath = path.join(tmpDir, '.claude', 'skills', 'context-management', 'SKILL.md');
       expect(await fs.pathExists(skillPath)).toBe(true);
     });
 
     it('saves conflicting skills as .workflow-ref.md (Tier 2)', async () => {
-      // Pre-create a conflicting skill
-      await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
+      // Pre-create a conflicting skill in directory format
+      await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'context-management'));
       await fs.writeFile(
-        path.join(tmpDir, '.claude', 'skills', 'context-management.md'),
+        path.join(tmpDir, '.claude', 'skills', 'context-management', 'SKILL.md'),
         '# My custom context rules'
       );
 
@@ -149,7 +150,8 @@ describe('merger', () => {
         claudeMdLineCount: 0,
         hasSettingsJson: false,
         hasMcpJson: false,
-        existingSkills: ['context-management.md'],
+        existingSkills: [],
+        existingSkillDirs: ['context-management'],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -157,17 +159,23 @@ describe('merger', () => {
       };
 
       const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
-      expect(report.conflicts.skills).toContain('context-management.md');
+      expect(report.conflicts.skills).toContain('context-management');
 
       // Original file untouched
       const original = await fs.readFile(
-        path.join(tmpDir, '.claude', 'skills', 'context-management.md'),
+        path.join(tmpDir, '.claude', 'skills', 'context-management', 'SKILL.md'),
         'utf-8'
       );
       expect(original).toBe('# My custom context rules');
 
       // .workflow-ref.md created alongside
-      const refPath = path.join(tmpDir, '.claude', 'skills', 'context-management.workflow-ref.md');
+      const refPath = path.join(
+        tmpDir,
+        '.claude',
+        'skills',
+        'context-management',
+        'SKILL.workflow-ref.md'
+      );
       expect(await fs.pathExists(refPath)).toBe(true);
     });
 
@@ -179,6 +187,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -203,6 +212,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -224,6 +234,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -255,6 +266,7 @@ describe('merger', () => {
         hasSettingsJson: true,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -298,6 +310,7 @@ describe('merger', () => {
         hasSettingsJson: true,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -339,6 +352,7 @@ describe('merger', () => {
         hasSettingsJson: true,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -371,6 +385,7 @@ describe('merger', () => {
         hasSettingsJson: true,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -412,6 +427,7 @@ describe('merger', () => {
         hasSettingsJson: true,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -442,6 +458,7 @@ describe('merger', () => {
         hasSettingsJson: true,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -470,6 +487,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: true,
@@ -493,6 +511,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -504,7 +523,7 @@ describe('merger', () => {
       expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md'))).toBe(true);
     });
 
-    it('creates agent-routing.md during merge', async () => {
+    it('creates agent-routing skill during merge', async () => {
       const scan = {
         hasClaudeDir: true,
         hasClaudeMd: false,
@@ -512,6 +531,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -519,19 +539,19 @@ describe('merger', () => {
       };
 
       const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
-      expect(report.added.skills).toContain('agent-routing.md');
+      expect(report.added.skills).toContain('agent-routing');
 
-      const routingPath = path.join(tmpDir, '.claude', 'skills', 'agent-routing.md');
+      const routingPath = path.join(tmpDir, '.claude', 'skills', 'agent-routing', 'SKILL.md');
       expect(await fs.pathExists(routingPath)).toBe(true);
       const content = await fs.readFile(routingPath, 'utf-8');
       expect(content).toContain('# Agent Routing Guide');
       expect(content).toContain('bug-fixer');
     });
 
-    it('saves agent-routing.md as .workflow-ref.md when conflict exists', async () => {
-      await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
+    it('saves agent-routing as .workflow-ref.md when conflict exists', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'agent-routing'));
       await fs.writeFile(
-        path.join(tmpDir, '.claude', 'skills', 'agent-routing.md'),
+        path.join(tmpDir, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
         '# My custom routing'
       );
 
@@ -541,7 +561,8 @@ describe('merger', () => {
         claudeMdLineCount: 0,
         hasSettingsJson: false,
         hasMcpJson: false,
-        existingSkills: ['agent-routing.md'],
+        existingSkills: [],
+        existingSkillDirs: ['agent-routing'],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,
@@ -549,17 +570,23 @@ describe('merger', () => {
       };
 
       const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
-      expect(report.conflicts.skills).toContain('agent-routing.md');
+      expect(report.conflicts.skills).toContain('agent-routing');
 
       // Original preserved
       const original = await fs.readFile(
-        path.join(tmpDir, '.claude', 'skills', 'agent-routing.md'),
+        path.join(tmpDir, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
         'utf-8'
       );
       expect(original).toBe('# My custom routing');
 
       // .workflow-ref.md created
-      const refPath = path.join(tmpDir, '.claude', 'skills', 'agent-routing.workflow-ref.md');
+      const refPath = path.join(
+        tmpDir,
+        '.claude',
+        'skills',
+        'agent-routing',
+        'SKILL.workflow-ref.md'
+      );
       expect(await fs.pathExists(refPath)).toBe(true);
       const refContent = await fs.readFile(refPath, 'utf-8');
       expect(refContent).toContain('# Agent Routing Guide');
@@ -575,6 +602,7 @@ describe('merger', () => {
         hasSettingsJson: false,
         hasMcpJson: false,
         existingSkills: [],
+        existingSkillDirs: [],
         existingAgents: [],
         existingCommands: [],
         hasProgressMd: false,

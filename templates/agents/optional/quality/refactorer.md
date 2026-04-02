@@ -1,5 +1,6 @@
 ---
 name: refactorer
+description: "Refactors code to improve maintainability"
 model: sonnet
 isolation: worktree
 ---

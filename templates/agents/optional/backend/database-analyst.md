@@ -1,5 +1,6 @@
 ---
 name: database-analyst
+description: "Reviews database schemas and queries"
 model: sonnet
 isolation: none
 ---

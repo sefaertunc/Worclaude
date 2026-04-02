@@ -1,5 +1,6 @@
 ---
 name: docker-helper
+description: "Reviews Docker configs for best practices"
 model: sonnet
 isolation: none
 ---

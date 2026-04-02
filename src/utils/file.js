@@ -40,6 +40,22 @@ export async function listFiles(dirPath) {
   }
 }
 
+export async function listSkillDirs(dirPath) {
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+    const valid = [];
+    for (const dir of dirs) {
+      if (await fileExists(path.join(dirPath, dir, 'SKILL.md'))) {
+        valid.push(dir);
+      }
+    }
+    return valid;
+  } catch {
+    return [];
+  }
+}
+
 export async function copyDirectory(src, dest) {
   await fs.copy(src, dest);
 }

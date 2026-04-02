@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { fileExists, dirExists, readFile, listFiles } from '../utils/file.js';
+import { fileExists, dirExists, readFile, listFiles, listSkillDirs } from '../utils/file.js';
 import { workflowMetaExists } from './config.js';
 
 export async function detectScenario(projectRoot) {
@@ -35,6 +35,7 @@ export async function scanExistingSetup(projectRoot) {
     hasSettingsJson: await fileExists(path.join(projectRoot, '.claude', 'settings.json')),
     hasMcpJson: await fileExists(path.join(projectRoot, '.mcp.json')),
     existingSkills: await listFiles(path.join(projectRoot, '.claude', 'skills')),
+    existingSkillDirs: await listSkillDirs(path.join(projectRoot, '.claude', 'skills')),
     existingAgents: await listFiles(path.join(projectRoot, '.claude', 'agents')),
     existingCommands: await listFiles(path.join(projectRoot, '.claude', 'commands')),
     hasProgressMd: await fileExists(path.join(projectRoot, 'docs', 'spec', 'PROGRESS.md')),

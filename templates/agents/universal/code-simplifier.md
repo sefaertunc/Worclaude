@@ -1,5 +1,6 @@
 ---
 name: code-simplifier
+description: "Reviews changed code and simplifies overly complex implementations"
 model: sonnet
 isolation: worktree
 ---

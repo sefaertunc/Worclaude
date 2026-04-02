@@ -118,7 +118,7 @@ export async function removeTrackedFiles(projectRoot, fileKeys) {
   for (const subdir of ['agents', 'commands', 'skills']) {
     const dirPath = path.join(claudeDir, subdir);
     if (await dirExists(dirPath)) {
-      const remaining = await listFiles(dirPath);
+      const remaining = await listFilesRecursive(dirPath);
       if (remaining.length === 0) {
         await removeDirectory(dirPath);
       }

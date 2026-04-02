@@ -55,6 +55,7 @@ describe('detector', () => {
       expect(scan.hasSettingsJson).toBe(false);
       expect(scan.hasMcpJson).toBe(false);
       expect(scan.existingSkills).toEqual([]);
+      expect(scan.existingSkillDirs).toEqual([]);
       expect(scan.existingAgents).toEqual([]);
       expect(scan.existingCommands).toEqual([]);
       expect(scan.hasProgressMd).toBe(false);
@@ -76,6 +77,16 @@ describe('detector', () => {
       expect(scan.existingSkills).toHaveLength(2);
       expect(scan.existingSkills).toContain('context-management.md');
       expect(scan.existingSkills).toContain('testing.md');
+    });
+
+    it('detects existing skill directories', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'testing'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.md'),
+        '# Testing'
+      );
+      const scan = await scanExistingSetup(tmpDir);
+      expect(scan.existingSkillDirs).toContain('testing');
     });
 
     it('detects settings.json and mcp.json', async () => {

@@ -52,16 +52,16 @@ describe('status command', () => {
       optionalAgents: ['bug-fixer'],
       useDocker: false,
       fileHashes: {
-        'skills/testing.md': skillHash,
+        'skills/testing/SKILL.md': skillHash,
       },
     };
 
-    await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'testing'));
     await fs.writeFile(
       path.join(tmpDir, '.claude', 'workflow-meta.json'),
       JSON.stringify(meta, null, 2)
     );
-    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing.md'), skillContent);
+    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.md'), skillContent);
     await fs.writeFile(
       path.join(tmpDir, '.claude', 'settings.json'),
       JSON.stringify({
@@ -94,22 +94,22 @@ describe('status command', () => {
       universalAgents: [],
       optionalAgents: [],
       fileHashes: {
-        'skills/testing.md': originalHash,
+        'skills/testing/SKILL.md': originalHash,
       },
     };
 
-    await fs.ensureDir(path.join(tmpDir, '.claude', 'skills'));
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'testing'));
     await fs.writeFile(
       path.join(tmpDir, '.claude', 'workflow-meta.json'),
       JSON.stringify(meta, null, 2)
     );
     // Write modified content (different from stored hash)
-    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing.md'), '# Modified');
+    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.md'), '# Modified');
 
     await statusCommand();
 
     const allOutput = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
-    expect(allOutput).toContain('skills/testing.md');
+    expect(allOutput).toContain('skills/testing/SKILL.md');
   });
 
   it('shows up to date when npm version matches CLI version', async () => {
@@ -250,7 +250,11 @@ describe('status command', () => {
       path.join(tmpDir, '.claude', 'workflow-meta.json'),
       JSON.stringify(meta, null, 2)
     );
-    await fs.writeFile(path.join(tmpDir, '.claude', 'skills', 'testing.workflow-ref.md'), '# Ref');
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'testing'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.workflow-ref.md'),
+      '# Ref'
+    );
 
     await statusCommand();
 

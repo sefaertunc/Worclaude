@@ -1,5 +1,6 @@
 ---
 name: security-reviewer
+description: "Reviews code for security vulnerabilities"
 model: opus
 isolation: none
 ---

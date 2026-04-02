@@ -1,5 +1,6 @@
 ---
 name: data-pipeline-reviewer
+description: "Reviews data pipeline correctness"
 model: sonnet
 isolation: none
 ---

@@ -1,5 +1,6 @@
 ---
 name: bug-fixer
+description: "Diagnoses and fixes bugs"
 model: sonnet
 isolation: worktree
 ---

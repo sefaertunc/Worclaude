@@ -1,5 +1,6 @@
 ---
 name: prompt-engineer
+description: "Reviews and improves LLM prompts"
 model: opus
 isolation: none
 ---

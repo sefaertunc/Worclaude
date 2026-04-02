@@ -1,5 +1,6 @@
 ---
 name: doc-writer
+description: "Writes and updates documentation"
 model: sonnet
 isolation: worktree
 ---

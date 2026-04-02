@@ -1,5 +1,6 @@
 ---
 name: ml-experiment-tracker
+description: "Reviews ML experiment reproducibility"
 model: sonnet
 isolation: none
 ---

@@ -1,5 +1,6 @@
 ---
 name: api-designer
+description: "Reviews API design for RESTful conventions"
 model: opus
 isolation: none
 ---
