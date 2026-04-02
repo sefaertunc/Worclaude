@@ -1,5 +1,6 @@
 ---
 description: "How Claude writes rules for itself, when to update CLAUDE.md, keeping it lean and effective"
+when_to_use: "When considering updates to CLAUDE.md, when the same mistake has happened twice, when CLAUDE.md is getting too long"
 ---
 
 # CLAUDE.md Maintenance

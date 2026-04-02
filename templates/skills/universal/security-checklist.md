@@ -1,5 +1,12 @@
 ---
 description: "OWASP-based security checklist any agent can reference when reviewing or writing code"
+when_to_use: "When writing code that handles user input, authentication, authorization, file uploads, or external data"
+paths:
+  - "**/auth/**"
+  - "**/security/**"
+  - "**/*config*"
+  - "**/*.env*"
+  - "**/middleware/**"
 ---
 
 # Security Checklist

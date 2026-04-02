@@ -1,3 +1,7 @@
+---
+description: "Compress context via /compact with safety checks"
+---
+
 Run /compact to compress context.
 The PostCompact hook will automatically re-read CLAUDE.md
 and PROGRESS.md.

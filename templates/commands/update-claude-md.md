@@ -1,3 +1,7 @@
+---
+description: "Propose updates to CLAUDE.md based on session work and recurring patterns"
+---
+
 Based on this session's work, propose updates to CLAUDE.md:
 
 Review what happened:

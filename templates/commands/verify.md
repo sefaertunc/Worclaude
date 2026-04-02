@@ -1,3 +1,7 @@
+---
+description: "Run full project verification — tests, build, lint, type checking"
+---
+
 Run full project verification:
 1. Run the test suite
 2. Run the build

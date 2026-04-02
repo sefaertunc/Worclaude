@@ -1,5 +1,6 @@
 ---
 description: "How to structure implementation plans as files, progressive implementation, plan review process"
+when_to_use: "When starting a multi-step task that needs a written plan, or when reviewing an existing implementation plan"
 ---
 
 # Planning with Files

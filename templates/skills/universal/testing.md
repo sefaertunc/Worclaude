@@ -1,5 +1,12 @@
 ---
 description: "Test philosophy, coverage strategy, test-first patterns, what to test and what not to"
+when_to_use: "When writing, modifying, or reviewing tests, or when making decisions about test strategy and coverage"
+paths:
+  - "test/**"
+  - "tests/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "__tests__/**"
 ---
 
 # Testing
