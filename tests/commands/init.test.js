@@ -39,7 +39,8 @@ function setupDefaultMocks() {
     { selectedAgents: ['bug-fixer'] }, // 6: fine-tune Quality
     { selectedAgents: ['doc-writer'] }, // 7: fine-tune Documentation
     { additionalCategories: [] }, // 8: unselected categories offer
-    { confirmation: 'yes' }, // 9: confirmation
+    { includeMemoryMd: false }, // 9: MEMORY.md prompt
+    { confirmation: 'yes' }, // 10: confirmation
   ];
   let callCount = 0;
   inquirer.prompt.mockImplementation(() => {
@@ -135,6 +136,8 @@ describe('init command', () => {
       'testing',
       'claude-md-maintenance',
       'subagent-usage',
+      'security-checklist',
+      'coordinator-mode',
       'backend-conventions',
       'frontend-design-system',
       'project-patterns',
@@ -205,6 +208,33 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'sessions', '.gitkeep'))).toBe(true);
   });
 
+  it('skips MEMORY.md by default', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, 'MEMORY.md'))).toBe(false);
+  });
+
+  it('creates MEMORY.md when opted in', async () => {
+    const responses = [
+      { projectName: 'mem-test', description: 'Test' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { includeMemoryMd: true },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, 'MEMORY.md'))).toBe(true);
+    const content = await fs.readFile(path.join(tmpDir, 'MEMORY.md'), 'utf-8');
+    expect(content).toContain('MEMORY.md');
+    expect(content).toContain('## User');
+    expect(content).toContain('## Feedback');
+  });
+
   it('uses project-type-specific SPEC.md template', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'), 'utf-8');
@@ -233,6 +263,7 @@ describe('init command', () => {
       { selectedCategories: ['Quality'] },
       { selectedAgents: ['bug-fixer'] },
       { additionalCategories: [] },
+      { includeMemoryMd: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -256,6 +287,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
+      { includeMemoryMd: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -275,6 +307,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
+      { includeMemoryMd: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -309,6 +342,7 @@ describe('init command', () => {
       { useDocker: true },
       { selectedCategories: [] },
       { additionalCategories: [] },
+      { includeMemoryMd: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -345,6 +379,7 @@ describe('init command', () => {
         { selectedCategories: ['Quality'] }, // categories
         { selectedAgents: ['bug-fixer'] }, // fine-tune
         { additionalCategories: [] }, // extra categories
+        { includeMemoryMd: false }, // MEMORY.md
         { confirmation: 'yes' }, // confirm
         { choice: 'keep' }, // CLAUDE.md handling
       ];

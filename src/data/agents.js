@@ -207,6 +207,7 @@ export const UNIVERSAL_SKILLS = [
   'claude-md-maintenance',
   'subagent-usage',
   'security-checklist',
+  'coordinator-mode',
 ];
 
 export const TEMPLATE_SKILLS = [
@@ -314,6 +315,7 @@ export const CONFIRMATION_STEPS = [
   { name: 'Project type', value: 'projectType' },
   { name: 'Tech stack', value: 'techStack' },
   { name: 'Agent selection', value: 'agents' },
+  { name: 'MEMORY.md (optional)', value: 'memoryMd' },
 ];
 
 export const NOTIFICATION_COMMANDS = {

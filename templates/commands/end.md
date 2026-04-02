@@ -6,6 +6,15 @@ Use this ONLY when stopping work mid-task without committing.
 
 Do NOT update PROGRESS.md — /sync handles that on develop after merging.
 
+## Pre-flight: Worktree Safety
+
+If you are working in a git worktree (not the main checkout):
+
+1. Check for uncommitted changes: `git status --porcelain`
+2. If changes exist, commit or stash before proceeding
+3. Note which worktree you are in for the handoff file
+4. Do NOT remove the worktree from /end — the user may resume here
+
 ## Mid-task handoff
 
 1. Create docs/handoffs/HANDOFF-{branch-name}-{date}.md

@@ -24,6 +24,7 @@ See `.claude/skills/` — load only what's relevant:
 - testing/SKILL.md — Test philosophy and patterns
 - subagent-usage/SKILL.md — When and how to use subagents
 - security-checklist/SKILL.md — Security review checklist
+- coordinator-mode/SKILL.md — Multi-agent orchestration
 - agent-routing/SKILL.md — When and how to use each installed agent (READ EVERY SESSION)
 {project_specific_skills}
 

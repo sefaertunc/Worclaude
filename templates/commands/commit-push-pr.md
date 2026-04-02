@@ -5,6 +5,13 @@ description: "Commit, push, and create PR — branch-aware with session summary"
 Determine which branch you're on, then follow the appropriate flow.
 Do not add Co-Authored-By trailers or AI-generated footers to commits or PR descriptions.
 
+## Worktree Awareness
+
+If you are in a git worktree session:
+- Verify you are on the correct branch: `git branch --show-current`
+- All changes must be committed before creating a PR — `git status --porcelain` should be empty after staging
+- Do NOT attempt to switch branches inside a worktree — each worktree is locked to its branch
+
 ## On a feature branch (feature/*, fix/*, chore/*, refactor/*)
 
 Feature branches contain ONLY the task changes. Do NOT touch shared-state
