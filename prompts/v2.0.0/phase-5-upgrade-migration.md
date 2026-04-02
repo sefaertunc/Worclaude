@@ -25,6 +25,7 @@ Execute
 ## Background
 
 Projects initialized with Worclaude v1.x have two structural problems:
+
 1. Skills are flat `.md` files in `.claude/skills/` (invisible to Claude Code)
 2. Agents lack the required `description` frontmatter (invisible to `/agents`)
 
@@ -45,14 +46,13 @@ During upgrade, detect flat `.md` files in `.claude/skills/` and migrate them to
 // Find flat .md files in .claude/skills/ (old format)
 const skillsDir = path.join(projectRoot, '.claude', 'skills');
 const entries = await fs.readdir(skillsDir, { withFileTypes: true });
-const flatSkills = entries
-  .filter((e) => e.isFile() && e.name.endsWith('.md'))
-  .map((e) => e.name);
+const flatSkills = entries.filter((e) => e.isFile() && e.name.endsWith('.md')).map((e) => e.name);
 ```
 
 ### Migration Logic
 
 For each flat skill file:
+
 1. Extract the skill name: `testing.md` → `testing`
 2. Create the directory: `.claude/skills/testing/`
 3. Move the file: `.claude/skills/testing.md` → `.claude/skills/testing/SKILL.md`
@@ -79,11 +79,13 @@ for (const flatFile of flatSkills) {
 ### Merge Strategy
 
 This is **additive tier** — safe to auto-apply because:
+
 - The old flat format was never functional (skills were invisible)
 - The migration preserves file content exactly (just moves the file)
 - No user customization is lost
 
 However, still report what was done:
+
 ```
 Migrated 13 skills to directory format (skill-name/SKILL.md)
 ```
@@ -91,6 +93,7 @@ Migrated 13 skills to directory format (skill-name/SKILL.md)
 ### Hash Key Migration
 
 Also update `workflow-meta.json` fileHashes:
+
 ```javascript
 const meta = await readWorkflowMeta(projectRoot);
 if (meta && meta.fileHashes) {
@@ -112,6 +115,7 @@ if (meta && meta.fileHashes) {
 ### Also handle `.workflow-ref.md` files
 
 If there are `.workflow-ref.md` conflict files from previous upgrades:
+
 - `testing.workflow-ref.md` → move to `testing/SKILL.workflow-ref.md`
 
 ---
@@ -154,7 +158,8 @@ const UNIVERSAL_AGENT_DESCRIPTIONS = {
   'code-simplifier': 'Reviews changed code and simplifies overly complex implementations',
   'test-writer': 'Writes comprehensive, meaningful tests for recently changed code',
   'build-validator': 'Validates that the project builds and all tests pass',
-  'verify-app': 'Verifies the running application end-to-end — tests actual behavior, not just code reading',
+  'verify-app':
+    'Verifies the running application end-to-end — tests actual behavior, not just code reading',
 };
 
 function getAgentDescription(agentName) {
@@ -171,6 +176,7 @@ function getAgentDescription(agentName) {
 ```
 
 For each agent missing description:
+
 1. Parse frontmatter
 2. Look up description from catalog
 3. Insert `description` line after `name` line
@@ -189,10 +195,7 @@ for (const file of agentsMissingDescription) {
   }
 
   // Insert description after name line
-  const updated = content.replace(
-    /^(name:\s*.+)$/m,
-    `$1\ndescription: "${description}"`
-  );
+  const updated = content.replace(/^(name:\s*.+)$/m, `$1\ndescription: "${description}"`);
 
   await writeFile(filePath, updated);
 }
@@ -201,11 +204,13 @@ for (const file of agentsMissingDescription) {
 ### Merge Strategy
 
 This is **interactive tier** for user-modified agents:
+
 - If the agent file hash matches the original template hash in workflow-meta → auto-patch (user hasn't customized)
 - If the agent file hash differs → prompt: "Agent {name} has been customized. Add missing `description` field? (y/n)"
 - For unknown agents (user-created, not in catalog) → skip with info message
 
 Report:
+
 ```
 Patched 12 agents with description frontmatter (5 auto, 7 prompted)
 Skipped 2 user-created agents (my-custom-agent, project-helper)
@@ -216,6 +221,7 @@ Skipped 2 user-created agents (my-custom-agent, project-helper)
 ## Integration into Upgrade Flow
 
 Add these migrations to the existing upgrade flow in `upgrade.js`. They should run:
+
 1. After the backup step (so user can restore if anything goes wrong)
 2. Before the normal file update/merge step
 3. With a clear section header in the output:
@@ -248,6 +254,7 @@ This prevents re-running migrations on projects already at v2.0.0+.
 Add tests in `tests/commands/upgrade.test.js` (or create a new test file for migrations):
 
 ### Skill migration tests:
+
 - Flat `.md` files are moved to `skill-name/SKILL.md` directory format
 - Already-migrated skills (directory format) are not touched
 - Mixed state (some flat, some directory) migrates only flat ones
@@ -256,6 +263,7 @@ Add tests in `tests/commands/upgrade.test.js` (or create a new test file for mig
 - Empty `.claude/skills/` doesn't error
 
 ### Agent frontmatter tests:
+
 - Agents missing `description` get it from catalog
 - Agents already having `description` are not modified
 - Universal agents get correct descriptions
@@ -269,11 +277,13 @@ Add tests in `tests/commands/upgrade.test.js` (or create a new test file for mig
 ## Verification Checklist
 
 ### Automated
+
 ```bash
 npm test && npm run lint
 ```
 
 ### Manual — Scenario C (upgrade from v1.9.0)
+
 ```bash
 # Create a v1.9.0 project first (using the v1.9.0 code or a pre-Phase-1 state)
 # Or manually create the old format:
@@ -285,6 +295,7 @@ node ~/SEFA/GIT/Claude-Workflow/src/index.js upgrade
 ```
 
 Verify:
+
 - [ ] Flat `.md` files in `.claude/skills/` are gone — replaced by directories
 - [ ] Each skill directory has `SKILL.md` inside
 - [ ] All agents have `description` in frontmatter

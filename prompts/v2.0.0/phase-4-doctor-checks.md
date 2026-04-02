@@ -55,14 +55,30 @@ async function checkClaudeMdSize(projectRoot) {
     const HARD_LIMIT = 40000;
 
     if (charCount > FAIL_THRESHOLD) {
-      return [result(FAIL, `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
-        `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`)];
+      return [
+        result(
+          FAIL,
+          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+          `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`
+        ),
+      ];
     }
     if (charCount > WARN_THRESHOLD) {
-      return [result(WARN, `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
-        `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`)];
+      return [
+        result(
+          WARN,
+          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+          `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`
+        ),
+      ];
     }
-    return [result(PASS, `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`, null)];
+    return [
+      result(
+        PASS,
+        `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`,
+        null
+      ),
+    ];
   } catch {
     return [];
   }
@@ -91,10 +107,13 @@ async function checkSkillFormat(projectRoot) {
       .map((e) => e.name);
 
     if (flatMdFiles.length > 0) {
-      results.push(result(FAIL,
-        `skills/ has ${flatMdFiles.length} flat .md file(s)`,
-        `Flat .md files in .claude/skills/ are invisible to Claude Code. Expected format: skill-name/SKILL.md. Run \`worclaude upgrade\` to migrate. Files: ${flatMdFiles.join(', ')}`
-      ));
+      results.push(
+        result(
+          FAIL,
+          `skills/ has ${flatMdFiles.length} flat .md file(s)`,
+          `Flat .md files in .claude/skills/ are invisible to Claude Code. Expected format: skill-name/SKILL.md. Run \`worclaude upgrade\` to migrate. Files: ${flatMdFiles.join(', ')}`
+        )
+      );
     }
 
     // Also check directory-format skills exist
@@ -108,7 +127,9 @@ async function checkSkillFormat(projectRoot) {
     }
 
     if (validDirSkills > 0 && flatMdFiles.length === 0) {
-      results.push(result(PASS, `skills/ format (${validDirSkills} directory-format skills)`, null));
+      results.push(
+        result(PASS, `skills/ format (${validDirSkills} directory-format skills)`, null)
+      );
     }
   } catch {
     // skills/ doesn't exist — covered by existing component checks
@@ -144,8 +165,13 @@ async function checkAgentDescription(projectRoot) {
       // Parse YAML frontmatter
       const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
       if (!frontmatterMatch) {
-        results.push(result(FAIL, `agents/${file.name}`,
-          'No YAML frontmatter — agent is invisible to Claude Code'));
+        results.push(
+          result(
+            FAIL,
+            `agents/${file.name}`,
+            'No YAML frontmatter — agent is invisible to Claude Code'
+          )
+        );
         continue;
       }
 
@@ -154,16 +180,24 @@ async function checkAgentDescription(projectRoot) {
       const hasDescription = /^description:\s*.+/m.test(frontmatter);
 
       if (!hasName) {
-        results.push(result(FAIL, `agents/${file.name}`,
-          'Missing required "name" field in frontmatter'));
+        results.push(
+          result(FAIL, `agents/${file.name}`, 'Missing required "name" field in frontmatter')
+        );
       } else if (!hasDescription) {
-        results.push(result(FAIL, `agents/${file.name}`,
-          'Missing required "description" field — agent is invisible to Claude Code\'s /agents and routing'));
+        results.push(
+          result(
+            FAIL,
+            `agents/${file.name}`,
+            'Missing required "description" field — agent is invisible to Claude Code\'s /agents and routing'
+          )
+        );
       }
     }
 
     if (results.length === 0 && mdFiles.length > 0) {
-      results.push(result(PASS, `agents/ frontmatter (${mdFiles.length} agents have required fields)`, null));
+      results.push(
+        result(PASS, `agents/ frontmatter (${mdFiles.length} agents have required fields)`, null)
+      );
     }
   } catch {
     // agents/ doesn't exist — covered by existing component checks
@@ -197,11 +231,13 @@ Add tests for the new checks in `tests/commands/doctor.test.js`:
 ## Verification Checklist
 
 ### Automated
+
 ```bash
 npm test && npm run lint
 ```
 
 ### Manual
+
 ```bash
 # Test on a clean v2.0.0 project (after Phase 1)
 cd /tmp/test-phase1
