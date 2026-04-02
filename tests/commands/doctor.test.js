@@ -29,7 +29,14 @@ async function scaffoldProject(tmpDir, opts = {}) {
   if (!opts.skipAgents) {
     await fs.ensureDir(path.join(claudeDir, 'agents'));
     for (const agent of UNIVERSAL_AGENTS) {
-      const content = `# ${agent} agent`;
+      let content;
+      if (opts.agentsNoFrontmatter) {
+        content = `# ${agent} agent`;
+      } else if (opts.agentsNoDescription) {
+        content = `---\nname: ${agent}\n---\n\n# ${agent} agent`;
+      } else {
+        content = `---\nname: ${agent}\ndescription: ${agent} agent\n---\n\n# ${agent} agent`;
+      }
       await fs.writeFile(path.join(claudeDir, 'agents', `${agent}.md`), content);
       fileHashes[`agents/${agent}.md`] = hashContent(content);
     }
@@ -55,6 +62,12 @@ async function scaffoldProject(tmpDir, opts = {}) {
       await fs.writeFile(path.join(skillDir, 'SKILL.md'), content);
       fileHashes[`skills/${skill}/SKILL.md`] = hashContent(content);
     }
+  }
+
+  // Flat skill files (triggers checkSkillFormat FAIL)
+  if (opts.flatSkillFiles) {
+    await fs.ensureDir(path.join(claudeDir, 'skills'));
+    await fs.writeFile(path.join(claudeDir, 'skills', 'stray-skill.md'), '# stray skill');
   }
 
   // Sessions directory
@@ -98,10 +111,10 @@ async function scaffoldProject(tmpDir, opts = {}) {
 
   // CLAUDE.md
   if (!opts.skipClaudeMd) {
-    await fs.writeFile(
-      path.join(tmpDir, 'CLAUDE.md'),
-      '# CLAUDE.md\n\nProject instructions.\n\n## Tech Stack\n\nNode.js\n\n## Commands\n\nnpm test\n\n## Rules\n\nFollow conventions.\n'
-    );
+    const claudeMdContent = opts.claudeMdSize
+      ? `# CLAUDE.md\n\n${'x'.repeat(opts.claudeMdSize)}`
+      : '# CLAUDE.md\n\nProject instructions.\n\n## Tech Stack\n\nNode.js\n\n## Commands\n\nnpm test\n\n## Rules\n\nFollow conventions.\n';
+    await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), claudeMdContent);
   }
 
   // docs/spec
@@ -172,5 +185,68 @@ describe('doctor command', () => {
     await doctorCommand();
     const output = getOutput();
     expect(output).toContain('sessions');
+  });
+
+  // CLAUDE.md size checks
+  it('passes CLAUDE.md size check for small files', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('CLAUDE.md size');
+    expect(output).toContain('limit');
+  });
+
+  it('warns when CLAUDE.md approaches size limit', async () => {
+    await scaffoldProject(tmpDir, { claudeMdSize: 31000 });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('CLAUDE.md size');
+    expect(output).toContain('Approaching limit');
+  });
+
+  it('fails when CLAUDE.md exceeds size limit', async () => {
+    await scaffoldProject(tmpDir, { claudeMdSize: 39000 });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('CLAUDE.md size');
+    expect(output).toContain('Exceeds recommended limit');
+  });
+
+  // Skill format checks
+  it('passes skill format check for directory-format skills', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('skills/ format');
+    expect(output).not.toContain('flat .md file');
+  });
+
+  it('detects flat skill files', async () => {
+    await scaffoldProject(tmpDir, { flatSkillFiles: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('flat .md file');
+  });
+
+  // Agent description checks
+  it('passes agent description check when all have frontmatter', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('agents/ frontmatter');
+  });
+
+  it('detects agents missing description field', async () => {
+    await scaffoldProject(tmpDir, { agentsNoDescription: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Missing required "description" field');
+  });
+
+  it('detects agents without frontmatter', async () => {
+    await scaffoldProject(tmpDir, { agentsNoFrontmatter: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('No YAML frontmatter');
   });
 });
