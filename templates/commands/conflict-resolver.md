@@ -1,3 +1,7 @@
+---
+description: "Resolve merge conflicts on develop branch"
+---
+
 You are resolving merge conflicts. ONLY resolve conflicts — do not
 update PROGRESS.md, SPEC.md, or bump versions. That is /sync's job.
 

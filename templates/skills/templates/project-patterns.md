@@ -1,5 +1,9 @@
 ---
 description: "Architectural patterns, naming conventions, file organization, and error handling philosophy for this project"
+when_to_use: "When writing new code that should follow established project patterns, or when reviewing code for consistency"
+paths:
+  - "src/**"
+  - "lib/**"
 ---
 
 # Project Patterns

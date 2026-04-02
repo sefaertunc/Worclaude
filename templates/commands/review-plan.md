@@ -1,3 +1,7 @@
+---
+description: "Send implementation plan to plan-reviewer agent for staff-level review"
+---
+
 Send the current implementation plan to the plan-reviewer agent.
 The plan-reviewer will act as a staff engineer and critically
 review the plan for:

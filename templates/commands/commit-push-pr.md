@@ -1,3 +1,7 @@
+---
+description: "Commit, push, and create PR — branch-aware with session summary"
+---
+
 Determine which branch you're on, then follow the appropriate flow.
 Do not add Co-Authored-By trailers or AI-generated footers to commits or PR descriptions.
 

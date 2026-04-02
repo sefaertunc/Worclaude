@@ -1,3 +1,7 @@
+---
+description: "Focused cleanup pass on recently changed code"
+---
+
 Run a focused cleanup pass on recently changed code. This command
 runs INLINE in your current session — it reads uncommitted changes,
 improves them in place, and leaves everything uncommitted for

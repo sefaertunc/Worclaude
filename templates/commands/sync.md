@@ -1,3 +1,7 @@
+---
+description: "Update PROGRESS.md, SPEC.md, and version after merging PRs on develop"
+---
+
 Update shared-state files after merging feature PRs into develop.
 Run this on the develop branch AFTER all PRs are merged and any
 conflicts are resolved.

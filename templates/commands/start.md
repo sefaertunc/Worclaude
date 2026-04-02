@@ -1,3 +1,7 @@
+---
+description: "Load session context, check for handoff files, detect drift since last session"
+---
+
 The SessionStart hook has already loaded CLAUDE.md, PROGRESS.md,
 and the most recent session summary into context.
 

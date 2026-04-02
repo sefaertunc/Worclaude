@@ -1,3 +1,7 @@
+---
+description: "Project setup interview — fills in CLAUDE.md, skills, and configuration"
+---
+
 You are conducting a project setup interview. Your goal is to gather
 enough information to fill in all project-specific files with real,
 useful content.

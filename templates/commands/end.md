@@ -1,3 +1,7 @@
+---
+description: "Mid-task stop — writes handoff file and session summary for next session"
+---
+
 Use this ONLY when stopping work mid-task without committing.
 
 Do NOT update PROGRESS.md — /sync handles that on develop after merging.
