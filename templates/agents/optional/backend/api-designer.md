@@ -3,6 +3,11 @@ name: api-designer
 description: "Reviews API design for RESTful conventions"
 model: opus
 isolation: none
+disallowedTools:
+  - Edit
+  - NotebookEdit
+  - Agent
+maxTurns: 30
 ---
 
 You are a senior API architect who reviews API designs for

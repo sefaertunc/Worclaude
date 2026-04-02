@@ -3,6 +3,7 @@ name: refactorer
 description: "Refactors code to improve maintainability"
 model: sonnet
 isolation: worktree
+maxTurns: 50
 ---
 
 You are a refactoring specialist. You improve code structure and

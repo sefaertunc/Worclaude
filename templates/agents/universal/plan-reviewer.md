@@ -3,6 +3,13 @@ name: plan-reviewer
 description: "Reviews implementation plans for specificity, gaps, and executability"
 model: opus
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 30
+omitClaudeMd: true
 ---
 
 You are a senior staff engineer reviewing an implementation plan.

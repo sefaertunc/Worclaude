@@ -3,6 +3,14 @@ name: security-reviewer
 description: "Reviews code for security vulnerabilities"
 model: opus
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 40
+omitClaudeMd: true
+memory: project
 ---
 
 You are a senior application security engineer performing a code

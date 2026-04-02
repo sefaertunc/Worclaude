@@ -3,6 +3,7 @@ name: style-enforcer
 description: "Ensures design system compliance"
 model: haiku
 isolation: none
+maxTurns: 30
 ---
 
 You are a design system compliance checker. Your job is to scan the
