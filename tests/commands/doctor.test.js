@@ -50,8 +50,10 @@ async function scaffoldProject(tmpDir, opts = {}) {
     await fs.ensureDir(path.join(claudeDir, 'skills'));
     for (const skill of ALL_SKILLS) {
       const content = `# ${skill} skill`;
-      await fs.writeFile(path.join(claudeDir, 'skills', `${skill}.md`), content);
-      fileHashes[`skills/${skill}.md`] = hashContent(content);
+      const skillDir = path.join(claudeDir, 'skills', skill);
+      await fs.ensureDir(skillDir);
+      await fs.writeFile(path.join(skillDir, 'SKILL.md'), content);
+      fileHashes[`skills/${skill}/SKILL.md`] = hashContent(content);
     }
   }
 

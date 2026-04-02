@@ -61,12 +61,14 @@ describe('delete command', () => {
     const files = {
       'agents/plan-reviewer.md': '# Plan Reviewer Agent',
       'commands/start.md': '# Start Command',
-      'skills/testing.md': '# Testing Skill',
+      'skills/testing/SKILL.md': '# Testing Skill',
     };
 
     const fileHashes = {};
     for (const [key, content] of Object.entries(files)) {
-      await fs.writeFile(path.join(claudeDir, ...key.split('/')), content);
+      const filePath = path.join(claudeDir, ...key.split('/'));
+      await fs.ensureDir(path.dirname(filePath));
+      await fs.writeFile(filePath, content);
       fileHashes[key] = hashContent(content);
     }
 
@@ -190,7 +192,7 @@ describe('delete command', () => {
       const result = await classifyClaudeFiles(tmpDir, meta);
       expect(result.safeToDelete).toContain('agents/plan-reviewer.md');
       expect(result.safeToDelete).toContain('commands/start.md');
-      expect(result.safeToDelete).toContain('skills/testing.md');
+      expect(result.safeToDelete).toContain('skills/testing/SKILL.md');
     });
 
     it('classifies modified files as modified', async () => {
@@ -207,9 +209,9 @@ describe('delete command', () => {
 
     it('classifies missing files as missing', async () => {
       const { meta } = await scaffoldMinimal();
-      await fs.remove(path.join(tmpDir, '.claude', 'skills', 'testing.md'));
+      await fs.remove(path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.md'));
       const result = await classifyClaudeFiles(tmpDir, meta);
-      expect(result.missing).toContain('skills/testing.md');
+      expect(result.missing).toContain('skills/testing/SKILL.md');
     });
 
     it('classifies user-added files as userOwned', async () => {
@@ -233,11 +235,11 @@ describe('delete command', () => {
     it('classifies .workflow-ref.md files as safeToDelete', async () => {
       const { meta } = await scaffoldMinimal();
       await fs.writeFile(
-        path.join(tmpDir, '.claude', 'skills', 'testing.workflow-ref.md'),
+        path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.workflow-ref.md'),
         '# Reference'
       );
       const result = await classifyClaudeFiles(tmpDir, meta);
-      expect(result.safeToDelete).toContain('skills/testing.workflow-ref.md');
+      expect(result.safeToDelete).toContain('skills/testing/SKILL.workflow-ref.md');
     });
 
     it('always includes workflow-meta.json in safeToDelete', async () => {
@@ -295,7 +297,7 @@ describe('delete command', () => {
       await removeTrackedFiles(tmpDir, [
         'agents/plan-reviewer.md',
         'commands/start.md',
-        'skills/testing.md',
+        'skills/testing/SKILL.md',
         'workflow-meta.json',
       ]);
       // settings.json still exists, so .claude/ should remain
@@ -310,7 +312,7 @@ describe('delete command', () => {
       await removeTrackedFiles(tmpDir, [
         'agents/plan-reviewer.md',
         'commands/start.md',
-        'skills/testing.md',
+        'skills/testing/SKILL.md',
         'workflow-meta.json',
       ]);
       expect(await fs.pathExists(path.join(tmpDir, '.claude'))).toBe(true);

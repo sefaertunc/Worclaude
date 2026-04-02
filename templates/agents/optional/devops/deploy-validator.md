@@ -1,5 +1,6 @@
 ---
 name: deploy-validator
+description: "Validates deployment readiness"
 model: sonnet
 isolation: none
 ---

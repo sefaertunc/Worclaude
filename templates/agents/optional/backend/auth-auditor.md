@@ -1,5 +1,6 @@
 ---
 name: auth-auditor
+description: "Audits authentication and authorization"
 model: opus
 isolation: none
 ---

@@ -1,5 +1,6 @@
 ---
 name: ui-reviewer
+description: "Reviews UI for consistency and accessibility"
 model: sonnet
 isolation: none
 ---

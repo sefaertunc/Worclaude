@@ -1,5 +1,6 @@
 ---
 name: dependency-manager
+description: "Reviews dependency health and updates"
 model: haiku
 isolation: none
 ---

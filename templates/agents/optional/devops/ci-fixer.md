@@ -1,5 +1,6 @@
 ---
 name: ci-fixer
+description: "Diagnoses and fixes CI/CD failures"
 model: sonnet
 isolation: worktree
 ---

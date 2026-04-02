@@ -111,39 +111,41 @@ async function mergeSkills(projectRoot, existingScan, variables, report, selecti
   ];
 
   for (const skill of allSkills) {
-    const filename = `${skill.name}.md`;
-    const destDir = path.join('.claude', 'skills');
+    const destPath = path.join('.claude', 'skills', skill.name, 'SKILL.md');
+    const existsAsDir = existingScan.existingSkillDirs.includes(skill.name);
+    const existsAsFlat = existingScan.existingSkills.includes(`${skill.name}.md`);
 
-    if (existingScan.existingSkills.includes(filename)) {
+    if (existsAsDir || existsAsFlat) {
       // Tier 2: conflict — save as .workflow-ref.md
       await scaffoldFile(
         skill.templatePath,
-        path.join(destDir, `${skill.name}.workflow-ref.md`),
+        path.join('.claude', 'skills', skill.name, 'SKILL.workflow-ref.md'),
         skill.vars,
         projectRoot
       );
-      report.conflicts.skills.push(filename);
+      report.conflicts.skills.push(skill.name);
     } else {
       // Tier 1: add
-      await scaffoldFile(skill.templatePath, path.join(destDir, filename), skill.vars, projectRoot);
-      report.added.skills.push(filename);
+      await scaffoldFile(skill.templatePath, destPath, skill.vars, projectRoot);
+      report.added.skills.push(skill.name);
     }
   }
 
-  // Generated skill: agent-routing.md
-  const routingFilename = 'agent-routing.md';
+  // Generated skill: agent-routing
   const skillsDir = path.join('.claude', 'skills');
   const routingContent = buildAgentRoutingSkill(selections.selectedAgents, selections.projectTypes);
+  const routingExistsAsDir = existingScan.existingSkillDirs.includes('agent-routing');
+  const routingExistsAsFlat = existingScan.existingSkills.includes('agent-routing.md');
 
-  if (existingScan.existingSkills.includes(routingFilename)) {
+  if (routingExistsAsDir || routingExistsAsFlat) {
     await writeFile(
-      path.join(projectRoot, skillsDir, 'agent-routing.workflow-ref.md'),
+      path.join(projectRoot, skillsDir, 'agent-routing', 'SKILL.workflow-ref.md'),
       routingContent
     );
-    report.conflicts.skills.push(routingFilename);
+    report.conflicts.skills.push('agent-routing');
   } else {
-    await writeFile(path.join(projectRoot, skillsDir, routingFilename), routingContent);
-    report.added.skills.push(routingFilename);
+    await writeFile(path.join(projectRoot, skillsDir, 'agent-routing', 'SKILL.md'), routingContent);
+    report.added.skills.push('agent-routing');
   }
 }
 

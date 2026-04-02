@@ -1,5 +1,6 @@
 ---
 name: e2e-runner
+description: "Writes and runs end-to-end tests"
 model: sonnet
 isolation: worktree
 ---

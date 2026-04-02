@@ -41,18 +41,18 @@ export async function buildTemplateHashMap() {
     map[key] = { templatePath, hash: hashContent(content), type: 'command' };
   }
 
-  // Universal skills: key = skills/{name}.md, templatePath = skills/universal/{name}.md
+  // Universal skills: key = skills/{name}/SKILL.md, templatePath = skills/universal/{name}.md
   for (const name of UNIVERSAL_SKILLS) {
-    const key = `skills/${name}.md`;
+    const key = `skills/${name}/SKILL.md`;
     const templatePath = `skills/universal/${name}.md`;
     const content = await readTemplate(templatePath);
     map[key] = { templatePath, hash: hashContent(content), type: 'universal-skill' };
   }
 
-  // Template skills: key = skills/{name}.md, templatePath = skills/templates/{name}.md
+  // Template skills: key = skills/{name}/SKILL.md, templatePath = skills/templates/{name}.md
   // These contain {variable} placeholders — raw hash won't match stored (substituted) hash
   for (const name of TEMPLATE_SKILLS) {
-    const key = `skills/${name}.md`;
+    const key = `skills/${name}/SKILL.md`;
     const templatePath = `skills/templates/${name}.md`;
     const content = await readTemplate(templatePath);
     map[key] = { templatePath, hash: hashContent(content), type: 'template-skill' };

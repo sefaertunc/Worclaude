@@ -53,7 +53,7 @@ Look in docs/handoffs/ for any HANDOFF*.md files:
 
 ## 3. Load Agent Routing
 
-Read .claude/skills/agent-routing.md for agent usage guidance.
+Read .claude/skills/agent-routing/SKILL.md for agent usage guidance.
 
 ## 4. Check for Active Prompt Files
 

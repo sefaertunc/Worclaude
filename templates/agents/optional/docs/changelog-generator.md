@@ -1,5 +1,6 @@
 ---
 name: changelog-generator
+description: "Generates changelog from commits"
 model: haiku
 isolation: none
 ---

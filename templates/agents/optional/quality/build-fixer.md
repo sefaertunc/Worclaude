@@ -1,5 +1,6 @@
 ---
 name: build-fixer
+description: "Diagnoses and fixes build failures"
 model: sonnet
 isolation: worktree
 ---

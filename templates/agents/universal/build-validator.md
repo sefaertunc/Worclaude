@@ -1,5 +1,6 @@
 ---
 name: build-validator
+description: "Validates that the project builds and all tests pass"
 model: haiku
 isolation: none
 ---

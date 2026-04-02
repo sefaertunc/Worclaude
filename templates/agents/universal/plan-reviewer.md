@@ -1,5 +1,6 @@
 ---
 name: plan-reviewer
+description: "Reviews implementation plans for specificity, gaps, and executability"
 model: opus
 isolation: none
 ---

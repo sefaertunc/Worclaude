@@ -332,7 +332,9 @@ function buildTemplateVariables(selections) {
 
   const commandsText = buildCommandsBlock(languages, useDocker);
 
-  const skillsLines = TEMPLATE_SKILLS.map((s) => `- ${s}.md — Run /setup to fill automatically`);
+  const skillsLines = TEMPLATE_SKILLS.map(
+    (s) => `- ${s}/SKILL.md — Run /setup to fill automatically`
+  );
   const skillsText = skillsLines.join('\n');
 
   return {
@@ -410,7 +412,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     for (const skill of UNIVERSAL_SKILLS) {
       await scaffoldFile(
         `skills/universal/${skill}.md`,
-        path.join('.claude', 'skills', `${skill}.md`),
+        path.join('.claude', 'skills', skill, 'SKILL.md'),
         {},
         projectRoot
       );
@@ -420,7 +422,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     for (const skill of TEMPLATE_SKILLS) {
       await scaffoldFile(
         `skills/templates/${skill}.md`,
-        path.join('.claude', 'skills', `${skill}.md`),
+        path.join('.claude', 'skills', skill, 'SKILL.md'),
         variables,
         projectRoot
       );
@@ -429,7 +431,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
 
     const agentRoutingContent = buildAgentRoutingSkill(selectedAgents, projectTypes);
     await writeFile(
-      path.join(projectRoot, '.claude', 'skills', 'agent-routing.md'),
+      path.join(projectRoot, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
       agentRoutingContent
     );
     spinner.text = 'Created agent routing guide';

@@ -141,15 +141,15 @@ describe('init command', () => {
       'agent-routing',
     ];
     for (const skill of skills) {
-      const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'skills', `${skill}.md`));
-      expect(exists, `${skill}.md should exist`).toBe(true);
+      const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'skills', skill, 'SKILL.md'));
+      expect(exists, `${skill}/SKILL.md should exist`).toBe(true);
     }
   });
 
-  it('generates agent-routing.md with correct agents', async () => {
+  it('generates agent-routing skill with correct agents', async () => {
     await initCommand();
     const content = await fs.readFile(
-      path.join(tmpDir, '.claude', 'skills', 'agent-routing.md'),
+      path.join(tmpDir, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
       'utf-8'
     );
     // Should contain universal agents
@@ -169,7 +169,7 @@ describe('init command', () => {
   it('includes agent-routing directive in CLAUDE.md', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(content).toContain('agent-routing.md');
+    expect(content).toContain('agent-routing/SKILL.md');
   });
 
   it('creates .mcp.json', async () => {
@@ -358,24 +358,24 @@ describe('init command', () => {
       const backups = entries.filter((e) => e.startsWith('.claude-backup-'));
       expect(backups.length).toBe(1);
 
-      // Original skill file untouched
+      // Original flat skill file untouched
       const original = await fs.readFile(
         path.join(tmpDir, '.claude', 'skills', 'context-management.md'),
         'utf-8'
       );
       expect(original).toBe('# My custom context rules');
 
-      // .workflow-ref.md created for conflicting skill
+      // .workflow-ref.md created in directory format for conflicting skill
       expect(
         await fs.pathExists(
-          path.join(tmpDir, '.claude', 'skills', 'context-management.workflow-ref.md')
+          path.join(tmpDir, '.claude', 'skills', 'context-management', 'SKILL.workflow-ref.md')
         )
       ).toBe(true);
 
-      // Non-conflicting skills added
-      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'verification.md'))).toBe(
-        true
-      );
+      // Non-conflicting skills added in directory format
+      expect(
+        await fs.pathExists(path.join(tmpDir, '.claude', 'skills', 'verification', 'SKILL.md'))
+      ).toBe(true);
 
       // Agents added
       expect(await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'))).toBe(

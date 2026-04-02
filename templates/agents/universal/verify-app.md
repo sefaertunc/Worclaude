@@ -1,5 +1,6 @@
 ---
 name: verify-app
+description: "Verifies the running application end-to-end — tests actual behavior, not just code reading"
 model: sonnet
 isolation: worktree
 ---

@@ -1,5 +1,6 @@
 ---
 name: performance-auditor
+description: "Analyzes code for performance issues"
 model: sonnet
 isolation: none
 ---

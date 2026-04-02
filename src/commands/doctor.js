@@ -157,7 +157,7 @@ async function checkSkills(projectRoot) {
   const allExpected = [...UNIVERSAL_SKILLS, ...TEMPLATE_SKILLS, 'agent-routing'];
 
   for (const skill of allExpected) {
-    const skillPath = path.join(skillsDir, `${skill}.md`);
+    const skillPath = path.join(skillsDir, skill, 'SKILL.md');
     if (!(await fileExists(skillPath))) {
       missing.push(skill);
     }
@@ -166,7 +166,7 @@ async function checkSkills(projectRoot) {
   if (missing.length === 0) {
     return [result(PASS, `skills/ (${allExpected.length} expected, all present)`, null)];
   }
-  return missing.map((s) => result(WARN, `skills/${s}.md`, 'Missing skill'));
+  return missing.map((s) => result(WARN, `skills/${s}/SKILL.md`, 'Missing skill'));
 }
 
 async function checkHashIntegrity(projectRoot, meta) {
