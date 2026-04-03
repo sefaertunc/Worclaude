@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 1.9.0
-**Last Updated:** 2026-04-01
+**Version:** 2.0.0
+**Last Updated:** 2026-04-03
 
 ## Completed
 
@@ -255,15 +255,25 @@
   - [x] Session Persistence and Doctor feature cards on docs landing page
   - [x] `worclaude doctor` verification step in getting-started.md
 
+- [x] v2.0.0: Claude Code Runtime Integration (8 phases, 2026-04-01 to 2026-04-03)
+  - [x] Phase 1: Critical fixes — skill directory format (`skill-name/SKILL.md`) + agent `description` frontmatter
+  - [x] Phase 2: Skill & command frontmatter (`when_to_use`, `paths`, `description` fields)
+  - [x] Phase 3: Agent frontmatter enrichment (`disallowedTools`, `background`, `maxTurns`, `omitClaudeMd`, `memory`)
+  - [x] Phase 4: Doctor enhancements — CLAUDE.md size check, skill format check, agent description check
+  - [x] Phase 5: Upgrade migrations — skill format migration (flat→directory) + agent frontmatter auto-patching
+  - [x] Phase 6: New content — MEMORY.md template, coordinator-mode skill, verify-app upgrade, worktree safety
+  - [x] Phase 7: E2E audit — verification tests, count fixes, template sync, stale file cleanup
+  - [x] Phase 8: Documentation update — new claude-code-integration.md guide + 13 reference/guide page updates
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
 - 5 universal agents + 20 optional agents (6 categories)
 - 16 slash commands
-- 10 universal skills + 3 template skills + 1 generated skill (agent-routing)
+- 11 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 247 tests across 22 test files
+- 307 tests across 24 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

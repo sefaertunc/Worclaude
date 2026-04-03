@@ -4,7 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 1.9.0
+**Version:** 2.0.0
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -191,7 +191,7 @@ Create all files. Show progress.
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 selected)
   ✓ .claude/commands/ (16 universal)
-  ✓ .claude/skills/ (9 universal + 3 templates + 1 generated)
+  ✓ .claude/skills/ (11 universal + 3 templates + 1 generated)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
   ✓ docs/spec/SPEC.md
@@ -294,7 +294,7 @@ Default: keep user's, generate suggestions file.
   Added:
   ✓ 5 universal agents + 4 selected optional agents
   ✓ 16 slash commands
-  ✓ 6 universal skills (3 conflicts saved as .workflow-ref.md)
+  ✓ 8 universal skills (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
 
@@ -533,16 +533,16 @@ Checks installation health across four categories with PASS/WARN/FAIL status per
 ### Core Files
 
 - `workflow-meta.json` — exists with version, projectTypes, techStack
-- `CLAUDE.md` — exists and is substantive (min 10 lines)
+- `CLAUDE.md` — exists and is substantive (min 10 lines); WARN at 30KB, FAIL at 38KB
 - `settings.json` — has permissions array and critical hooks (PostCompact, SessionStart)
 - `.claude/sessions/` — directory exists for session persistence
 
 ### Components
 
-- Universal agents (all 5 present)
-- Selected optional agents (per workflow-meta)
+- Universal agents (all 5 present, each has required `description` frontmatter)
+- Selected optional agents (per workflow-meta, `description` field verified)
 - Command files (all 16 present)
-- Skills (universal + template + agent-routing.md)
+- Skills (universal + template + agent-routing.md, directory format verified)
 
 ### Documentation
 
@@ -569,7 +569,7 @@ $ worclaude doctor
   │   ✓ 5/5 universal agents
   │   ✓ 6/6 optional agents
   │   ✓ 16/16 commands
-  │   ✓ 14/14 skills
+  │   ✓ 15/15 skills
   │
   │ Documentation
   │   ✓ docs/spec/PROGRESS.md
@@ -1001,7 +1001,7 @@ Report results with specific pass/fail for each verification step.
 
 ### All Optional Agents
 
-Each agent follows the same frontmatter format. Full content for each agent is in `templates/agents/optional/`. The key specifications:
+Each agent uses frontmatter fields recognized by Claude Code's runtime. Required: `name`, `description`. Optional: `model`, `isolation`, `disallowedTools`, `background`, `maxTurns`, `omitClaudeMd`, `memory`. Full content in `templates/agents/optional/`. Key specifications:
 
 | Agent                  | Model  | Isolation | Category |
 | ---------------------- | ------ | --------- | -------- |
@@ -1277,7 +1277,7 @@ Rules: Test behavior not implementation, no trivial tests, independent tests, re
 
 ## Universal Skills
 
-All 10 universal skills live in `.claude/skills/`. Full content for each is in `templates/skills/universal/`. They follow Thariq's skill authoring standards:
+All 11 universal skills are installed in directory format (`skill-name/SKILL.md`) under `.claude/skills/`. Source templates live in `templates/skills/universal/`. They follow Thariq's skill authoring standards:
 
 - Skip the obvious
 - Build a Gotchas section
@@ -1300,6 +1300,7 @@ All 10 universal skills live in `.claude/skills/`. Full content for each is in `
 | claude-md-maintenance.md | How Claude writes rules for itself, when to update, how to keep CLAUDE.md lean                          |
 | subagent-usage.md        | When to use subagents, how many, context hygiene, worktree isolation patterns                           |
 | security-checklist.md    | OWASP Top 10 reference checklist any agent can consult when reviewing or writing security-relevant code |
+| coordinator-mode.md      | Multi-agent coordination patterns, task decomposition, parallel agent orchestration                     |
 
 ### Template Skills (project-specific placeholders)
 
@@ -1452,11 +1453,11 @@ worclaude/
 │   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
 │   ├── commands/ (16 slash commands)
 │   └── skills/
-│       ├── universal/ (10 files)
-│       └── templates/ (3 files)
+│       ├── universal/ (11 files, installed as skill-name/SKILL.md)
+│       └── templates/ (3 files, installed as skill-name/SKILL.md)
 └── tests/
     ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor)
-    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles)
+    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles, migration)
     ├── generators/ (agent-routing)
     ├── prompts/ (claude-md-merge)
     └── utils/ (display, file, hash, time)
@@ -1527,6 +1528,17 @@ worclaude/
 - Doctor command: 4-category health check (core files, components, docs, integrity)
 - Hook profiles: WORCLAUDE_HOOK_PROFILE environment variable (minimal/standard/strict)
 - CI & branching strategy, Windows compatibility, comprehensive documentation
+
+### v2.0.0: Claude Code Runtime Integration
+
+- Skills migrated to directory format (`skill-name/SKILL.md`) — required by Claude Code's skill loader
+- All 25 agent templates enriched with runtime frontmatter (`description`, `disallowedTools`, `background`, `maxTurns`, `omitClaudeMd`, `memory`)
+- Skill and command templates enriched with `when_to_use`, `paths`, and `description` frontmatter
+- Doctor: CLAUDE.md size check (WARN 30KB / FAIL 38KB), skill format check, agent description check
+- Upgrade migrations: automatic skill flat→directory conversion, agent frontmatter auto-patching
+- New content: MEMORY.md template, coordinator-mode skill, enhanced verify-app agent
+- E2E audit with 60+ new tests for migration and doctor checks
+- Documentation: new claude-code-integration.md guide + 13 reference/guide page updates
 
 ---
 
