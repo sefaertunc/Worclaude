@@ -1,8 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   detectMissingSections,
   generateWorkflowSuggestions,
+  promptClaudeMdMerge,
+  interactiveSectionMerge,
 } from '../../src/prompts/claude-md-merge.js';
+
+// Mock inquirer
+vi.mock('inquirer', () => ({
+  default: {
+    prompt: vi.fn(),
+  },
+}));
+
+// Suppress console output
+vi.spyOn(console, 'log').mockImplementation(() => {});
+
+import inquirer from 'inquirer';
 
 describe('claude-md-merge', () => {
   describe('detectMissingSections', () => {
@@ -128,6 +142,83 @@ describe('claude-md-merge', () => {
       ].join('\n');
       const suggestions = generateWorkflowSuggestions(content, '');
       expect(suggestions).toContain('already has all recommended sections');
+    });
+  });
+
+  describe('promptClaudeMdMerge', () => {
+    it('returns keep immediately when no sections are missing', async () => {
+      const result = await promptClaudeMdMerge('# Full CLAUDE.md', []);
+      expect(result).toBe('keep');
+      expect(inquirer.prompt).not.toHaveBeenCalled();
+    });
+
+    it('prompts user when sections are missing', async () => {
+      inquirer.prompt.mockResolvedValue({ choice: 'keep' });
+      const result = await promptClaudeMdMerge('# Minimal', ['Key Files', 'Gotchas section']);
+      expect(result).toBe('keep');
+      expect(inquirer.prompt).toHaveBeenCalled();
+    });
+
+    it('returns merge-sections when user chooses it', async () => {
+      inquirer.prompt.mockResolvedValue({ choice: 'merge-sections' });
+      const result = await promptClaudeMdMerge('# Minimal', ['Critical Rules']);
+      expect(result).toBe('merge-sections');
+    });
+  });
+
+  describe('interactiveSectionMerge', () => {
+    it('appends accepted sections to content', async () => {
+      inquirer.prompt.mockResolvedValue({ addSection: true });
+
+      const existing = '# My Project';
+      const rendered = [
+        '# CLAUDE.md',
+        '',
+        '## Key Files',
+        '- PROGRESS.md',
+        '- SPEC.md',
+        '',
+        '## Gotchas',
+        '[Grows during development]',
+      ].join('\n');
+
+      const result = await interactiveSectionMerge(existing, rendered, [
+        'Key Files',
+        'Gotchas section',
+      ]);
+
+      expect(result).toContain('# My Project');
+      expect(result).toContain('## Key Files');
+      expect(result).toContain('PROGRESS.md');
+    });
+
+    it('skips declined sections', async () => {
+      inquirer.prompt.mockResolvedValue({ addSection: false });
+
+      const existing = '# My Project';
+      const rendered = '## Key Files\n- PROGRESS.md\n\n## Gotchas\n[Grows]';
+
+      const result = await interactiveSectionMerge(existing, rendered, ['Key Files']);
+
+      expect(result).toBe('# My Project');
+      expect(result).not.toContain('Key Files');
+    });
+
+    it('handles mix of accepted and declined sections', async () => {
+      inquirer.prompt
+        .mockResolvedValueOnce({ addSection: true })
+        .mockResolvedValueOnce({ addSection: false });
+
+      const existing = '# My Project';
+      const rendered = '## Key Files\n- PROGRESS.md\n\n## Gotchas\n[Grows]';
+
+      const result = await interactiveSectionMerge(existing, rendered, [
+        'Key Files',
+        'Gotchas section',
+      ]);
+
+      expect(result).toContain('Key Files');
+      expect(result).not.toContain('Gotchas');
     });
   });
 });

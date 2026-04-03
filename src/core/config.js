@@ -59,6 +59,17 @@ export async function writeWorkflowMeta(projectRoot, meta) {
   await writeFile(metaPath, JSON.stringify(meta, null, 2));
 }
 
+export async function requireWorkflowMeta(projectRoot) {
+  if (!(await workflowMetaExists(projectRoot))) {
+    return { meta: null, error: 'not-installed' };
+  }
+  const meta = await readWorkflowMeta(projectRoot);
+  if (!meta) {
+    return { meta: null, error: 'corrupted' };
+  }
+  return { meta, error: null };
+}
+
 export async function computeFileHashes(projectRoot) {
   const claudeDir = path.join(projectRoot, '.claude');
   const allFiles = await listFilesRecursive(claudeDir);

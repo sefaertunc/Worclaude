@@ -455,7 +455,7 @@ export async function doctorCommand() {
 
   // Summary
   if (metaResult.status === FAIL) {
-    display.error('Workflow is not installed. Run `worclaude init` to set up.');
+    display.info('Workflow is not installed. Run `worclaude init` to set up.');
   } else {
     display.success('Doctor complete. Review any warnings above.');
   }

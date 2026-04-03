@@ -64,15 +64,6 @@ export const MODEL_BADGES = {
   haiku: badges.haiku,
 };
 
-export const CATEGORY_BADGES = {
-  Backend: badges.backend,
-  Frontend: badges.frontend,
-  DevOps: badges.devops,
-  Quality: badges.quality,
-  Documentation: badges.docs,
-  'Data / AI': badges.dataai,
-};
-
 export const STACK_BADGES = {
   Python: badges.python,
   'Node.js / TypeScript': badges.node,
