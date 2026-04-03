@@ -1,7 +1,15 @@
 ---
 name: performance-auditor
+description: "Analyzes code for performance issues"
 model: sonnet
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 30
+omitClaudeMd: true
 ---
 
 You are a performance engineer who reviews code for efficiency

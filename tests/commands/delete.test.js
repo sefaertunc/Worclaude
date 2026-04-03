@@ -61,12 +61,14 @@ describe('delete command', () => {
     const files = {
       'agents/plan-reviewer.md': '# Plan Reviewer Agent',
       'commands/start.md': '# Start Command',
-      'skills/testing.md': '# Testing Skill',
+      'skills/testing/SKILL.md': '# Testing Skill',
     };
 
     const fileHashes = {};
     for (const [key, content] of Object.entries(files)) {
-      await fs.writeFile(path.join(claudeDir, ...key.split('/')), content);
+      const filePath = path.join(claudeDir, ...key.split('/'));
+      await fs.ensureDir(path.dirname(filePath));
+      await fs.writeFile(filePath, content);
       fileHashes[key] = hashContent(content);
     }
 
@@ -104,7 +106,7 @@ describe('delete command', () => {
     if (opts.withGitignore !== false) {
       await fs.writeFile(
         path.join(tmpDir, '.gitignore'),
-        'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/sessions/\n.claude/workflow-meta.json\n.claude-backup-*/\n'
+        'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/sessions/\n.claude/settings.local.json\n.claude/workflow-meta.json\n.claude/worktrees/\n.claude-backup-*/\n'
       );
     }
 
@@ -190,7 +192,7 @@ describe('delete command', () => {
       const result = await classifyClaudeFiles(tmpDir, meta);
       expect(result.safeToDelete).toContain('agents/plan-reviewer.md');
       expect(result.safeToDelete).toContain('commands/start.md');
-      expect(result.safeToDelete).toContain('skills/testing.md');
+      expect(result.safeToDelete).toContain('skills/testing/SKILL.md');
     });
 
     it('classifies modified files as modified', async () => {
@@ -207,9 +209,9 @@ describe('delete command', () => {
 
     it('classifies missing files as missing', async () => {
       const { meta } = await scaffoldMinimal();
-      await fs.remove(path.join(tmpDir, '.claude', 'skills', 'testing.md'));
+      await fs.remove(path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.md'));
       const result = await classifyClaudeFiles(tmpDir, meta);
-      expect(result.missing).toContain('skills/testing.md');
+      expect(result.missing).toContain('skills/testing/SKILL.md');
     });
 
     it('classifies user-added files as userOwned', async () => {
@@ -233,11 +235,11 @@ describe('delete command', () => {
     it('classifies .workflow-ref.md files as safeToDelete', async () => {
       const { meta } = await scaffoldMinimal();
       await fs.writeFile(
-        path.join(tmpDir, '.claude', 'skills', 'testing.workflow-ref.md'),
+        path.join(tmpDir, '.claude', 'skills', 'testing', 'SKILL.workflow-ref.md'),
         '# Reference'
       );
       const result = await classifyClaudeFiles(tmpDir, meta);
-      expect(result.safeToDelete).toContain('skills/testing.workflow-ref.md');
+      expect(result.safeToDelete).toContain('skills/testing/SKILL.workflow-ref.md');
     });
 
     it('always includes workflow-meta.json in safeToDelete', async () => {
@@ -295,7 +297,7 @@ describe('delete command', () => {
       await removeTrackedFiles(tmpDir, [
         'agents/plan-reviewer.md',
         'commands/start.md',
-        'skills/testing.md',
+        'skills/testing/SKILL.md',
         'workflow-meta.json',
       ]);
       // settings.json still exists, so .claude/ should remain
@@ -310,7 +312,7 @@ describe('delete command', () => {
       await removeTrackedFiles(tmpDir, [
         'agents/plan-reviewer.md',
         'commands/start.md',
-        'skills/testing.md',
+        'skills/testing/SKILL.md',
         'workflow-meta.json',
       ]);
       expect(await fs.pathExists(path.join(tmpDir, '.claude'))).toBe(true);
@@ -373,7 +375,9 @@ describe('delete command', () => {
       const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
       expect(content).not.toContain('# Worclaude (generated workflow files)');
       expect(content).not.toContain('.claude/sessions/');
+      expect(content).not.toContain('.claude/settings.local.json');
       expect(content).not.toContain('.claude/workflow-meta.json');
+      expect(content).not.toContain('.claude/worktrees/');
     });
 
     it('keeps .claude-backup-*/ entry', async () => {
@@ -399,13 +403,15 @@ describe('delete command', () => {
     it('handles CRLF line endings in .gitignore', async () => {
       await fs.writeFile(
         path.join(tmpDir, '.gitignore'),
-        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/sessions/\r\n.claude/workflow-meta.json\r\n.claude-backup-*/\r\n'
+        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/sessions/\r\n.claude/settings.local.json\r\n.claude/workflow-meta.json\r\n.claude/worktrees/\r\n.claude-backup-*/\r\n'
       );
       await cleanGitignore(tmpDir);
       const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
       expect(content).not.toContain('# Worclaude (generated workflow files)');
       expect(content).not.toContain('.claude/sessions/');
+      expect(content).not.toContain('.claude/settings.local.json');
       expect(content).not.toContain('.claude/workflow-meta.json');
+      expect(content).not.toContain('.claude/worktrees/');
       expect(content).toContain('.claude-backup-*/');
       expect(content).toContain('node_modules/');
     });

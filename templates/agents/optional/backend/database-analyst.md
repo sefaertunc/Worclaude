@@ -1,7 +1,14 @@
 ---
 name: database-analyst
+description: "Reviews database schemas and queries"
 model: sonnet
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 30
 ---
 
 You are a database specialist who reviews schemas, queries, and

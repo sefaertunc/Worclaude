@@ -1,3 +1,7 @@
+---
+description: "Scan codebase for technical debt and report findings"
+---
+
 Scan the codebase for technical debt:
 - Duplicated code
 - Dead code (unused functions, imports, variables)

@@ -39,9 +39,10 @@ Creates all of the following:
 - `.claude/settings.json` -- permissions and hooks for the selected stack
 - `.claude/agents/` -- 5 universal + selected optional agents
 - `.claude/commands/` -- 16 slash commands
-- `.claude/skills/` -- 10 universal + 3 template + 1 generated skills
+- `.claude/skills/` -- 11 universal + 3 template + 1 generated skills (directory format)
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
+- `MEMORY.md` -- optional persistent memory index (if selected during init)
 - `docs/spec/PROGRESS.md` -- if not already present
 - `docs/spec/SPEC.md` -- project-type-specific template, if not already present
 
@@ -123,6 +124,15 @@ worclaude upgrade
 - A backup is always created before changes are applied.
 - Conflict files should be reviewed manually; delete `.workflow-ref.md` files when done.
 - Settings merge is additive -- existing permissions and hooks are preserved.
+
+### v2.0.0 Migration
+
+When upgrading from a version below 2.0.0, two additional migrations run automatically:
+
+- **Skill format migration** -- Flat `skill.md` files are moved to `skill/SKILL.md` directory format. Hash keys in `workflow-meta.json` are updated. Corresponding `.workflow-ref.md` files are also moved inside the skill directory.
+- **Agent description patching** -- Agents missing the required `description` frontmatter field get it added. Unmodified agents are patched silently. Modified agents prompt for confirmation before patching.
+
+The upgrade report shows migration counts (e.g., "Migrated: 14 skills to directory format", "Patched: 5 agents with description").
 
 ---
 
@@ -337,12 +347,15 @@ Requires `workflow-meta.json`. Reports failure if not found.
 
 **Checks performed**
 
-| Section           | What it checks                                                                                                                                                               |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Core Files**    | `workflow-meta.json` (valid JSON, required fields), `CLAUDE.md` (exists, not a stub), `settings.json` (permissions, hooks, PostCompact, SessionStart), `sessions/` directory |
-| **Components**    | All 5 universal agents present, selected optional agents present, all slash commands present, all skills (universal + template + agent-routing) present                      |
-| **Documentation** | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                     |
-| **Integrity**     | File hash verification against `workflow-meta.json`, pending `.workflow-ref.md` or `.workflow-suggestions` files                                                             |
+| Section               | What it checks                                                                                                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Files**        | `workflow-meta.json` (valid JSON, required fields), `CLAUDE.md` (exists, not a stub), `settings.json` (permissions, hooks, PostCompact, SessionStart), `sessions/` directory |
+| **CLAUDE.md Size**    | Character count against thresholds: warns at 30K, fails at 38K (hard limit 40K). Large files degrade context quality.                                                        |
+| **Components**        | All 5 universal agents present, selected optional agents present, all slash commands present, all skills (universal + template + agent-routing) present                      |
+| **Skill Format**      | Detects flat `.md` files in `skills/` that should be in directory format (`skill-name/SKILL.md`). Reports count and filenames.                                               |
+| **Agent Description** | Verifies all agent files have `name` and `description` in YAML frontmatter. Without these, agents are invisible to Claude Code.                                              |
+| **Documentation**     | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                     |
+| **Integrity**         | File hash verification against `workflow-meta.json`, pending `.workflow-ref.md` or `.workflow-suggestions` files                                                             |
 
 **Output**
 

@@ -30,11 +30,11 @@ describe('file-categorizer', () => {
       expect(map['commands/start.md']).toBeDefined();
       expect(map['commands/start.md'].type).toBe('command');
       // Should have universal skills
-      expect(map['skills/testing.md']).toBeDefined();
-      expect(map['skills/testing.md'].type).toBe('universal-skill');
+      expect(map['skills/testing/SKILL.md']).toBeDefined();
+      expect(map['skills/testing/SKILL.md'].type).toBe('universal-skill');
       // Should have template skills
-      expect(map['skills/backend-conventions.md']).toBeDefined();
-      expect(map['skills/backend-conventions.md'].type).toBe('template-skill');
+      expect(map['skills/backend-conventions/SKILL.md']).toBeDefined();
+      expect(map['skills/backend-conventions/SKILL.md'].type).toBe('template-skill');
     });
 
     it('computes correct hashes from template content', async () => {

@@ -118,7 +118,7 @@ export async function removeTrackedFiles(projectRoot, fileKeys) {
   for (const subdir of ['agents', 'commands', 'skills']) {
     const dirPath = path.join(claudeDir, subdir);
     if (await dirExists(dirPath)) {
-      const remaining = await listFiles(dirPath);
+      const remaining = await listFilesRecursive(dirPath);
       if (remaining.length === 0) {
         await removeDirectory(dirPath);
       }
@@ -185,7 +185,9 @@ export async function cleanGitignore(projectRoot) {
     '# Worclaude (generated workflow files)',
     '.claude/',
     '.claude/sessions/',
+    '.claude/settings.local.json',
     '.claude/workflow-meta.json',
+    '.claude/worktrees/',
   ]);
 
   const filtered = lines.filter((line) => !REMOVE_LINES.has(line.trim()));

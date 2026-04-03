@@ -1,3 +1,7 @@
+---
+description: "Load session context, check for handoff files, detect drift since last session"
+---
+
 The SessionStart hook has already loaded CLAUDE.md, PROGRESS.md,
 and the most recent session summary into context.
 
@@ -53,7 +57,7 @@ Look in docs/handoffs/ for any HANDOFF*.md files:
 
 ## 3. Load Agent Routing
 
-Read .claude/skills/agent-routing.md for agent usage guidance.
+Read .claude/skills/agent-routing/SKILL.md for agent usage guidance.
 
 ## 4. Check for Active Prompt Files
 

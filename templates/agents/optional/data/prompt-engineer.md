@@ -1,7 +1,9 @@
 ---
 name: prompt-engineer
+description: "Reviews and improves LLM prompts"
 model: opus
 isolation: none
+maxTurns: 30
 ---
 
 You are an LLM prompt engineering specialist who reviews and improves

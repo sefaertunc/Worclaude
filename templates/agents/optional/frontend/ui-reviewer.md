@@ -1,7 +1,14 @@
 ---
 name: ui-reviewer
+description: "Reviews UI for consistency and accessibility"
 model: sonnet
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 30
 ---
 
 You are a senior UI/UX engineer who reviews frontend components for

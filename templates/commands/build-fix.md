@@ -1,3 +1,7 @@
+---
+description: "Fix current build failures via build-fixer agent"
+---
+
 Fix the current build failures. Delegates to the build-fixer agent
 for diagnosis and resolution.
 

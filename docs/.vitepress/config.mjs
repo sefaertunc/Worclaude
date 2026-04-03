@@ -24,6 +24,7 @@ export default defineConfig({
             { text: 'Existing Projects', link: '/guide/existing-projects' },
             { text: 'Upgrading', link: '/guide/upgrading' },
             { text: 'Workflow Tips', link: '/guide/workflow-tips' },
+            { text: 'Claude Code Integration', link: '/guide/claude-code-integration' },
           ],
         },
       ],

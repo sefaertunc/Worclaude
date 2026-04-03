@@ -1,7 +1,7 @@
 import path from 'node:path';
 import ora from 'ora';
 import { createBackup } from '../core/backup.js';
-import { fileExists, dirExists, listFiles } from '../utils/file.js';
+import { fileExists, dirExists, listFiles, listSkillDirs } from '../utils/file.js';
 import * as display from '../utils/display.js';
 
 export async function backupCommand() {
@@ -33,11 +33,13 @@ export async function backupCommand() {
   if (await dirExists(claudeBackup)) {
     const agents = await listFiles(path.join(claudeBackup, 'agents'));
     const commands = await listFiles(path.join(claudeBackup, 'commands'));
-    const skills = await listFiles(path.join(claudeBackup, 'skills'));
+    const skillFiles = await listFiles(path.join(claudeBackup, 'skills'));
+    const skillDirs = await listSkillDirs(path.join(claudeBackup, 'skills'));
+    const skillCount = skillDirs.length + skillFiles.length;
     const parts = [];
     if (agents.length > 0) parts.push(`${agents.length} agents`);
     if (commands.length > 0) parts.push(`${commands.length} commands`);
-    if (skills.length > 0) parts.push(`${skills.length} skills`);
+    if (skillCount > 0) parts.push(`${skillCount} skills`);
     contents.push(`.claude/ (${parts.join(', ')})`);
   }
 

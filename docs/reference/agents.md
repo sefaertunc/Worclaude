@@ -1,15 +1,26 @@
 # Agents
 
-Worclaude installs Claude Code agent definitions as Markdown files in `.claude/agents/`. Each agent has a specific model, isolation mode, and purpose. Universal agents are always installed. Optional agents are selected during `worclaude init` based on project type.
+Worclaude installs Claude Code agent definitions as Markdown files in `.claude/agents/`. Each agent has a specific model, isolation mode, and purpose. Universal agents are always installed. Optional agents are selected during `worclaude init` based on project type. See [Claude Code Integration](/guide/claude-code-integration) for details on how agents register with the runtime.
 
 ## Agent Properties
 
-Every agent file includes a YAML frontmatter block with three fields:
+Every agent file includes a YAML frontmatter block. The `name` and `description` fields are **required** -- without `description`, agents are invisible to Claude Code and will not appear in `/agents` or be available for routing.
 
-| Property    | Values                    | Meaning                                   |
-| ----------- | ------------------------- | ----------------------------------------- |
-| `model`     | `opus`, `sonnet`, `haiku` | Which Claude model the agent uses         |
-| `isolation` | `none`, `worktree`        | Whether the agent works in a git worktree |
+| Property          | Required | Values                    | Purpose                                          |
+| ----------------- | -------- | ------------------------- | ------------------------------------------------ |
+| `name`            | Yes      | string                    | Agent identifier used for routing                |
+| `description`     | Yes      | string                    | What the agent does -- required for visibility   |
+| `model`           | Yes      | `opus`, `sonnet`, `haiku` | Which Claude model the agent uses                |
+| `isolation`       | No       | `none`, `worktree`        | Whether the agent works in a git worktree        |
+| `disallowedTools` | No       | string[]                  | Tools the agent cannot use (enforced by runtime) |
+| `background`      | No       | boolean                   | Run asynchronously without blocking the user     |
+| `maxTurns`        | No       | number                    | Maximum conversation turns before auto-stop      |
+| `omitClaudeMd`    | No       | boolean                   | Skip loading CLAUDE.md for this agent            |
+| `memory`          | No       | `project`                 | Memory scope for cross-session learning          |
+
+::: warning
+Without a `description` field, agents are invisible to Claude Code. They will not appear in `/agents` and cannot be routed to. Run `worclaude doctor` to detect agents with missing descriptions.
+:::
 
 ### Model Selection
 
@@ -38,13 +49,15 @@ These 5 agents are installed with every Worclaude project. They cover the core d
 
 ### plan-reviewer
 
-|                |                              |
-| -------------- | ---------------------------- |
-| **Model**      | opus                         |
-| **Isolation**  | none                         |
-| **Invoked by** | `/review-plan` slash command |
+|                     |                                  |
+| ------------------- | -------------------------------- |
+| **Model**           | opus                             |
+| **Isolation**       | none                             |
+| **Invoked by**      | `/review-plan` slash command     |
+| **disallowedTools** | Edit, Write, NotebookEdit, Agent |
+| **omitClaudeMd**    | true                             |
 
-Acts as a senior staff engineer reviewing an implementation plan. Challenges assumptions, identifies ambiguity, checks for missing verification steps, and ensures the plan is specific enough for one-shot implementation. Validates alignment with `SPEC.md`. Does not approve plans that are vague or lack verification.
+Acts as a senior staff engineer reviewing an implementation plan. Challenges assumptions, identifies ambiguity, checks for missing verification steps, and ensures the plan is specific enough for one-shot implementation. Validates alignment with `SPEC.md`. Does not approve plans that are vague or lack verification. Read-only: cannot modify files.
 
 ### code-simplifier
 
@@ -61,17 +74,19 @@ Reviews recently changed code and improves it. Finds and eliminates duplication,
 | ------------- | -------- |
 | **Model**     | sonnet   |
 | **Isolation** | worktree |
+| **memory**    | project  |
 
-Writes comprehensive tests for recently changed code. Covers unit tests for individual functions, integration tests for component interactions, edge cases (null, empty, boundary values), and error paths. Follows the project's testing patterns from `.claude/skills/testing.md`. Aims for meaningful coverage rather than 100% line coverage.
+Writes comprehensive tests for recently changed code. Covers unit tests for individual functions, integration tests for component interactions, edge cases (null, empty, boundary values), and error paths. Follows the project's testing patterns from `.claude/skills/testing/SKILL.md`. Aims for meaningful coverage rather than 100% line coverage. Has project memory for learning test patterns across sessions.
 
 ### build-validator
 
-|               |       |
-| ------------- | ----- |
-| **Model**     | haiku |
-| **Isolation** | none  |
+|                |       |
+| -------------- | ----- |
+| **Model**      | haiku |
+| **Isolation**  | none  |
+| **background** | true  |
 
-Validates that the project builds and passes all checks: build command, full test suite, linter, and type checker (if applicable). Reports failures with clear error messages. Does not fix issues -- reports them so the main session can address them. Used as a lightweight read-only validation step.
+Validates that the project builds and passes all checks: build command, full test suite, linter, and type checker (if applicable). Reports failures with clear error messages. Does not fix issues -- reports them so the main session can address them. Runs in the background so you can continue working while it validates.
 
 ### verify-app
 
@@ -80,8 +95,9 @@ Validates that the project builds and passes all checks: build command, full tes
 | **Model**      | sonnet                               |
 | **Isolation**  | worktree                             |
 | **Invoked by** | `/verify` slash command (indirectly) |
+| **background** | true                                 |
 
-Tests the actual running application behavior, not just unit tests. Starts the application, tests changed functionality end-to-end, verifies behavior matches the specification, checks for regressions in related features, and tests error handling and edge cases in the running app. Reports specific pass/fail for each verification step.
+Tests the actual running application behavior, not just unit tests. Starts the application, tests changed functionality end-to-end, verifies behavior matches the specification, checks for regressions in related features, and tests error handling and edge cases in the running app. Reports specific pass/fail for each verification step. Runs in the background.
 
 ---
 
@@ -201,6 +217,33 @@ The following table shows the specific agents recommended for each project type:
 | ml-experiment-tracker  | Data / AI     | sonnet | none      | Reviews ML experiment reproducibility            |
 | prompt-engineer        | Data / AI     | opus   | none      | Reviews and improves LLM prompts                 |
 
+### Runtime Properties
+
+The following table shows which agents have special runtime properties beyond the standard model/isolation fields:
+
+| Agent                  | Read-Only | Background | Memory  | omitClaudeMd |
+| ---------------------- | --------- | ---------- | ------- | ------------ |
+| plan-reviewer          | Yes       |            |         | Yes          |
+| test-writer            |           |            | project |              |
+| build-validator        |           | Yes        |         |              |
+| verify-app             |           | Yes        |         |              |
+| api-designer           | Yes       |            |         |              |
+| database-analyst       | Yes       |            |         |              |
+| ui-reviewer            | Yes       |            |         |              |
+| security-reviewer      |           |            | project | Yes          |
+| performance-auditor    |           |            |         | Yes          |
+| dependency-manager     | Yes       |            |         |              |
+| deploy-validator       | Yes       |            |         |              |
+| e2e-runner             |           | Yes        |         |              |
+| doc-writer             |           |            | project |              |
+| changelog-generator    | Yes       |            |         | Yes          |
+| data-pipeline-reviewer | Yes       |            |         |              |
+| ml-experiment-tracker  | Yes       |            |         |              |
+
+**Read-Only** = has `disallowedTools` preventing file modifications. **Background** = runs asynchronously via `background: true`. **Memory** = has cross-session learning via `memory` field. **omitClaudeMd** = does not load CLAUDE.md (narrower focus).
+
+Agents not listed have no special runtime properties beyond model and isolation.
+
 ---
 
 ## Agent File Location
@@ -225,6 +268,7 @@ Agent files can be customized after installation. The `worclaude diff` command t
 
 ## See Also
 
+- [Claude Code Integration](/guide/claude-code-integration) -- how agents register with Claude Code's runtime
 - [Slash Commands](/reference/slash-commands) -- commands that invoke agents (e.g., `/review-plan`)
 - [Skills](/reference/skills) -- knowledge files that complement agent behavior
 - [CLAUDE.md Template](/reference/claude-md) -- how agents integrate with the session protocol

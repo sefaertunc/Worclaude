@@ -31,10 +31,31 @@ export async function copyFile(src, dest) {
   await fs.copy(src, dest);
 }
 
+export async function moveFile(src, dest) {
+  await fs.ensureDir(path.dirname(dest));
+  await fs.move(src, dest);
+}
+
 export async function listFiles(dirPath) {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
     return entries.filter((e) => e.isFile()).map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
+
+export async function listSkillDirs(dirPath) {
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+    const valid = [];
+    for (const dir of dirs) {
+      if (await fileExists(path.join(dirPath, dir, 'SKILL.md'))) {
+        valid.push(dir);
+      }
+    }
+    return valid;
   } catch {
     return [];
   }

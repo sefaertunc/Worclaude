@@ -1,5 +1,15 @@
 ---
 description: "Design system, component library, styling approach, accessibility and responsive design standards"
+when_to_use: "When building, modifying, or reviewing UI components, styling, layouts, or frontend architecture"
+paths:
+  - "src/components/**"
+  - "src/pages/**"
+  - "src/views/**"
+  - "**/*.vue"
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.css"
+  - "**/*.scss"
 ---
 
 # Frontend Design System

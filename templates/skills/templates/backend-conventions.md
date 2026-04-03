@@ -1,5 +1,11 @@
 ---
 description: "Stack-specific backend patterns, API design, database access, error handling conventions"
+when_to_use: "When working on backend logic, data access patterns, configuration management, or filesystem operations"
+paths:
+  - "src/**"
+  - "lib/**"
+  - "server/**"
+  - "api/**"
 ---
 
 # Backend Conventions

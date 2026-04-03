@@ -21,8 +21,10 @@ features:
     details: From plan-reviewer (Opus) to build-validator (Haiku). Each agent has a dedicated model and purpose.
   - title: 16 Slash Commands
     details: /start, /end, /commit-push-pr, /verify, /build-fix — session lifecycle and quality tools built in.
-  - title: 14 Skills
-    details: Knowledge files covering testing, security, git conventions, context management, and agent routing.
+  - title: 15 Skills
+    details: Knowledge files with conditional loading — testing, security, git conventions, context management, coordinator mode, and agent routing.
+  - title: Claude Code Runtime Integration
+    details: Skills and agents register with Claude Code through frontmatter — conditional loading, tool restrictions, background execution, and memory.
   - title: Smart Merge
     details: Already have a Claude Code setup? Worclaude detects it and merges intelligently — no overwrites.
   - title: Session Persistence

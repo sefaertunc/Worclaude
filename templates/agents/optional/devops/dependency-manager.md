@@ -1,7 +1,14 @@
 ---
 name: dependency-manager
+description: "Reviews dependency health and updates"
 model: haiku
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 20
 ---
 
 You are a dependency health analyst. You review the project's

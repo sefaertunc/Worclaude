@@ -1,7 +1,14 @@
 ---
 name: ml-experiment-tracker
+description: "Reviews ML experiment reproducibility"
 model: sonnet
 isolation: none
+disallowedTools:
+  - Edit
+  - Write
+  - NotebookEdit
+  - Agent
+maxTurns: 30
 ---
 
 You are an ML engineering specialist who reviews experiment code for

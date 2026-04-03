@@ -231,8 +231,54 @@ The workflow installed by Worclaude follows a pipeline: **Design -> Review -> Ex
 
 This pipeline is not mandatory, but it produces consistently high-quality results. For small changes, you can skip straight from design to execute. For anything complex, the full pipeline pays for itself.
 
+## Conditional Skills
+
+Some skills load only when you are working on files that match specific path patterns. This keeps the context window focused -- Claude does not carry security knowledge when writing documentation, or testing patterns when editing a README.
+
+Skills with a `paths` field in their frontmatter are conditional:
+
+- `testing` and `verification` -- load when touching `test/**`, `**/*.test.*`, `**/*.spec.*`
+- `security-checklist` -- loads when touching `**/auth/**`, `**/security/**`, `**/*config*`
+- `backend-conventions` -- loads when touching `src/**`, `lib/**`, `server/**`, `api/**`
+- `frontend-design-system` -- loads when touching component/styling files
+- `project-patterns` -- loads when touching `src/**`, `lib/**`
+
+Skills without `paths` (like `git-conventions`, `context-management`, `coordinator-mode`) are always available.
+
+To make your own custom skills conditional, add a `paths` field to the frontmatter. See [Conditional Skill Activation](/guide/claude-code-integration#conditional-skill-activation) for details.
+
+## Coordinator Mode
+
+For large tasks spanning multiple areas of the codebase, use multi-agent coordination. The `coordinator-mode` skill teaches patterns for breaking work into independent sub-tasks that different agents handle in parallel.
+
+When to use coordinator mode:
+
+- **Independent research + implementation** -- one agent researches while another implements
+- **Parallel file areas** -- separate agents for frontend and backend changes
+- **Verification alongside implementation** -- background agents validate while you code
+
+Worker prompt best practices: give each agent a complete, self-contained task description. Agents start with zero context -- they cannot see your conversation. Be explicit about file paths, expected outcomes, and how to verify success.
+
+**Continue vs spawn:** Continue an existing agent when it has relevant context from prior work. Spawn a new agent when the task is independent or the prior context is no longer useful.
+
+## Memory System
+
+MEMORY.md is an optional persistent memory file at your project root. It serves as an index of things Claude should remember across sessions.
+
+**Four memory types:**
+
+- **user** -- your role, preferences, and expertise level
+- **feedback** -- corrections and confirmations about how you want Claude to work
+- **project** -- ongoing work context, decisions, and deadlines
+- **reference** -- pointers to external systems (issue trackers, dashboards, Slack channels)
+
+**What NOT to store:** code patterns (derive from code), git history (use `git log`), debugging solutions (the fix is in the code), anything already in CLAUDE.md.
+
+Agents with `memory: project` in their frontmatter (test-writer, security-reviewer, doc-writer) learn from project memory across sessions. See [Memory System](/guide/claude-code-integration#memory-system) for details.
+
 ## Next Steps
 
+- [Claude Code Integration](/guide/claude-code-integration) -- How skills and agents register with the runtime
 - [Getting Started](/guide/getting-started) -- Full setup walkthrough
 - [Existing Projects](/guide/existing-projects) -- How smart merge works
 - [Upgrading](/guide/upgrading) -- Keeping your workflow current
