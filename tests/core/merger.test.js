@@ -14,7 +14,7 @@ vi.mock('../../src/prompts/claude-md-merge.js', () => ({
     .fn()
     .mockReturnValue('# Workflow Suggestions\n\nSuggested content.'),
   detectMissingSections: vi.fn().mockReturnValue(['Session Protocol', 'Critical Rules']),
-  interactiveSectionMerge: vi.fn(),
+  interactiveSectionMerge: vi.fn().mockResolvedValue('# Merged\n\n## Session Protocol\nMerged.'),
 }));
 
 // Suppress console output
@@ -22,6 +22,11 @@ vi.spyOn(console, 'log').mockImplementation(() => {});
 
 import { performMerge, buildSettingsJson } from '../../src/core/merger.js';
 import { promptHookConflict } from '../../src/prompts/conflict-resolution.js';
+import {
+  detectMissingSections,
+  promptClaudeMdMerge,
+  interactiveSectionMerge,
+} from '../../src/prompts/claude-md-merge.js';
 import { COMMAND_FILES } from '../../src/data/agents.js';
 
 describe('merger', () => {
@@ -618,6 +623,77 @@ describe('merger', () => {
       // Original CLAUDE.md untouched
       const original = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
       expect(original).toBe('# My Project\n\nDescription.');
+    });
+
+    it('keeps CLAUDE.md when all sections are present', async () => {
+      const fullContent = [
+        '# Project',
+        '## Key Files',
+        '- PROGRESS.md',
+        '## Session Protocol',
+        '**Start:** Read. **End:** Update.',
+        '## Critical Rules',
+        '1. Test.',
+        '## Skills (read on demand)',
+        'See `.claude/skills/`',
+        '## Gotchas',
+        '[Grows]',
+      ].join('\n');
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), fullContent);
+
+      detectMissingSections.mockReturnValue([]);
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: true,
+        claudeMdLineCount: 11,
+        hasSettingsJson: false,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingSkillDirs: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      expect(report.claudeMdHandling).toBe('kept');
+      expect(promptClaudeMdMerge).not.toHaveBeenCalled();
+
+      // CLAUDE.md unchanged
+      const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+      expect(content).toBe(fullContent);
+    });
+
+    it('performs interactive section merge when user chooses merge-sections', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# My Project');
+
+      detectMissingSections.mockReturnValue(['Session Protocol']);
+      promptClaudeMdMerge.mockResolvedValue('merge-sections');
+      interactiveSectionMerge.mockResolvedValue('# My Project\n\n## Session Protocol\nMerged.');
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: true,
+        claudeMdLineCount: 1,
+        hasSettingsJson: false,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingSkillDirs: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      expect(report.claudeMdHandling).toBe('merged-sections');
+      expect(interactiveSectionMerge).toHaveBeenCalled();
+
+      // CLAUDE.md was updated
+      const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+      expect(content).toContain('Session Protocol');
     });
   });
 });
