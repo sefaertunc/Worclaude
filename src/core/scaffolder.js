@@ -46,7 +46,13 @@ export async function scaffoldDirectory(templateDir, destDir, variables, project
 
 export async function updateGitignore(projectDir) {
   const gitignorePath = path.join(projectDir, '.gitignore');
-  const entries = ['.claude/sessions/', '.claude/workflow-meta.json', '.claude-backup-*/'];
+  const entries = [
+    '.claude/sessions/',
+    '.claude/settings.local.json',
+    '.claude/workflow-meta.json',
+    '.claude/worktrees/',
+    '.claude-backup-*/',
+  ];
   const header = '# Worclaude (generated workflow files)';
 
   let content = '';

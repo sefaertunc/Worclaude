@@ -185,7 +185,9 @@ export async function cleanGitignore(projectRoot) {
     '# Worclaude (generated workflow files)',
     '.claude/',
     '.claude/sessions/',
+    '.claude/settings.local.json',
     '.claude/workflow-meta.json',
+    '.claude/worktrees/',
   ]);
 
   const filtered = lines.filter((line) => !REMOVE_LINES.has(line.trim()));

@@ -127,7 +127,9 @@ describe('updateGitignore', () => {
     expect(result).toBe(true);
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
     expect(content).toContain('.claude/sessions/');
+    expect(content).toContain('.claude/settings.local.json');
     expect(content).toContain('.claude/workflow-meta.json');
+    expect(content).toContain('.claude/worktrees/');
     expect(content).toContain('.claude-backup-*/');
     expect(content).toContain('# Worclaude');
   });
@@ -140,7 +142,9 @@ describe('updateGitignore', () => {
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
     expect(content).toContain('node_modules/');
     expect(content).toContain('.claude/sessions/');
+    expect(content).toContain('.claude/settings.local.json');
     expect(content).toContain('.claude/workflow-meta.json');
+    expect(content).toContain('.claude/worktrees/');
     expect(content).toContain('.claude-backup-*/');
   });
 
@@ -148,7 +152,7 @@ describe('updateGitignore', () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
     await fs.writeFile(
       path.join(tmpDir, '.gitignore'),
-      '.claude/sessions/\n.claude/workflow-meta.json\n.claude-backup-*/\n'
+      '.claude/sessions/\n.claude/settings.local.json\n.claude/workflow-meta.json\n.claude/worktrees/\n.claude-backup-*/\n'
     );
     const result = await updateGitignore(tmpDir);
     expect(result).toBe(false);
@@ -160,7 +164,9 @@ describe('updateGitignore', () => {
     const result = await updateGitignore(tmpDir);
     expect(result).toBe(true);
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(content).toContain('.claude/settings.local.json');
     expect(content).toContain('.claude/workflow-meta.json');
+    expect(content).toContain('.claude/worktrees/');
     expect(content).toContain('.claude-backup-*/');
     // Should not duplicate .claude/sessions/
     const matches = content.match(/\.claude\/sessions\//g);
@@ -181,10 +187,27 @@ describe('updateGitignore', () => {
     expect(lines).not.toContain('.claude/');
     // New granular entries present
     expect(content).toContain('.claude/sessions/');
+    expect(content).toContain('.claude/settings.local.json');
     expect(content).toContain('.claude/workflow-meta.json');
+    expect(content).toContain('.claude/worktrees/');
     expect(content).toContain('.claude-backup-*/');
     // Header present once
     const headerMatches = content.match(/# Worclaude/g);
     expect(headerMatches.length).toBe(1);
+  });
+
+  it('writes exactly 5 gitignore entries', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
+    await updateGitignore(tmpDir);
+    const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
+    const entryLines = content.split('\n').filter((l) => l.trim() && !l.startsWith('#'));
+    expect(entryLines).toHaveLength(5);
+    expect(entryLines).toEqual([
+      '.claude/sessions/',
+      '.claude/settings.local.json',
+      '.claude/workflow-meta.json',
+      '.claude/worktrees/',
+      '.claude-backup-*/',
+    ]);
   });
 });
