@@ -82,7 +82,7 @@ Installation metadata used by `worclaude upgrade`, `worclaude status`, and `worc
   "fileHashes": {
     "agents/plan-reviewer.md": "a1b2c3...",
     "commands/start.md": "d4e5f6...",
-    "skills/testing.md": "g7h8i9..."
+    "skills/testing/SKILL.md": "g7h8i9..."
   }
 }
 ```
@@ -136,6 +136,31 @@ This file is a placeholder. MCP servers can be added to give Claude access to ex
 
 ---
 
+## MEMORY.md
+
+**Path:** `MEMORY.md` (project root)
+
+An optional persistent memory index file. Created during `worclaude init` if the user opts in.
+
+MEMORY.md serves as an **index** -- each entry is a one-line pointer to a detailed memory file stored in `.claude/memory/`. Claude Code reads this file at session start and uses it to maintain context across sessions.
+
+**Four memory types:**
+
+| Type        | Purpose                                                     |
+| ----------- | ----------------------------------------------------------- |
+| `user`      | Your role, preferences, and expertise                       |
+| `feedback`  | How you want Claude to work (corrections and confirmations) |
+| `project`   | Ongoing work context, decisions, deadlines                  |
+| `reference` | Pointers to external systems (Linear, Grafana, Slack)       |
+
+**Limits:** 200 lines maximum, 25KB size. Individual entries should be under 150 characters.
+
+**What NOT to store:** Code patterns (derive from code), git history (use `git log`), debugging solutions (fix is in the code), anything already in CLAUDE.md.
+
+Agents with `memory: project` in their frontmatter (test-writer, security-reviewer, doc-writer) access project-scoped memory for cross-session learning. See [Claude Code Integration](/guide/claude-code-integration#memory-system) for details.
+
+---
+
 ## Environment Variables
 
 | Variable                 | Values                          | Default    | Description                                                                                                 |
@@ -151,14 +176,26 @@ This is the only environment variable used by worclaude at runtime. It is read b
 ```
 project-root/
   CLAUDE.md                     ← main instruction file (never auto-merged)
+  MEMORY.md                     ← optional persistent memory index
   .mcp.json                     ← MCP server config
   .claude/
     settings.json               ← permissions + hooks
     workflow-meta.json           ← installation metadata
-    agents/                     ← agent definitions
+    agents/                     ← agent definitions (flat .md files)
     commands/                   ← slash commands
-    skills/                     ← knowledge files
+    skills/                     ← knowledge directories (skill-name/SKILL.md)
     sessions/                   ← session summary files
+    memory/                     ← individual memory files (if MEMORY.md used)
+```
+
+**.gitignore entries** managed by worclaude:
+
+```
+.claude/sessions/
+.claude/settings.local.json
+.claude/workflow-meta.json
+.claude/worktrees/
+.claude-backup-*/
 ```
 
 ---

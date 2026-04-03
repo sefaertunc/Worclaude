@@ -1,18 +1,18 @@
 # Skills
 
-Skills are knowledge files installed to `.claude/skills/`. They teach Claude how to perform specific types of work. Unlike CLAUDE.md (which is always loaded), skills are loaded on demand -- Claude reads them only when the task at hand requires that knowledge.
+Skills are knowledge files installed to `.claude/skills/` using the **directory format** required by Claude Code. Each skill lives in its own directory as `skill-name/SKILL.md`. Flat `.md` files in the skills directory are silently ignored by Claude Code's runtime.
 
-CLAUDE.md contains pointers to each skill so Claude knows they exist. When working on git operations, Claude loads `git-conventions.md`. When writing tests, Claude loads `testing.md`. This keeps the active context focused.
+Unlike CLAUDE.md (which is always loaded), skills are loaded on demand -- Claude reads them only when the task at hand requires that knowledge. Some skills are **conditional**: they load automatically only when working on files matching specific path patterns. See [Claude Code Integration](/guide/claude-code-integration) for details on how skills register with the runtime.
 
 ## Universal Skills
 
-10 skills installed with every project. These cover workflow mechanics that apply regardless of tech stack. Additionally, 1 generated skill (`agent-routing.md`) is dynamically built from your agent selections during init.
+11 skills installed with every project. These cover workflow mechanics that apply regardless of tech stack. Additionally, 1 generated skill (`agent-routing`) is dynamically built from your agent selections during init.
 
 ### context-management
 
 |                 |                                                                                           |
 | --------------- | ----------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/context-management.md`                                                    |
+| **File**        | `.claude/skills/context-management/SKILL.md`                                              |
 | **Description** | Context budget awareness, when to compact, when to clear, subagent offloading             |
 | **When loaded** | Mid-session when context is growing large; before deciding to compact or spawn a subagent |
 
@@ -22,7 +22,7 @@ Teaches the 70% rule (act before running out of context), the three tools for ma
 
 |                 |                                                                         |
 | --------------- | ----------------------------------------------------------------------- |
-| **File**        | `.claude/skills/git-conventions.md`                                     |
+| **File**        | `.claude/skills/git-conventions/SKILL.md`                               |
 | **Description** | Branch naming, commit message format, PR workflow, worktree conventions |
 | **When loaded** | Before creating branches, writing commits, or opening PRs               |
 
@@ -32,7 +32,7 @@ Covers branch naming patterns (`type/short-description`), conventional commit fo
 
 |                 |                                                                                                 |
 | --------------- | ----------------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/planning-with-files.md`                                                         |
+| **File**        | `.claude/skills/planning-with-files/SKILL.md`                                                   |
 | **Description** | How to structure implementation plans as files, progressive implementation, plan review process |
 | **When loaded** | Before starting multi-file changes or new features                                              |
 
@@ -42,7 +42,7 @@ Defines the IMPLEMENTATION-PROMPT pattern for writing plans as versioned Markdow
 
 |                 |                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/review-and-handoff.md`                                                   |
+| **File**        | `.claude/skills/review-and-handoff/SKILL.md`                                             |
 | **Description** | Session ending protocol, HANDOFF document format, seamless continuation between sessions |
 | **When loaded** | At session end or when ending mid-task. Triggered by the `/end` command.                 |
 
@@ -52,7 +52,7 @@ Defines the session ending protocol (commit, test, update PROGRESS.md, write han
 
 |                 |                                                                                        |
 | --------------- | -------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/prompt-engineering.md`                                                 |
+| **File**        | `.claude/skills/prompt-engineering/SKILL.md`                                           |
 | **Description** | Effective prompting patterns for working with Claude, demanding quality, writing specs |
 | **When loaded** | When crafting instructions for subagents or writing spec documents                     |
 
@@ -62,7 +62,7 @@ Covers how to demand quality and elegance from Claude, when to be specific vs de
 
 |                 |                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/verification.md`                                                   |
+| **File**        | `.claude/skills/verification/SKILL.md`                                             |
 | **Description** | Domain-specific verification beyond tests, closing the feedback loop               |
 | **When loaded** | After implementing changes, before committing. Triggered by the `/verify` command. |
 
@@ -72,7 +72,7 @@ Covers verification strategies for web applications (dev server, manual testing)
 
 |                 |                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/testing.md`                                                           |
+| **File**        | `.claude/skills/testing/SKILL.md`                                                     |
 | **Description** | Test philosophy, coverage strategy, test-first patterns, what to test and what not to |
 | **When loaded** | When writing or reviewing tests. Used by the `test-writer` agent.                     |
 
@@ -82,7 +82,7 @@ Teaches test philosophy (behavior not implementation), meaningful coverage vs li
 
 |                 |                                                                               |
 | --------------- | ----------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/claude-md-maintenance.md`                                     |
+| **File**        | `.claude/skills/claude-md-maintenance/SKILL.md`                               |
 | **Description** | How Claude writes rules for itself, when to update CLAUDE.md, keeping it lean |
 | **When loaded** | When updating CLAUDE.md. Triggered by the `/update-claude-md` command.        |
 
@@ -92,7 +92,7 @@ Explains the self-healing pattern (same mistake twice becomes a rule), the 50-li
 
 |                 |                                                                               |
 | --------------- | ----------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/subagent-usage.md`                                            |
+| **File**        | `.claude/skills/subagent-usage/SKILL.md`                                      |
 | **Description** | When to use subagents, how many, context hygiene, worktree isolation patterns |
 | **When loaded** | Before spawning subagents for testing, code review, or parallel work          |
 
@@ -102,11 +102,21 @@ Covers when subagents help vs when they do not, context hygiene (offloading to k
 
 |                 |                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/security-checklist.md`                                                |
+| **File**        | `.claude/skills/security-checklist/SKILL.md`                                          |
 | **Description** | OWASP-based security checklist any agent can reference when reviewing or writing code |
 | **When loaded** | When writing code that handles user input, authentication, or external data           |
 
 A reference checklist (not an agent) covering the OWASP Top 10. Includes a quick 5-point scan for pre-commit checks (no hardcoded secrets, input validated, queries parameterized, output escaped, auth checked) and detailed guidance for each OWASP category. Also lists common false positives to avoid unnecessary flags. Any agent — code-simplifier, test-writer, verify-app, or the main session — can consult this checklist.
+
+### coordinator-mode
+
+|                 |                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
+| **File**        | `.claude/skills/coordinator-mode/SKILL.md`                                                           |
+| **Description** | Multi-agent orchestration patterns: when to use coordinator mode, worker prompts, parallel execution |
+| **When loaded** | When working with multiple agents or terminals in parallel, or breaking large tasks into sub-tasks   |
+
+Covers when to use multi-agent coordination (independent research + implementation, parallel file areas, verification alongside implementation), worker prompt best practices, the continue vs spawn decision framework, and parallel execution patterns. Explains how to structure coordinator prompts that break tasks into independently verifiable units.
 
 ---
 
@@ -118,7 +128,7 @@ A reference checklist (not an agent) covering the OWASP Top 10. Includes a quick
 
 |                 |                                                                                         |
 | --------------- | --------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/agent-routing.md`                                                       |
+| **File**        | `.claude/skills/agent-routing/SKILL.md`                                                 |
 | **Description** | When and how to use each installed agent — decision matrix, triggers, and routing rules |
 | **When loaded** | At the start of every session (referenced in Session Protocol)                          |
 
@@ -136,7 +146,7 @@ Unlike universal and template skills, this file is not copied from a template. I
 
 |                 |                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/backend-conventions.md`                                                  |
+| **File**        | `.claude/skills/backend-conventions/SKILL.md`                                            |
 | **Description** | Stack-specific backend patterns, API design, database access, error handling conventions |
 
 Placeholder sections: API Patterns, Database Access, Error Handling, Authentication, Logging, Configuration Management. Each section includes HTML comment prompts asking specific questions (e.g., "Which ORM/query builder/driver is used?", "What HTTP status codes map to which error types?").
@@ -145,7 +155,7 @@ Placeholder sections: API Patterns, Database Access, Error Handling, Authenticat
 
 |                 |                                                                                                   |
 | --------------- | ------------------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/frontend-design-system.md`                                                        |
+| **File**        | `.claude/skills/frontend-design-system/SKILL.md`                                                  |
 | **Description** | Design system, component library, styling approach, accessibility and responsive design standards |
 
 Placeholder sections: Component Library, Styling Approach, State Management, Accessibility Standards, Responsive Design. Prompts cover topics like component naming, CSS methodology, state management solution, WCAG level, and breakpoint strategy.
@@ -154,7 +164,7 @@ Placeholder sections: Component Library, Styling Approach, State Management, Acc
 
 |                 |                                                                                          |
 | --------------- | ---------------------------------------------------------------------------------------- |
-| **File**        | `.claude/skills/project-patterns.md`                                                     |
+| **File**        | `.claude/skills/project-patterns/SKILL.md`                                               |
 | **Description** | Architectural patterns, naming conventions, file organization, error handling philosophy |
 
 Placeholder sections: Architecture Overview, Naming Conventions, File Organization, Common Patterns, Error Handling Philosophy. Prompts cover high-level architecture, directory structure philosophy, design patterns in use, and error classification approach.
@@ -173,28 +183,31 @@ Template skills can also be filled manually by editing the Markdown files direct
 
 ## Adding Custom Skills
 
-Custom skills can be added by creating new `.md` files in `.claude/skills/`. They follow the same format as universal skills. Custom skills are not tracked by `worclaude diff` or `worclaude upgrade` -- they are fully user-managed.
+Custom skills use the same directory format: create a `skill-name/SKILL.md` directory inside `.claude/skills/`. Include `description` and `when_to_use` frontmatter. Optionally add `paths` for conditional activation. Custom skills are not tracked by `worclaude diff` or `worclaude upgrade` -- they are fully user-managed.
 
-To make Claude aware of a custom skill, add a pointer to CLAUDE.md's Skills section:
-
-```markdown
-## Skills (read on demand, not upfront)
-
-See `.claude/skills/` — load only what's relevant:
-...existing skills...
-
-- my-custom-skill.md — Description of when to use it
 ```
+.claude/skills/
+  my-custom-skill/
+    SKILL.md              ← your custom skill
+```
+
+::: warning
+Flat `.md` files in `.claude/skills/` are silently ignored by Claude Code. Always use the `skill-name/SKILL.md` directory format.
+:::
 
 ---
 
 ## Skill File Format
 
-Every skill file uses YAML frontmatter with a `description` field, followed by Markdown content:
+Every `SKILL.md` file uses YAML frontmatter followed by Markdown content:
 
 ```markdown
 ---
 description: 'Brief description of what this skill teaches'
+when_to_use: 'When this skill is relevant to the current task'
+paths:
+  - 'src/**'
+  - 'lib/**'
 ---
 
 # Skill Name
@@ -203,7 +216,13 @@ Content organized by topic with headers, lists, code examples,
 tables, and a Gotchas section at the end.
 ```
 
-The `description` field appears in Claude's skill listing, helping it decide which skill to load.
+| Field         | Required | Purpose                                                                                                 |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `description` | Yes      | Short summary shown in `/skills` listing                                                                |
+| `when_to_use` | Yes      | Tells Claude when to load this skill                                                                    |
+| `paths`       | No       | Glob patterns for [conditional activation](/guide/claude-code-integration#conditional-skill-activation) |
+
+The `description` and `when_to_use` fields appear in Claude's skill listing, helping it decide which skill to load. The `paths` field, when present, restricts the skill to load only when working on matching files.
 
 ---
 
@@ -211,28 +230,54 @@ The `description` field appears in Claude's skill listing, helping it decide whi
 
 ```
 .claude/skills/
-  context-management.md       # universal
-  git-conventions.md          # universal
-  planning-with-files.md      # universal
-  review-and-handoff.md       # universal
-  prompt-engineering.md       # universal
-  verification.md             # universal
-  testing.md                  # universal
-  claude-md-maintenance.md    # universal
-  subagent-usage.md           # universal
-  security-checklist.md       # universal
-  agent-routing.md            # generated (dynamic, based on agent selection)
-  backend-conventions.md      # template
-  frontend-design-system.md   # template
-  project-patterns.md         # template
+  context-management/SKILL.md       # universal (always loaded)
+  git-conventions/SKILL.md          # universal (always loaded)
+  planning-with-files/SKILL.md      # universal (always loaded)
+  review-and-handoff/SKILL.md       # universal (always loaded)
+  prompt-engineering/SKILL.md       # universal (always loaded)
+  verification/SKILL.md             # universal (conditional: test/**)
+  testing/SKILL.md                  # universal (conditional: test/**)
+  claude-md-maintenance/SKILL.md    # universal (always loaded)
+  subagent-usage/SKILL.md           # universal (always loaded)
+  security-checklist/SKILL.md       # universal (conditional: auth/security/**)
+  coordinator-mode/SKILL.md         # universal (always loaded)
+  agent-routing/SKILL.md            # generated (dynamic, based on agent selection)
+  backend-conventions/SKILL.md      # template (conditional: src/**)
+  frontend-design-system/SKILL.md   # template (conditional: components/**)
+  project-patterns/SKILL.md         # template (conditional: src/**)
 ```
 
-Skills can be customized after installation. Additional custom skills can be added to the same directory. The `worclaude diff` command tracks modifications to installed skills.
+Skills can be customized after installation. Additional custom skills can be added as new directories. The `worclaude diff` command tracks modifications to installed skills.
+
+---
+
+## Conditional vs Always-Loaded
+
+| Skill                  | Loading     | Path Patterns                                                                                                    |
+| ---------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| context-management     | Always      | —                                                                                                                |
+| git-conventions        | Always      | —                                                                                                                |
+| planning-with-files    | Always      | —                                                                                                                |
+| review-and-handoff     | Always      | —                                                                                                                |
+| prompt-engineering     | Always      | —                                                                                                                |
+| claude-md-maintenance  | Always      | —                                                                                                                |
+| subagent-usage         | Always      | —                                                                                                                |
+| coordinator-mode       | Always      | —                                                                                                                |
+| agent-routing          | Always      | —                                                                                                                |
+| verification           | Conditional | `test/**`, `tests/**`, `**/*.test.*`, `**/*.spec.*`                                                              |
+| testing                | Conditional | `test/**`, `tests/**`, `**/*.test.*`, `**/*.spec.*`, `__tests__/**`                                              |
+| security-checklist     | Conditional | `**/auth/**`, `**/security/**`, `**/*config*`, `**/*.env*`, `**/middleware/**`                                   |
+| backend-conventions    | Conditional | `src/**`, `lib/**`, `server/**`, `api/**`                                                                        |
+| frontend-design-system | Conditional | `src/components/**`, `src/pages/**`, `src/views/**`, `**/*.vue`, `**/*.tsx`, `**/*.jsx`, `**/*.css`, `**/*.scss` |
+| project-patterns       | Conditional | `src/**`, `lib/**`                                                                                               |
+
+See [Conditional Skill Activation](/guide/claude-code-integration#conditional-skill-activation) for details on how path-based loading works.
 
 ---
 
 ## See Also
 
+- [Claude Code Integration](/guide/claude-code-integration) -- how skills register with Claude Code's runtime
 - [CLAUDE.md Template](/reference/claude-md) -- how skills are referenced from CLAUDE.md
 - [Slash Commands](/reference/slash-commands) -- `/setup` fills template skills automatically
-- [Agents](/reference/agents) -- agents that rely on skills (e.g., test-writer uses testing.md)
+- [Agents](/reference/agents) -- agents that rely on skills (e.g., test-writer uses testing/SKILL.md)

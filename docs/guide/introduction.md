@@ -10,7 +10,7 @@ Most people skip all of this. They open Claude Code, type a prompt, and get dece
 
 Worclaude automates that setup. Run one command, answer a few questions about your project, and you get a complete professional workflow installed in your repository. Every file it generates is derived from Boris Cherny's tips.
 
-Worclaude is a Node.js CLI tool (v1.1.0) that you install globally and run in any project directory. It examines your project, asks what kind of software you are building, and scaffolds the right combination of agents, skills, commands, hooks, and permissions.
+Worclaude is a Node.js CLI tool that you install globally and run in any project directory. It examines your project, asks what kind of software you are building, and scaffolds the right combination of agents, skills, commands, hooks, and permissions. As of v2.0.0, all generated files integrate directly with Claude Code's runtime systems -- skills support conditional activation via file path patterns, and agents support tool restrictions, background execution, and persistent memory.
 
 ## What You Get
 
@@ -28,9 +28,11 @@ Agents are specialized Claude instances, each with a specific model and purpose.
 
 On top of these, you choose from 20 **optional agents** across 6 categories (Backend, Frontend, DevOps, Quality, Documentation, Data/AI). Worclaude recommends agents based on your project type, so you do not have to guess.
 
-### Skills (14 total)
+### Skills (15 total)
 
-Skills are knowledge files that Claude loads on demand. They teach Claude how your project works without bloating the main context. You get 10 **universal skills** covering context management, git conventions, planning, session handoffs, prompt engineering, verification, testing, CLAUDE.md maintenance, subagent usage, and security. You also get 3 **template skills** (backend-conventions, frontend-design-system, project-patterns) that serve as placeholders for your project-specific details. Finally, you get 1 **generated skill** — `agent-routing.md` — a dynamic routing guide that tells Claude exactly when and how to use each installed agent, built from your specific agent selections.
+Skills are knowledge files that Claude loads on demand, stored in directory format (`skill-name/SKILL.md`). They teach Claude how your project works without bloating the main context. You get 11 **universal skills** covering context management, git conventions, planning, session handoffs, prompt engineering, verification, testing, CLAUDE.md maintenance, subagent usage, security, and coordinator mode. You also get 3 **template skills** (backend-conventions, frontend-design-system, project-patterns) that serve as placeholders for your project-specific details. Finally, you get 1 **generated skill** — `agent-routing` — a dynamic routing guide that tells Claude exactly when and how to use each installed agent, built from your specific agent selections.
+
+Some skills are **conditional** — they load automatically only when working on files matching specific path patterns (e.g., testing skills load only when touching test files). See [Claude Code Integration](/guide/claude-code-integration) for details.
 
 ### Slash Commands (16 total)
 

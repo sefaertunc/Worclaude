@@ -23,7 +23,7 @@ This compares your current setup against the latest workflow version and shows w
 
   Modified (your changes):
   ~ CLAUDE.md (added 5 gotchas)
-  ~ .claude/skills/testing.md (added pytest patterns)
+  ~ .claude/skills/testing/SKILL.md (added pytest patterns)
 
   Missing (removed or never installed):
   - .claude/agents/doc-writer.md
@@ -110,6 +110,33 @@ After you confirm, Worclaude:
 
   Review .workflow-ref.md files and merge what's useful.
 ```
+
+## Upgrading from v1.x to v2.0.0
+
+v2.0.0 introduces Claude Code runtime integration. Two structural changes require migration:
+
+**What changed:**
+
+- **Skill format:** Flat `.md` files replaced with `skill-name/SKILL.md` directory format. Claude Code silently ignores flat files in the skills directory.
+- **Agent frontmatter:** The `description` field is now required. Without it, agents are invisible to Claude Code's `/agents` listing and routing.
+- **New skill:** `coordinator-mode` added for multi-agent orchestration.
+- **New doctor checks:** CLAUDE.md size limits, skill format validation, agent description verification.
+
+**What `worclaude upgrade` does automatically:**
+
+1. Migrates skill files from flat to directory format (e.g., `testing.md` → `testing/SKILL.md`)
+2. Moves corresponding `.workflow-ref.md` files inside skill directories
+3. Patches agent files with missing `description` frontmatter (auto-patches unmodified agents; prompts for modified ones)
+4. Updates hash keys in `workflow-meta.json` for the new skill paths
+
+**How to verify the upgrade:**
+
+1. Run `worclaude doctor` -- all new checks should pass
+2. Start Claude Code and run `/skills` to confirm skills are loaded with descriptions
+3. Run `/agents` to confirm all agents are visible
+4. Check that conditional skills activate only when working on matching files
+
+**If something went wrong:** Run `worclaude restore` to roll back from the automatic backup.
 
 ## Handling Conflict Files
 
