@@ -1,3 +1,7 @@
+---
+description: "Report current session state — branch, recent changes, pending work"
+---
+
 Report current session state:
 - Current task / what you're working on
 - Git branch and recent commits

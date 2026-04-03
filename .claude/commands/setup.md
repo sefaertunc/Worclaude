@@ -1,3 +1,7 @@
+---
+description: "Project setup interview — fills in CLAUDE.md, skills, and configuration"
+---
+
 You are conducting a project setup interview. Your goal is to gather
 enough information to fill in all project-specific files with real,
 useful content.
@@ -94,15 +98,15 @@ these files with real, project-specific content:
    from the interview answers. Include all features, data models,
    architecture decisions, and implementation phases.
 
-3. **.claude/skills/backend-conventions.md** — Fill with real
+3. **.claude/skills/backend-conventions/SKILL.md** — Fill with real
    backend patterns, framework-specific conventions, database
    patterns specific to this project.
 
-4. **.claude/skills/frontend-design-system.md** — Fill with real
+4. **.claude/skills/frontend-design-system/SKILL.md** — Fill with real
    design system, component patterns, styling approach if
    applicable.
 
-5. **.claude/skills/project-patterns.md** — Fill with real
+5. **.claude/skills/project-patterns/SKILL.md** — Fill with real
    architectural patterns, directory structure explanation,
    module interaction patterns.
 

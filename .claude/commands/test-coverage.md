@@ -1,3 +1,7 @@
+---
+description: "Analyze test coverage and fill gaps in recently changed code"
+---
+
 Analyze test coverage and fill gaps in the most critical areas.
 Delegates to the test-writer agent for test creation.
 

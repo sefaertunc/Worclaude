@@ -1,3 +1,7 @@
+---
+description: "Code review — reports findings as prioritized table without modifying files"
+---
+
 Review changed code for reuse, quality, and efficiency.
 
 CRITICAL: This is a READ-ONLY review. You MUST NOT edit any files.

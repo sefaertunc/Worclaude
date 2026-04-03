@@ -1,7 +1,9 @@
 ---
 name: build-fixer
+description: "Diagnoses and fixes build failures"
 model: sonnet
 isolation: worktree
+maxTurns: 40
 ---
 
 You are a build error specialist. When the build is broken — tests
