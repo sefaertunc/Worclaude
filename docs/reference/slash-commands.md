@@ -6,7 +6,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /start
 
-**Session kickoff.** Orients Claude at the beginning of a work session.
+**Load session context, check for handoff files, detect drift since last session.**
 
 |                  |                                                                                                                                                                                                                                                                                                                                                     |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -19,7 +19,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /end
 
-**Mid-task handoff.** Use ONLY when stopping work mid-task without committing.
+**Mid-task stop -- writes handoff file and session summary for next session.**
 
 |                  |                                                                                                                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -32,7 +32,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /commit-push-pr
 
-**Branch-aware git workflow.** Stages, commits, pushes, and opens a pull request — with branch-specific behavior.
+**Commit, push, and create PR -- branch-aware with session summary.**
 
 |                  |                                                                                                                                                                                                                                                                      |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -45,7 +45,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /review-plan
 
-**Plan review with the plan-reviewer agent.** Sends an implementation plan through a senior staff engineer review.
+**Send implementation plan to plan-reviewer agent for staff-level review.**
 
 |                  |                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -58,7 +58,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /techdebt
 
-**Technical debt scan.** Identifies code quality issues across the codebase.
+**Scan codebase for technical debt and report findings.**
 
 |                  |                                                                                                                                                                                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -71,7 +71,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /verify
 
-**Run verification suite.** Full project validation across all check types.
+**Run full project verification -- tests, build, lint, type checking.**
 
 |                  |                                                                                                                                             |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -84,7 +84,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /compact-safe
 
-**Safe context compaction.** Compresses context while preserving orientation.
+**Compress context via /compact with safety checks.**
 
 |                  |                                                                                                                                                                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -97,7 +97,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /status
 
-**Session status check.** Reports current session state without modifying anything.
+**Report current session state -- branch, recent changes, pending work.**
 
 |                  |                                                                                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -110,7 +110,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /update-claude-md
 
-**Update CLAUDE.md rules.** Proposes self-healing rule additions based on session experience.
+**Propose updates to CLAUDE.md based on session work and recurring patterns.**
 
 |                  |                                                                                                                                                                                                                                                  |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -123,7 +123,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /setup
 
-**Project interview to fill specs.** Conducts a structured interview and populates all project-specific files.
+**Project setup interview -- fills in CLAUDE.md, skills, and configuration.**
 
 |                  |                                                                                                                                                                                                                             |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -148,7 +148,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /sync
 
-**Post-merge shared-state updater.** Updates PROGRESS.md, SPEC.md, and version after merging feature PRs.
+**Update PROGRESS.md, SPEC.md, and version after merging PRs on develop.**
 
 |                  |                                                                                                                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -161,7 +161,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /conflict-resolver
 
-**Merge conflict resolution.** Resolves merge conflicts from parallel branches.
+**Resolve merge conflicts on develop branch.**
 
 |                  |                                                                                                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -174,7 +174,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /review-changes
 
-**Read-only code review.** Analyzes recent changes and reports findings without modifying files.
+**Code review -- reports findings as prioritized table without modifying files.**
 
 |                  |                                                                                                                                                                     |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -187,7 +187,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /build-fix
 
-**Build failure resolution.** Delegates to the build-fixer agent for diagnosis and repair.
+**Fix current build failures via build-fixer agent.**
 
 |                  |                                                                                                                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -200,7 +200,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /refactor-clean
 
-**Inline cleanup pass.** Improves recently changed code without changing behavior.
+**Focused cleanup pass on recently changed code.**
 
 |                  |                                                                                                                                                                  |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -213,7 +213,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /test-coverage
 
-**Coverage analysis and gap filling.** Delegates to the test-writer agent.
+**Analyze test coverage and fill gaps in recently changed code.**
 
 |                  |                                                                                                                                                                |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |

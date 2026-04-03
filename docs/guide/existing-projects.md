@@ -65,7 +65,7 @@ Worclaude uses a tiered merge strategy designed to never destroy your work. Each
 
 Files that do not conflict with anything you already have are added silently:
 
-- **Missing skills** are added directly to `.claude/skills/`
+- **Missing skills** are added directly to `.claude/skills/` in directory format (`skill-name/SKILL.md`). Detection supports both flat files and directory format for backward compatibility.
 - **Missing agents** are added to `.claude/agents/` (both universal and your selected optional agents)
 - **Missing commands** are added to `.claude/commands/`
 - **settings.json permissions** -- new permission rules are appended to your existing allow list without removing any of your existing rules
@@ -77,18 +77,25 @@ Files that do not conflict with anything you already have are added silently:
 
 ### Tier 2: Safe Alongside (Notify, Do Not Ask)
 
-When Worclaude wants to install a file that you already have (for example, a skill or agent with the same name), it does not overwrite yours. Instead, it saves the workflow version alongside your file with a `.workflow-ref.md` suffix:
+When Worclaude wants to install a file that you already have (for example, a skill or agent with the same name), it does not overwrite yours. Instead, it saves the workflow version alongside your file with a `.workflow-ref.md` suffix.
 
-- Your `context-management.md` stays untouched
-- The workflow version is saved as `context-management.workflow-ref.md`
+For skills (directory format), the reference file goes inside the skill directory:
+
+- Your `context-management/SKILL.md` stays untouched
+- The workflow version is saved as `context-management/SKILL.workflow-ref.md`
+
+For agents and commands (flat files), the reference file sits alongside:
+
+- Your `plan-reviewer.md` stays untouched
+- The workflow version is saved as `plan-reviewer.workflow-ref.md`
 
 This applies to conflicting skills, agents, and commands. You get a notification in the final report but are never prompted to choose during the merge.
 
 ```
   Conflicts (saved alongside for review):
-  ~ context-management.md → context-management.workflow-ref.md
-  ~ git-conventions.md → git-conventions.workflow-ref.md
-  ~ testing.md → testing.workflow-ref.md
+  ~ context-management/SKILL.md → context-management/SKILL.workflow-ref.md
+  ~ git-conventions/SKILL.md → git-conventions/SKILL.workflow-ref.md
+  ~ testing/SKILL.md → testing/SKILL.workflow-ref.md
 ```
 
 ### Tier 3: Interactive (Asks You)

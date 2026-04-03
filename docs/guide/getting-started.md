@@ -185,7 +185,7 @@ Once you confirm, Worclaude creates all the files:
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 optional)
   ✓ .claude/commands/ (16)
-  ✓ .claude/skills/ (10 universal + 3 templates + 1 generated)
+  ✓ .claude/skills/ (11 universal + 3 templates + 1 generated)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
   ✓ docs/spec/SPEC.md
@@ -260,13 +260,17 @@ The whole process takes about 5 minutes and replaces all the placeholder content
 
 After `/setup` completes, verify the workflow is functioning:
 
-1. Run `/status` to see your current session state
-2. Run `/verify` to confirm your build and tests pass
-3. Check that `CLAUDE.md` contains your actual project details
-4. Check that auto-formatting works by making a small edit
-5. Run `worclaude doctor` to validate that all workflow files are correctly installed and no components are missing
+1. Run `/skills` in Claude Code to verify skills are loaded with descriptions
+2. Run `/agents` in Claude Code to verify agents are visible and routable
+3. Run `/status` to see your current session state
+4. Run `/verify` to confirm your build and tests pass
+5. Check that `CLAUDE.md` contains your actual project details
+6. Check that auto-formatting works by making a small edit
+7. Run `worclaude doctor` to validate skill format, agent descriptions, and file integrity
 
-If everything looks good, you are ready to start building. See the [Workflow Tips](/guide/workflow-tips) guide for best practices on working with Claude Code after setup.
+If MEMORY.md was created during init, it will be read at session start for cross-session context.
+
+If everything looks good, you are ready to start building. See the [Workflow Tips](/guide/workflow-tips) guide for best practices, or [Claude Code Integration](/guide/claude-code-integration) for details on how skills and agents register with the runtime.
 
 ## Next Steps
 

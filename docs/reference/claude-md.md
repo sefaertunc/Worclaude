@@ -83,7 +83,7 @@ See `.claude/skills/` — load only what's relevant:
 - project-patterns.md — Run /setup to fill automatically
 ````
 
-Lists all 10 universal skills, 1 generated skill (agent-routing), and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern. The exception is `agent-routing.md`, which is marked "READ EVERY SESSION" because Claude needs to know which agents to use from the start.
+Lists all 11 universal skills, 1 generated skill (agent-routing), and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern. The exception is `agent-routing.md`, which is marked "READ EVERY SESSION" because Claude needs to know which agents to use from the start.
 
 ### Session Protocol
 
