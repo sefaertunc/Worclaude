@@ -1,6 +1,7 @@
 ---
 description: "When to use subagents, how many, context hygiene, worktree isolation patterns"
 when_to_use: "When deciding whether to spawn a subagent, choosing between parallel and sequential execution, or giving subagent instructions"
+version: "1.0.0"
 ---
 
 # Subagent Usage

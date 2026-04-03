@@ -1,6 +1,7 @@
 ---
 description: "Domain-specific verification beyond tests, closing the feedback loop for web, API, CLI, data"
 when_to_use: "When verifying that implemented changes work correctly, after running automated tests, before committing"
+version: "1.0.0"
 paths:
   - "test/**"
   - "tests/**"

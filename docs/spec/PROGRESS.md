@@ -273,7 +273,7 @@
 - 11 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 307 tests across 24 test files
+- 384 tests across 26 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
