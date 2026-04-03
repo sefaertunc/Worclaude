@@ -4,7 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 2.0.1
+**Version:** 2.1.0
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -1540,7 +1540,7 @@ worclaude/
 - E2E audit with 60+ new tests for migration and doctor checks
 - Documentation: new claude-code-integration.md guide + 13 reference/guide page updates
 
-### v2.0.1: Post-release Polish
+### v2.1.0: Post-release Polish and Backlog Implementation
 
 - Agent frontmatter: added `criticalSystemReminder`, `skills`, `initialPrompt` fields to select agents
 - Skill templates: added `version` field to all 11 universal skill frontmatter

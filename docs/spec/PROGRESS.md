@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.0.1
+**Version:** 2.1.0
 **Last Updated:** 2026-04-04
 
 ## Completed
@@ -265,7 +265,7 @@
   - [x] Phase 7: E2E audit — verification tests, count fixes, template sync, stale file cleanup
   - [x] Phase 8: Documentation update — new claude-code-integration.md guide + 13 reference/guide page updates
 
-- [x] v2.0.1: Post-release polish (2026-04-04)
+- [x] v2.1.0: Post-release polish and backlog implementation (2026-04-04)
   - [x] Agent frontmatter: `criticalSystemReminder`, `skills`, `initialPrompt` fields on select agents
   - [x] Skill version fields: all 11 universal skill templates
   - [x] Doctor enhancements: agent frontmatter completeness scoring, CLAUDE.md section analysis
