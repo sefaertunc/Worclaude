@@ -106,7 +106,7 @@ describe('delete command', () => {
     if (opts.withGitignore !== false) {
       await fs.writeFile(
         path.join(tmpDir, '.gitignore'),
-        'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/sessions/\n.claude/workflow-meta.json\n.claude-backup-*/\n'
+        'node_modules/\n\n# Worclaude (generated workflow files)\n.claude/sessions/\n.claude/settings.local.json\n.claude/workflow-meta.json\n.claude/worktrees/\n.claude-backup-*/\n'
       );
     }
 
@@ -375,7 +375,9 @@ describe('delete command', () => {
       const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
       expect(content).not.toContain('# Worclaude (generated workflow files)');
       expect(content).not.toContain('.claude/sessions/');
+      expect(content).not.toContain('.claude/settings.local.json');
       expect(content).not.toContain('.claude/workflow-meta.json');
+      expect(content).not.toContain('.claude/worktrees/');
     });
 
     it('keeps .claude-backup-*/ entry', async () => {
@@ -401,13 +403,15 @@ describe('delete command', () => {
     it('handles CRLF line endings in .gitignore', async () => {
       await fs.writeFile(
         path.join(tmpDir, '.gitignore'),
-        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/sessions/\r\n.claude/workflow-meta.json\r\n.claude-backup-*/\r\n'
+        'node_modules/\r\n\r\n# Worclaude (generated workflow files)\r\n.claude/sessions/\r\n.claude/settings.local.json\r\n.claude/workflow-meta.json\r\n.claude/worktrees/\r\n.claude-backup-*/\r\n'
       );
       await cleanGitignore(tmpDir);
       const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf-8');
       expect(content).not.toContain('# Worclaude (generated workflow files)');
       expect(content).not.toContain('.claude/sessions/');
+      expect(content).not.toContain('.claude/settings.local.json');
       expect(content).not.toContain('.claude/workflow-meta.json');
+      expect(content).not.toContain('.claude/worktrees/');
       expect(content).toContain('.claude-backup-*/');
       expect(content).toContain('node_modules/');
     });
