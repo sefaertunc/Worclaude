@@ -4,7 +4,7 @@
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
 
-**Version:** 2.0.0
+**Version:** 2.0.1
 **Install:** `npm install -g worclaude`
 **Usage:** `worclaude init` in any project directory
 
@@ -539,8 +539,8 @@ Checks installation health across four categories with PASS/WARN/FAIL status per
 
 ### Components
 
-- Universal agents (all 5 present, each has required `description` frontmatter)
-- Selected optional agents (per workflow-meta, `description` field verified)
+- Universal agents (all 5 present, each has required `description` frontmatter, completeness scoring for optional fields)
+- Selected optional agents (per workflow-meta, `description` field verified, completeness scoring)
 - Command files (all 16 present)
 - Skills (universal + template + agent-routing.md, directory format verified)
 
@@ -1001,7 +1001,7 @@ Report results with specific pass/fail for each verification step.
 
 ### All Optional Agents
 
-Each agent uses frontmatter fields recognized by Claude Code's runtime. Required: `name`, `description`. Optional: `model`, `isolation`, `disallowedTools`, `background`, `maxTurns`, `omitClaudeMd`, `memory`. Full content in `templates/agents/optional/`. Key specifications:
+Each agent uses frontmatter fields recognized by Claude Code's runtime. Required: `name`, `description`. Optional: `model`, `isolation`, `disallowedTools`, `background`, `maxTurns`, `omitClaudeMd`, `memory`, `criticalSystemReminder`, `skills`, `initialPrompt`. Full content in `templates/agents/optional/`. Key specifications:
 
 | Agent                  | Model  | Isolation | Category |
 | ---------------------- | ------ | --------- | -------- |
@@ -1539,6 +1539,15 @@ worclaude/
 - New content: MEMORY.md template, coordinator-mode skill, enhanced verify-app agent
 - E2E audit with 60+ new tests for migration and doctor checks
 - Documentation: new claude-code-integration.md guide + 13 reference/guide page updates
+
+### v2.0.1: Post-release Polish
+
+- Agent frontmatter: added `criticalSystemReminder`, `skills`, `initialPrompt` fields to select agents
+- Skill templates: added `version` field to all 11 universal skill frontmatter
+- Doctor: agent frontmatter completeness scoring, CLAUDE.md section analysis
+- Settings validation matrix: 46 tests covering all language/docker template combinations
+- MEMORY.md template: enriched with structured content format (rule + Why + How to apply)
+- Tech debt: removed dead code, deduplicated workflow validation, data-driven command registration
 
 ---
 

@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.0.0
-**Last Updated:** 2026-04-03
+**Version:** 2.0.1
+**Last Updated:** 2026-04-04
 
 ## Completed
 
@@ -264,6 +264,17 @@
   - [x] Phase 6: New content — MEMORY.md template, coordinator-mode skill, verify-app upgrade, worktree safety
   - [x] Phase 7: E2E audit — verification tests, count fixes, template sync, stale file cleanup
   - [x] Phase 8: Documentation update — new claude-code-integration.md guide + 13 reference/guide page updates
+
+- [x] v2.0.1: Post-release polish (2026-04-04)
+  - [x] Agent frontmatter: `criticalSystemReminder`, `skills`, `initialPrompt` fields on select agents
+  - [x] Skill version fields: all 11 universal skill templates
+  - [x] Doctor enhancements: agent frontmatter completeness scoring, CLAUDE.md section analysis
+  - [x] Settings validation matrix: 46 tests covering all language/docker template combinations
+  - [x] MEMORY.md template enrichment: structured content format
+  - [x] Tech debt: removed dead code, deduplicated workflow validation, data-driven command registration
+  - [x] Stale count fixes: README, CLAUDE.md, PROGRESS.md synced to actual values
+  - [x] Added "What's New in v2.0.0" to README, Template Format Requirements to CONTRIBUTING.md
+  - [x] Created BACKLOG-v2.1.md for future enhancements
 
 ## Stats
 
