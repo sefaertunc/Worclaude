@@ -108,6 +108,12 @@ When adding new features, include tests that cover:
 
 Test all three scenarios (fresh project, existing project, upgrade) if your change touches merge logic or file generation.
 
+## Template Format Requirements
+
+- **Skills** must be in directory format: `templates/skills/universal/skill-name.md` is the source, scaffolded as `.claude/skills/skill-name/SKILL.md` in user projects. Flat `.md` files in `.claude/skills/` are silently ignored by Claude Code.
+- **Agents** must have both `name` and `description` in YAML frontmatter. Without `description`, agents are invisible to Claude Code's `/agents` and routing system.
+- **Commands** are flat `.md` files in `templates/commands/` and scaffolded as `.claude/commands/command-name.md`. This is the legacy format and is supported.
+
 ## Questions?
 
 Open a discussion on GitHub or mention it in your issue/PR. We're happy to help.

@@ -298,6 +298,65 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     expect(await fs.pathExists(path.join(tmpDir, 'MEMORY.md'))).toBe(true);
   });
 
+  it('read-only agents have criticalSystemReminder', async () => {
+    setupFreshMocks({ allAgents: true });
+    await initCommand();
+
+    const agentsDir = path.join(tmpDir, '.claude', 'agents');
+    const readOnlyAgents = ['plan-reviewer.md', 'security-reviewer.md', 'verify-app.md'];
+
+    for (const name of readOnlyAgents) {
+      const agentPath = path.join(agentsDir, name);
+      if (await fs.pathExists(agentPath)) {
+        const content = await fs.readFile(agentPath, 'utf8');
+        expect(content, `${name} should have criticalSystemReminder`).toContain(
+          'criticalSystemReminder:'
+        );
+      }
+    }
+  });
+
+  it('agents with skill dependencies have skills field', async () => {
+    setupFreshMocks({ allAgents: true });
+    await initCommand();
+
+    const agentsDir = path.join(tmpDir, '.claude', 'agents');
+    const skillAgents = [
+      { file: 'test-writer.md', skill: 'testing' },
+      { file: 'security-reviewer.md', skill: 'security-checklist' },
+    ];
+
+    for (const { file, skill } of skillAgents) {
+      const agentPath = path.join(agentsDir, file);
+      if (await fs.pathExists(agentPath)) {
+        const content = await fs.readFile(agentPath, 'utf8');
+        expect(content, `${file} should preload ${skill}`).toContain(`- ${skill}`);
+      }
+    }
+  });
+
+  it('verify-app has initialPrompt', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const content = await fs.readFile(
+      path.join(tmpDir, '.claude', 'agents', 'verify-app.md'),
+      'utf8'
+    );
+    expect(content).toContain('initialPrompt:');
+  });
+
+  it('universal skills have version field', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const skillsDir = path.join(tmpDir, '.claude', 'skills');
+    for (const skill of UNIVERSAL_SKILLS) {
+      const content = await fs.readFile(path.join(skillsDir, skill, 'SKILL.md'), 'utf8');
+      expect(content, `${skill} should have version`).toContain('version:');
+    }
+  });
+
   it('memory: project set on correct agents', async () => {
     setupFreshMocks({ allAgents: true });
     await initCommand();
