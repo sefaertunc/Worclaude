@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readWorkflowMeta, workflowMetaExists, getPackageVersion } from '../core/config.js';
+import { requireWorkflowMeta, getPackageVersion } from '../core/config.js';
 import { hashFile } from '../utils/hash.js';
 import { fileExists, readFile, listFilesRecursive } from '../utils/file.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
@@ -15,13 +15,12 @@ function countByPrefix(fileHashes, prefix) {
 export async function statusCommand() {
   const projectRoot = process.cwd();
 
-  if (!(await workflowMetaExists(projectRoot))) {
+  const { meta, error } = await requireWorkflowMeta(projectRoot);
+  if (error === 'not-installed') {
     display.info('Workflow is not installed. Run `worclaude init` to set up.');
     return;
   }
-
-  const meta = await readWorkflowMeta(projectRoot);
-  if (!meta) {
+  if (error === 'corrupted') {
     display.error('workflow-meta.json is corrupted. Run `worclaude init` to reinstall.');
     return;
   }

@@ -4,8 +4,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import {
   computeFileHashes,
-  readWorkflowMeta,
-  workflowMetaExists,
+  requireWorkflowMeta,
   writeWorkflowMeta,
   getPackageVersion,
 } from '../core/config.js';
@@ -70,16 +69,13 @@ export async function upgradeCommand() {
   }
 
   // 2. Check prerequisite
-  if (!(await workflowMetaExists(projectRoot))) {
-    display.error('No workflow installation found.');
-    display.info('Run `worclaude init` to set up the workflow first.');
+  const { meta, error } = await requireWorkflowMeta(projectRoot);
+  if (error === 'not-installed') {
+    display.info('Workflow is not installed. Run `worclaude init` to set up.');
     return;
   }
-
-  const meta = await readWorkflowMeta(projectRoot);
-  if (!meta) {
-    display.error('workflow-meta.json is corrupted or invalid.');
-    display.info('Run `worclaude init` to reinstall (a backup will be created first).');
+  if (error === 'corrupted') {
+    display.error('workflow-meta.json is corrupted. Run `worclaude init` to reinstall.');
     return;
   }
 

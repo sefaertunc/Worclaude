@@ -5,6 +5,8 @@ model: sonnet
 isolation: worktree
 maxTurns: 50
 memory: project
+skills:
+  - testing
 ---
 
 You are a test specialist. You write comprehensive, meaningful tests

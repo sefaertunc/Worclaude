@@ -10,7 +10,7 @@
 
 [Full Documentation](https://sefaertunc.github.io/Worclaude/) · [Interactive Demo](https://sefaertunc.github.io/Worclaude/demo/) · [npm](https://www.npmjs.com/package/worclaude)
 
-Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 25 agents, 16 slash commands, 14 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
+Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 25 agents, 16 slash commands, 15 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
 
 ---
 
@@ -26,9 +26,9 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 **Slash Commands (16)**
 `/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/setup` `/sync` `/conflict-resolver` `/review-changes` `/build-fix` `/refactor-clean` `/test-coverage`
 
-**Skills (14)**
+**Skills (15)**
 
-- 10 universal knowledge files (testing, git conventions, context management, security, and more)
+- 11 universal knowledge files (testing, git conventions, context management, security, coordinator mode, and more)
 - 3 project-specific templates filled in by `/setup`
 - 1 generated agent routing guide (dynamically built from your agent selection)
 
@@ -45,6 +45,45 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 - Pre-configured permissions per tech stack (Node.js, Python, Go, Rust, and more)
 - CLAUDE.md template with progressive disclosure
 - Sandbox, effort, and output defaults ready out of the box
+
+---
+
+## What's New in v2.0.0
+
+v2.0.0 is a major integration release. Skills and agents now register with Claude Code's runtime systems — they show up in `/skills` and `/agents`, not just as files on disk.
+
+**Claude Code Runtime Integration**
+
+- Skills use directory format (`skill-name/SKILL.md`) and register with `/skills`
+- Agents include `description` frontmatter and register with `/agents`
+- Run `worclaude doctor` to verify everything is wired up correctly
+
+**Conditional Skills**
+
+- 6 skills activate only when relevant files are touched (testing, security, frontend, backend, verification, project-patterns)
+- 8 skills stay always-loaded for cross-cutting guidance
+- Saves context window budget by keeping domain-specific guidance out of unrelated work
+
+**Agent Enhancements**
+
+- Read-only agents blocked from file modifications via `disallowedTools`
+- Background execution for long-running agents (verify-app, build-validator, e2e-runner)
+- Turn limits (`maxTurns`) prevent runaway token consumption
+- Persistent memory for agents that learn across sessions (test-writer, security-reviewer, doc-writer)
+
+**New Content**
+
+- Coordinator-mode skill for multi-agent orchestration patterns
+- Optional MEMORY.md template for Claude Code's memory system
+- Enhanced verify-app agent with structured verdicts and adversarial probe requirements
+- Per-tech-stack permission presets (16 languages)
+
+**Upgrade Migration**
+
+- `worclaude upgrade` auto-migrates v1.x projects: flat skills → directory format, agents get required frontmatter
+- `worclaude doctor` detects old formats and missing fields
+
+See the [Claude Code Integration guide](https://sefaertunc.github.io/Worclaude/guide/claude-code-integration) for technical details.
 
 ---
 

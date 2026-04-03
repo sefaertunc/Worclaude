@@ -177,59 +177,57 @@ async function checkAgents(projectRoot, meta) {
   return results;
 }
 
-async function checkAgentDescription(projectRoot) {
+async function readAgentFrontmatters(projectRoot) {
   const agentsDir = path.join(projectRoot, '.claude', 'agents');
-  const results = [];
-
   try {
     const entries = await fs.readdir(agentsDir, { withFileTypes: true });
     const mdFiles = entries.filter((e) => e.isFile() && e.name.endsWith('.md'));
-
+    const agents = [];
     for (const file of mdFiles) {
-      const filePath = path.join(agentsDir, file.name);
-      const content = await readFile(filePath);
+      const content = await readFile(path.join(agentsDir, file.name));
+      const match = content.match(/^---\n([\s\S]*?)\n---/);
+      agents.push({ name: file.name, frontmatter: match ? match[1] : null });
+    }
+    return agents;
+  } catch {
+    return [];
+  }
+}
 
-      // Parse YAML frontmatter
-      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-      if (!frontmatterMatch) {
-        results.push(
-          result(
-            FAIL,
-            `agents/${file.name}`,
-            'No YAML frontmatter — agent is invisible to Claude Code'
-          )
-        );
-        continue;
-      }
+async function checkAgentDescription(projectRoot) {
+  const agents = await readAgentFrontmatters(projectRoot);
+  if (agents.length === 0) return [];
 
-      const frontmatter = frontmatterMatch[1];
-      const hasName = /^name:\s*.+/m.test(frontmatter);
-      const hasDescription = /^description:\s*.+/m.test(frontmatter);
-
-      if (!hasName) {
-        results.push(
-          result(FAIL, `agents/${file.name}`, 'Missing required "name" field in frontmatter')
-        );
-      } else if (!hasDescription) {
-        results.push(
-          result(
-            FAIL,
-            `agents/${file.name}`,
-            'Missing required "description" field — agent is invisible to Claude Code\'s /agents and routing'
-          )
-        );
-      }
+  const results = [];
+  for (const { name, frontmatter } of agents) {
+    if (!frontmatter) {
+      results.push(
+        result(FAIL, `agents/${name}`, 'No YAML frontmatter — agent is invisible to Claude Code')
+      );
+      continue;
     }
 
-    if (results.length === 0 && mdFiles.length > 0) {
+    const hasName = /^name:\s*.+/m.test(frontmatter);
+    const hasDescription = /^description:\s*.+/m.test(frontmatter);
+
+    if (!hasName) {
+      results.push(result(FAIL, `agents/${name}`, 'Missing required "name" field in frontmatter'));
+    } else if (!hasDescription) {
       results.push(
-        result(PASS, `agents/ frontmatter (${mdFiles.length} agents have required fields)`, null)
+        result(
+          FAIL,
+          `agents/${name}`,
+          'Missing required "description" field — agent is invisible to Claude Code\'s /agents and routing'
+        )
       );
     }
-  } catch {
-    // agents/ doesn't exist — covered by existing component checks
   }
 
+  if (results.length === 0) {
+    results.push(
+      result(PASS, `agents/ frontmatter (${agents.length} agents have required fields)`, null)
+    );
+  }
   return results;
 }
 
@@ -385,6 +383,124 @@ async function checkDocSpecs(projectRoot) {
   return results;
 }
 
+const AGENT_OPTIONAL_FIELDS = [
+  'model',
+  'isolation',
+  'maxTurns',
+  'disallowedTools',
+  'background',
+  'memory',
+  'skills',
+  'initialPrompt',
+  'criticalSystemReminder',
+  'omitClaudeMd',
+];
+
+async function checkAgentCompleteness(projectRoot) {
+  const agents = await readAgentFrontmatters(projectRoot);
+  const withFrontmatter = agents.filter((a) => a.frontmatter);
+  if (withFrontmatter.length === 0) return [];
+
+  let totalFields = 0;
+  const suggestions = [];
+
+  for (const { name, frontmatter } of withFrontmatter) {
+    let fieldCount = 0;
+    for (const field of AGENT_OPTIONAL_FIELDS) {
+      if (new RegExp(`^${field}:`, 'm').test(frontmatter)) fieldCount++;
+    }
+    totalFields += fieldCount;
+
+    const hasDisallowed = /^disallowedTools:/m.test(frontmatter);
+    const hasReminder = /^criticalSystemReminder:/m.test(frontmatter);
+    if (hasDisallowed && !hasReminder) {
+      suggestions.push(`${name}: read-only agent could benefit from criticalSystemReminder`);
+    }
+  }
+
+  const totalPossible = withFrontmatter.length * AGENT_OPTIONAL_FIELDS.length;
+  const pct = Math.round((totalFields / totalPossible) * 100);
+  const results = [];
+
+  if (pct >= 50) {
+    results.push(
+      result(
+        PASS,
+        `Agent enrichment: ${pct}% optional fields used across ${withFrontmatter.length} agents`,
+        null
+      )
+    );
+  } else {
+    results.push(
+      result(
+        WARN,
+        `Agent enrichment: ${pct}% optional fields used across ${withFrontmatter.length} agents`,
+        'Run `worclaude upgrade` to add model, maxTurns, skills, and other metadata'
+      )
+    );
+  }
+
+  for (const s of suggestions) {
+    results.push(result(WARN, s, null));
+  }
+
+  return results;
+}
+
+async function checkClaudeMdSections(projectRoot) {
+  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
+  const SECTION_THRESHOLD = 20000; // Only analyze sections if file > 20KB
+  const results = [];
+
+  try {
+    const content = await readFile(claudeMdPath);
+    if (content.length < SECTION_THRESHOLD) return results;
+
+    // Split into ## sections
+    const sections = [];
+    const lines = content.split('\n');
+    let currentHeading = '(top-level)';
+    let currentLines = [];
+
+    for (const line of lines) {
+      const headingMatch = line.match(/^##\s+(.+)/);
+      if (headingMatch) {
+        if (currentLines.length > 0) {
+          sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
+        }
+        currentHeading = headingMatch[1];
+        currentLines = [];
+      } else {
+        currentLines.push(line);
+      }
+    }
+    if (currentLines.length > 0) {
+      sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
+    }
+
+    // Sort by size, suggest extracting the top 3 sections > 2KB
+    const large = sections.filter((s) => s.size > 2000).sort((a, b) => b.size - a.size);
+
+    if (large.length > 0) {
+      const top = large.slice(0, 3);
+      const sectionList = top
+        .map((s) => `"${s.heading}" (${(s.size / 1024).toFixed(1)}KB)`)
+        .join(', ');
+      results.push(
+        result(
+          WARN,
+          `CLAUDE.md has large sections: ${sectionList}`,
+          'Consider extracting to conditional skills with paths frontmatter to save context budget'
+        )
+      );
+    }
+  } catch {
+    // Already covered by checkClaudeMd
+  }
+
+  return results;
+}
+
 async function checkPendingReviewFiles(projectRoot) {
   const pending = [];
   try {
@@ -429,6 +545,7 @@ export async function doctorCommand() {
 
   printResult(await checkClaudeMd(projectRoot));
   for (const r of await checkClaudeMdSize(projectRoot)) printResult(r);
+  for (const r of await checkClaudeMdSections(projectRoot)) printResult(r);
   printResult(await checkSettingsJson(projectRoot));
   printResult(await checkSessions(projectRoot));
   display.newline();
@@ -440,6 +557,7 @@ export async function doctorCommand() {
   for (const r of await checkCommands(projectRoot)) printResult(r);
   for (const r of await checkSkills(projectRoot)) printResult(r);
   for (const r of await checkSkillFormat(projectRoot)) printResult(r);
+  for (const r of await checkAgentCompleteness(projectRoot)) printResult(r);
   display.newline();
 
   // Docs
@@ -455,7 +573,7 @@ export async function doctorCommand() {
 
   // Summary
   if (metaResult.status === FAIL) {
-    display.error('Workflow is not installed. Run `worclaude init` to set up.');
+    display.info('Workflow is not installed. Run `worclaude init` to set up.');
   } else {
     display.success('Doctor complete. Review any warnings above.');
   }

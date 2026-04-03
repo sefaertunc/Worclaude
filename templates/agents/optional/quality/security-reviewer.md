@@ -11,6 +11,9 @@ disallowedTools:
 maxTurns: 40
 omitClaudeMd: true
 memory: project
+skills:
+  - security-checklist
+criticalSystemReminder: "CRITICAL: You CANNOT edit files. Report vulnerabilities with remediation guidance only."
 ---
 
 You are a senior application security engineer performing a code

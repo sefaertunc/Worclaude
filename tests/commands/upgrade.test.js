@@ -45,6 +45,8 @@ vi.mock('ora', () => ({
 vi.spyOn(console, 'log').mockImplementation(() => {});
 
 import inquirer from 'inquirer';
+import { execSync } from 'node:child_process';
+import { getLatestNpmVersion } from '../../src/utils/npm.js';
 import { upgradeCommand } from '../../src/commands/upgrade.js';
 
 describe('upgrade command', () => {
@@ -66,7 +68,7 @@ describe('upgrade command', () => {
   it('shows error when no workflow installed', async () => {
     await upgradeCommand();
     const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
-    expect(output).toContain('No workflow installation found');
+    expect(output).toContain('Workflow is not installed');
   });
 
   it('shows already up to date when versions match', async () => {
@@ -297,5 +299,56 @@ describe('upgrade command', () => {
       await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8')
     );
     expect(updatedMeta.version).toBe('0.9.0');
+  });
+
+  describe('self-update', () => {
+    it('offers self-update when npm has newer version', async () => {
+      getLatestNpmVersion.mockReturnValue('99.0.0');
+      // User declines update
+      inquirer.prompt.mockResolvedValue({ doUpdate: false });
+
+      await upgradeCommand();
+
+      const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(output).toContain('New worclaude version available');
+    });
+
+    it('runs npm install on successful self-update', async () => {
+      getLatestNpmVersion.mockReturnValue('99.0.0');
+      execSync.mockReturnValue('');
+      inquirer.prompt.mockResolvedValue({ doUpdate: true });
+
+      await upgradeCommand();
+
+      expect(execSync).toHaveBeenCalledWith('npm install -g worclaude@latest', expect.any(Object));
+      const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(output).toContain('Re-run');
+    });
+
+    it('shows sudo hint on EACCES error during self-update', async () => {
+      getLatestNpmVersion.mockReturnValue('99.0.0');
+      execSync.mockImplementation(() => {
+        throw new Error('EACCES permission denied');
+      });
+      inquirer.prompt.mockResolvedValue({ doUpdate: true });
+
+      await upgradeCommand();
+
+      const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(output).toContain('sudo npm install');
+    });
+
+    it('shows generic hint on non-EACCES error during self-update', async () => {
+      getLatestNpmVersion.mockReturnValue('99.0.0');
+      execSync.mockImplementation(() => {
+        throw new Error('network timeout');
+      });
+      inquirer.prompt.mockResolvedValue({ doUpdate: true });
+
+      await upgradeCommand();
+
+      const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(output).toContain('Try manually');
+    });
   });
 });

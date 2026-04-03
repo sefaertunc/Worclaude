@@ -7,22 +7,50 @@
 ## User
 
 <!-- Role, preferences, expertise — helps Claude tailor responses -->
+<!-- Example: - [Backend lead](user_role.md) — 8 years Python, new to this frontend -->
 
 ## Feedback
 
 <!-- What to do and what to avoid — both corrections AND confirmed approaches -->
 <!-- Format: rule, then **Why:** and **How to apply:** -->
+<!-- Example: - [No mocks in integration tests](feedback_testing.md) — burned by mock/prod divergence -->
 
 ## Project
 
 <!-- Ongoing work, goals, deadlines — convert relative dates to absolute -->
 <!-- Format: fact/decision, then **Why:** and **How to apply:** -->
+<!-- Example: - [Merge freeze 2026-03-05](project_release.md) — mobile team cutting release branch -->
 
 ## Reference
 
 <!-- Pointers to external systems — Linear boards, Slack channels, dashboards -->
+<!-- Example: - [Pipeline bugs](reference_linear.md) — tracked in Linear project "INGEST" -->
 
 ---
+
+## Memory File Format
+
+Each memory file in `.claude/memory/` uses this frontmatter:
+
+```markdown
+---
+name: descriptive-name
+description: one-line summary used to decide relevance in future sessions
+type: user | feedback | project | reference
+---
+
+Content here. For feedback/project types, structure as:
+Rule or fact.
+**Why:** the reason or context.
+**How to apply:** when and where this guidance applies.
+```
+
+## Drift and Verification
+
+- Memory records become stale over time. Before acting on a memory, verify it against the current state of the codebase.
+- If a memory names a file path, check the file still exists. If it names a function or flag, grep for it.
+- If a recalled memory conflicts with current information, trust what you observe now — update or remove the stale memory.
+- "The memory says X exists" is not the same as "X exists now."
 
 ## What NOT to save here
 

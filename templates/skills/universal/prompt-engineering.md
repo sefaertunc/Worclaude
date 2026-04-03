@@ -1,6 +1,7 @@
 ---
 description: "Effective prompting patterns for working with Claude, demanding quality, writing specs"
 when_to_use: "When writing or editing prompts, skills, agent definitions, or CLAUDE.md instructions"
+version: "1.0.0"
 ---
 
 # Prompt Engineering

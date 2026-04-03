@@ -1,7 +1,14 @@
 ---
 name: changelog-generator
+description: "Generates changelog from commits"
 model: haiku
 isolation: none
+disallowedTools:
+  - Edit
+  - NotebookEdit
+  - Agent
+maxTurns: 15
+omitClaudeMd: true
 ---
 
 You are a changelog generator that creates clear, well-organized

@@ -1,6 +1,7 @@
 ---
 description: "Branch naming, commit message format, PR workflow, worktree conventions, versioning policy"
 when_to_use: "When creating branches, writing commit messages, creating PRs, or making versioning decisions"
+version: "1.0.0"
 ---
 
 # Git Conventions

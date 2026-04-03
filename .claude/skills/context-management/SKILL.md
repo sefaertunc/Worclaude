@@ -1,5 +1,6 @@
 ---
 description: "Context budget awareness, when to compact, when to clear, subagent offloading"
+when_to_use: "When context is running low, before compaction decisions, when deciding whether to use subagents for context hygiene"
 ---
 
 # Context Management

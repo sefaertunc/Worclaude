@@ -1,7 +1,7 @@
 import path from 'node:path';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { workflowMetaExists, readWorkflowMeta } from '../core/config.js';
+import { requireWorkflowMeta } from '../core/config.js';
 import { createBackup } from '../core/backup.js';
 import {
   classifyClaudeFiles,
@@ -16,16 +16,13 @@ export async function deleteCommand() {
   const projectRoot = process.cwd();
 
   // Pre-flight: ensure worclaude is installed
-  if (!(await workflowMetaExists(projectRoot))) {
-    display.error('No worclaude workflow found in this project.');
-    display.info('Run `worclaude init` to set up a workflow first.');
+  const { meta, error } = await requireWorkflowMeta(projectRoot);
+  if (error === 'not-installed') {
+    display.info('Workflow is not installed. Run `worclaude init` to set up.');
     return;
   }
-
-  const meta = await readWorkflowMeta(projectRoot);
-  if (!meta) {
-    display.error('workflow-meta.json is corrupted or unreadable.');
-    display.info('You may need to manually remove the .claude/ directory.');
+  if (error === 'corrupted') {
+    display.error('workflow-meta.json is corrupted. Run `worclaude init` to reinstall.');
     return;
   }
 
