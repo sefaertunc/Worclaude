@@ -16,7 +16,7 @@ A flat file like `.claude/skills/testing.md` is **silently ignored** by Claude C
 
 ### Skill Frontmatter
 
-Each `SKILL.md` file starts with YAML frontmatter:
+Each `SKILL.md` file starts with YAML frontmatter. Claude Code's runtime parses 16 fields:
 
 ```yaml
 ---
@@ -25,14 +25,30 @@ when_to_use: 'When this skill is relevant'
 paths:
   - 'src/**'
   - 'lib/**'
+version: '1.0.0'
 ---
 ```
 
-| Field         | Required | Purpose                                  |
-| ------------- | -------- | ---------------------------------------- |
-| `description` | Yes      | Short summary shown in `/skills` listing |
-| `when_to_use` | Yes      | Tells Claude when to load this skill     |
-| `paths`       | No       | Glob patterns for conditional activation |
+| Field                      | Required | Applies To | Purpose                                                            |
+| -------------------------- | -------- | ---------- | ------------------------------------------------------------------ |
+| `description`              | Yes      | Both       | Short summary shown in `/skills` listing                           |
+| `when_to_use`              | Yes      | Both       | Tells Claude when to load this skill                               |
+| `paths`                    | No       | Both       | Glob patterns for conditional activation                           |
+| `version`                  | No       | Both       | Version tracking for upgrades                                      |
+| `name`                     | No       | Both       | Display name (defaults to directory name)                          |
+| `allowed-tools`            | No       | Both       | Restrict which tools the skill can use when invoked                |
+| `arguments`                | No       | Both       | Named arguments as array or space-separated string                 |
+| `argument-hint`            | No       | Both       | Usage hint displayed for arguments                                 |
+| `model`                    | No       | Both       | Model override (`haiku`, `sonnet`, `opus`, `inherit`)              |
+| `context`                  | No       | Skills     | Execution context: `inline` (default) or `fork` (run as sub-agent) |
+| `agent`                    | No       | Skills     | Route to a specific agent type when `context: fork`                |
+| `effort`                   | No       | Both       | Effort level (`low`, `medium`, `high`, or integer)                 |
+| `shell`                    | No       | Both       | Shell override (`bash`, `zsh`, `sh`, `pwsh`)                       |
+| `user-invocable`           | No       | Both       | Whether users can type `/skill-name` directly (default: true)      |
+| `disable-model-invocation` | No       | Both       | Prevent Claude from auto-invoking this skill                       |
+| `hooks`                    | No       | Both       | Per-skill hook registration (activates when skill is invoked)      |
+
+"Both" means the field applies to both skills (`.claude/skills/`) and legacy commands (`.claude/commands/`).
 
 After the frontmatter, the rest of the file is markdown content that Claude reads when the skill is loaded.
 
@@ -68,17 +84,27 @@ omitClaudeMd: true
 ---
 ```
 
-| Field             | Required | Values                    | Purpose                                            |
-| ----------------- | -------- | ------------------------- | -------------------------------------------------- |
-| `name`            | Yes      | string                    | Agent identifier used for routing                  |
-| `description`     | Yes      | string                    | What the agent does -- **required for visibility** |
-| `model`           | Yes      | `opus`, `sonnet`, `haiku` | Which Claude model powers the agent                |
-| `isolation`       | No       | `none`, `worktree`        | Git isolation mode                                 |
-| `disallowedTools` | No       | string[]                  | Tools the agent cannot use                         |
-| `background`      | No       | boolean                   | Run without blocking the user                      |
-| `maxTurns`        | No       | number                    | Maximum conversation turns                         |
-| `omitClaudeMd`    | No       | boolean                   | Skip loading CLAUDE.md for this agent              |
-| `memory`          | No       | `project`                 | Memory scope for cross-session learning            |
+| Field             | Required | Values                               | Purpose                                               |
+| ----------------- | -------- | ------------------------------------ | ----------------------------------------------------- |
+| `name`            | Yes      | string                               | Agent identifier used for routing                     |
+| `description`     | Yes      | string                               | What the agent does -- **required for visibility**    |
+| `model`           | Yes      | `opus`, `sonnet`, `haiku`, `inherit` | Which Claude model powers the agent                   |
+| `isolation`       | No       | `none`, `worktree`                   | Git isolation mode                                    |
+| `disallowedTools` | No       | string[]                             | Tools the agent cannot use                            |
+| `tools`           | No       | string[]                             | Tool **allowlist** (alternative to `disallowedTools`) |
+| `background`      | No       | boolean                              | Run without blocking the user                         |
+| `maxTurns`        | No       | number                               | Maximum conversation turns                            |
+| `omitClaudeMd`    | No       | boolean                              | Skip loading CLAUDE.md for this agent                 |
+| `memory`          | No       | `project`                            | Memory scope for cross-session learning               |
+| `effort`          | No       | `low`, `medium`, `high`, or integer  | Controls token spend for the agent                    |
+| `color`           | No       | string                               | Agent color in the UI (e.g., `orange`, `red`)         |
+| `permissionMode`  | No       | `dontAsk`, `default`, etc.           | Per-agent permission override                         |
+| `mcpServers`      | No       | string[] or object[]                 | MCP servers this agent needs                          |
+| `hooks`           | No       | object                               | Per-agent hooks that register when the agent starts   |
+
+::: tip tools vs disallowedTools
+For read-only agents, a `tools` allowlist is often cleaner than `disallowedTools`. Instead of listing every tool to deny, specify only what the agent needs: `tools: ['Read', 'Bash', 'Glob', 'Grep']`. Claude Code's own built-in agents use both patterns.
+:::
 
 **Critical:** Without a `description` field, agents are invisible to Claude Code. They will not appear in `/agents` and cannot be routed to. This is the most common issue when agents appear to be missing.
 
@@ -202,6 +228,45 @@ Agents with project memory:
 - Debugging solutions (the fix is in the code)
 - Anything already in CLAUDE.md
 - Ephemeral task details
+
+## CLAUDE.md @include Directive
+
+CLAUDE.md and all other memory files support `@include` directives for splitting large content across files. This works in CLAUDE.md, `.claude/CLAUDE.md`, `.claude/rules/*.md`, and `CLAUDE.local.md`.
+
+```markdown
+# CLAUDE.md
+
+## Key Files
+
+@./docs/spec/PROGRESS.md
+@./docs/conventions.md
+```
+
+Syntax:
+
+- `@path` or `@./relative` -- relative to the file containing the directive
+- `@~/path` -- relative to home directory
+- `@/absolute/path` -- absolute path
+
+Rules:
+
+- Works in leaf text nodes only (not inside code blocks)
+- Circular references are prevented automatically
+- Non-existent files are silently ignored
+- Each included file consumes context budget -- use judiciously
+
+This is the recommended way to keep CLAUDE.md lean while still loading relevant context. See the [claude-md-maintenance](/reference/skills#claude-md-maintenance) skill for guidelines on CLAUDE.md size.
+
+## CLAUDE.md Loading Hierarchy
+
+Claude Code loads instruction files from multiple locations in priority order (later = higher priority):
+
+1. **Managed** -- `/etc/claude-code/CLAUDE.md` (enterprise policy)
+2. **User** -- `~/.claude/CLAUDE.md` (personal defaults)
+3. **Project** -- `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/rules/*.md` (per-project, at each directory level up to home)
+4. **Local** -- `CLAUDE.local.md` (gitignored, personal overrides)
+
+Files closer to the current working directory have higher priority. The total budget for all loaded instruction files is approximately 40,000 characters.
 
 ## Verifying Integration
 

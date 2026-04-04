@@ -59,3 +59,12 @@ Rule or fact.
 - Debugging solutions — the fix is in the code, the context is in the commit message
 - Anything already in CLAUDE.md
 - Ephemeral task details — current conversation context, in-progress work
+
+These exclusions apply even when explicitly asked to save. If asked to save a PR list or activity summary, ask what was *surprising* or *non-obvious* about it — that is the part worth keeping.
+
+## Memory vs Plans vs Tasks
+
+Memory is for information useful across conversations. Don't use it for:
+- **Plans** — use a plan file or plan mode for implementation strategies within a session
+- **Tasks** — use the task system for tracking work steps within a session
+- **Session state** — current conversation context belongs in the conversation, not memory
