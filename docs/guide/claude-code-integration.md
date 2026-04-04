@@ -84,23 +84,23 @@ omitClaudeMd: true
 ---
 ```
 
-| Field             | Required | Values                               | Purpose                                               |
-| ----------------- | -------- | ------------------------------------ | ----------------------------------------------------- |
-| `name`            | Yes      | string                               | Agent identifier used for routing                     |
-| `description`     | Yes      | string                               | What the agent does -- **required for visibility**    |
-| `model`           | Yes      | `opus`, `sonnet`, `haiku`, `inherit` | Which Claude model powers the agent                   |
-| `isolation`       | No       | `none`, `worktree`                   | Git isolation mode                                    |
-| `disallowedTools` | No       | string[]                             | Tools the agent cannot use                            |
-| `tools`           | No       | string[]                             | Tool **allowlist** (alternative to `disallowedTools`) |
-| `background`      | No       | boolean                              | Run without blocking the user                         |
-| `maxTurns`        | No       | number                               | Maximum conversation turns                            |
-| `omitClaudeMd`    | No       | boolean                              | Skip loading CLAUDE.md for this agent                 |
-| `memory`          | No       | `project`                            | Memory scope for cross-session learning               |
-| `effort`          | No       | `low`, `medium`, `high`, or integer  | Controls token spend for the agent                    |
-| `color`           | No       | string                               | Agent color in the UI (e.g., `orange`, `red`)         |
-| `permissionMode`  | No       | `dontAsk`, `default`, etc.           | Per-agent permission override                         |
-| `mcpServers`      | No       | string[] or object[]                 | MCP servers this agent needs                          |
-| `hooks`           | No       | object                               | Per-agent hooks that register when the agent starts   |
+| Field             | Required | Values                                                           | Purpose                                               |
+| ----------------- | -------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| `name`            | Yes      | string                                                           | Agent identifier used for routing                     |
+| `description`     | Yes      | string                                                           | What the agent does -- **required for visibility**    |
+| `model`           | Yes      | `opus`, `sonnet`, `haiku`, `inherit`                             | Which Claude model powers the agent                   |
+| `isolation`       | No       | `none`, `worktree`                                               | Git isolation mode                                    |
+| `disallowedTools` | No       | string[]                                                         | Tools the agent cannot use                            |
+| `tools`           | No       | string[]                                                         | Tool **allowlist** (alternative to `disallowedTools`) |
+| `background`      | No       | boolean                                                          | Run without blocking the user                         |
+| `maxTurns`        | No       | number                                                           | Maximum conversation turns                            |
+| `omitClaudeMd`    | No       | boolean                                                          | Skip loading CLAUDE.md for this agent                 |
+| `memory`          | No       | `project`                                                        | Memory scope for cross-session learning               |
+| `effort`          | No       | `low`, `medium`, `high`, or integer                              | Controls token spend for the agent                    |
+| `color`           | No       | string                                                           | Agent color in the UI (e.g., `orange`, `red`)         |
+| `permissionMode`  | No       | `acceptEdits`, `bypassPermissions`, `default`, `dontAsk`, `plan` | Per-agent permission override                         |
+| `mcpServers`      | No       | string[] or object[]                                             | MCP servers this agent needs                          |
+| `hooks`           | No       | object                                                           | Per-agent hooks that register when the agent starts   |
 
 ::: tip tools vs disallowedTools
 For read-only agents, a `tools` allowlist is often cleaner than `disallowedTools`. Instead of listing every tool to deny, specify only what the agent needs: `tools: ['Read', 'Bash', 'Glob', 'Grep']`. Claude Code's own built-in agents use both patterns.

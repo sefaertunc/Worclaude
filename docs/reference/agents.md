@@ -6,23 +6,23 @@ Worclaude installs Claude Code agent definitions as Markdown files in `.claude/a
 
 Every agent file includes a YAML frontmatter block. The `name` and `description` fields are **required** -- without `description`, agents are invisible to Claude Code and will not appear in `/agents` or be available for routing.
 
-| Property          | Required | Values                               | Purpose                                                |
-| ----------------- | -------- | ------------------------------------ | ------------------------------------------------------ |
-| `name`            | Yes      | string                               | Agent identifier used for routing                      |
-| `description`     | Yes      | string                               | What the agent does -- required for visibility         |
-| `model`           | Yes      | `opus`, `sonnet`, `haiku`, `inherit` | Which Claude model the agent uses                      |
-| `isolation`       | No       | `none`, `worktree`                   | Whether the agent works in a git worktree              |
-| `disallowedTools` | No       | string[]                             | Tools the agent cannot use (enforced by runtime)       |
-| `tools`           | No       | string[]                             | Tool **allowlist** -- alternative to `disallowedTools` |
-| `background`      | No       | boolean                              | Run asynchronously without blocking the user           |
-| `maxTurns`        | No       | number                               | Maximum conversation turns before auto-stop            |
-| `omitClaudeMd`    | No       | boolean                              | Skip loading CLAUDE.md for this agent                  |
-| `memory`          | No       | `project`                            | Memory scope for cross-session learning                |
-| `effort`          | No       | `low`, `medium`, `high`, or integer  | Controls token spend for the agent                     |
-| `color`           | No       | string                               | Agent color in the UI (e.g., `orange`, `red`)          |
-| `permissionMode`  | No       | `dontAsk`, `default`, etc.           | Per-agent permission mode override                     |
-| `mcpServers`      | No       | string[] or object[]                 | MCP servers this agent requires                        |
-| `hooks`           | No       | object                               | Per-agent hooks that register when the agent starts    |
+| Property          | Required | Values                                                           | Purpose                                                |
+| ----------------- | -------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `name`            | Yes      | string                                                           | Agent identifier used for routing                      |
+| `description`     | Yes      | string                                                           | What the agent does -- required for visibility         |
+| `model`           | Yes      | `opus`, `sonnet`, `haiku`, `inherit`                             | Which Claude model the agent uses                      |
+| `isolation`       | No       | `none`, `worktree`                                               | Whether the agent works in a git worktree              |
+| `disallowedTools` | No       | string[]                                                         | Tools the agent cannot use (enforced by runtime)       |
+| `tools`           | No       | string[]                                                         | Tool **allowlist** -- alternative to `disallowedTools` |
+| `background`      | No       | boolean                                                          | Run asynchronously without blocking the user           |
+| `maxTurns`        | No       | number                                                           | Maximum conversation turns before auto-stop            |
+| `omitClaudeMd`    | No       | boolean                                                          | Skip loading CLAUDE.md for this agent                  |
+| `memory`          | No       | `project`                                                        | Memory scope for cross-session learning                |
+| `effort`          | No       | `low`, `medium`, `high`, or integer                              | Controls token spend for the agent                     |
+| `color`           | No       | string                                                           | Agent color in the UI (e.g., `orange`, `red`)          |
+| `permissionMode`  | No       | `acceptEdits`, `bypassPermissions`, `default`, `dontAsk`, `plan` | Per-agent permission mode override                     |
+| `mcpServers`      | No       | string[] or object[]                                             | MCP servers this agent requires                        |
+| `hooks`           | No       | object                                                           | Per-agent hooks that register when the agent starts    |
 
 ::: tip tools vs disallowedTools
 Use `tools` (allowlist) when you know exactly which tools an agent needs: `tools: ['Read', 'Bash', 'Glob', 'Grep']`. Use `disallowedTools` (denylist) when the agent needs most tools but should be blocked from a few: `disallowedTools: ['Edit', 'Write']`. Both are enforced by the runtime — the agent physically cannot access restricted tools.

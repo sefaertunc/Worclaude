@@ -219,7 +219,7 @@ Hooks are defined in `.claude/settings.json` under the `hooks` key. The structur
 
 ## Hook Events Reference
 
-Claude Code supports 28 hook events. The `matcher` field filters when the hook fires within that event — leave empty to fire on every occurrence.
+Claude Code supports 27 hook events. The `matcher` field filters when the hook fires within that event — leave empty to fire on every occurrence.
 
 | Event                | Matcher Field                                                                                                         | Exit Code Behavior                                                                |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -364,40 +364,59 @@ Spawns a small agent to evaluate a prompt. More capable than prompt hooks — th
 
 ## Custom Hook Examples
 
+Block destructive git commands via PreToolUse:
+
 ```json
-// Block destructive git commands via PreToolUse
 {
-  "PreToolUse": [{
-    "matcher": "Bash",
-    "hooks": [{
-      "type": "command",
-      "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.command // empty'); case \"$cmd\" in *'git push --force'*|*'git reset --hard'*) echo 'Blocked: destructive git command' >&2; exit 2;; esac; exit 0",
-      "statusMessage": "Checking command safety..."
-    }]
-  }]
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.command // empty'); case \"$cmd\" in *'git push --force'*|*'git reset --hard'*) echo 'Blocked: destructive git command' >&2; exit 2;; esac; exit 0",
+          "statusMessage": "Checking command safety..."
+        }
+      ]
+    }
+  ]
 }
+```
 
-// Run tests after every file write
+Run tests after every file write:
+
+```json
 {
-  "PostToolUse": [{
-    "matcher": "Write|Edit",
-    "hooks": [{
-      "type": "command",
-      "command": "npm test 2>/dev/null || true"
-    }]
-  }]
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "npm test 2>/dev/null || true"
+        }
+      ]
+    }
+  ]
 }
+```
 
-// Webhook notification on session end
+Webhook notification on session end:
+
+```json
 {
-  "SessionEnd": [{
-    "matcher": "",
-    "hooks": [{
-      "type": "http",
-      "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
-      "timeout": 5
-    }]
-  }]
+  "SessionEnd": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "http",
+          "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
 }
 ```
 
