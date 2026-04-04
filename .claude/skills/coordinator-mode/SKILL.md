@@ -1,6 +1,7 @@
 ---
 description: 'Multi-agent orchestration patterns: when to use coordinator mode, worker prompts, parallel execution'
 when_to_use: 'When working with multiple agents or terminals in parallel, or when deciding how to break a large task into coordinated sub-tasks'
+version: "1.0.0"
 ---
 
 # Coordinator Mode
