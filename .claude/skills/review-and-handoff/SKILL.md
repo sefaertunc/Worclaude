@@ -1,6 +1,7 @@
 ---
 description: "Session ending protocol, HANDOFF document format, seamless continuation between sessions"
 when_to_use: "When ending a session, writing handoff documents, or updating PROGRESS.md"
+version: "1.0.0"
 ---
 
 # Review and Handoff
