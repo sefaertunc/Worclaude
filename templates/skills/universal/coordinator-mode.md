@@ -21,6 +21,25 @@ Don't use coordinator patterns when:
 - Steps are strictly sequential with no parallelism
 - The overhead of coordination exceeds the work itself
 
+## Phase-Based Workflow
+
+Most coordinated tasks follow four phases:
+
+| Phase | Who | Purpose |
+|-------|-----|---------|
+| Research | Workers (parallel) | Investigate codebase, find files, understand problem |
+| Synthesis | **You** (coordinator) | Read findings, understand the problem, craft implementation specs |
+| Implementation | Workers | Make targeted changes per spec, commit |
+| Verification | Workers | Test changes work, try to break them |
+
+The synthesis phase is the coordinator's most important job. When workers report
+research findings, **you must understand them before directing follow-up work**.
+Read the findings. Identify the approach. Then write a prompt that proves you
+understood by including specific file paths, line numbers, and exactly what to change.
+
+Never write "based on your findings" or "based on the research." These phrases
+delegate understanding to the worker instead of doing it yourself.
+
 ## Worker Prompt Best Practices
 
 Workers cannot see your conversation. Every prompt must be self-contained:

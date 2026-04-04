@@ -215,33 +215,208 @@ Hooks are defined in `.claude/settings.json` under the `hooks` key. The structur
 }
 ```
 
-**Hook events:**
+---
 
-| Event          | When It Fires                                                                            |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `SessionStart` | When a Claude Code session begins. `matcher` is typically empty (fires on all sessions). |
-| `PostToolUse`  | After Claude uses a tool. `matcher` filters by tool name (e.g., `Write\|Edit`, `Stop`).  |
-| `PostCompact`  | After context compaction. `matcher` is typically empty (fires on all compactions).       |
+## Hook Events Reference
 
-**Custom hook examples:**
+Claude Code supports 27 hook events. The `matcher` field filters when the hook fires within that event — leave empty to fire on every occurrence.
+
+| Event                | Matcher Field                                                                                                         | Exit Code Behavior                                                                |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `PreToolUse`         | `tool_name` (e.g., `Bash`, `Write`)                                                                                   | 0=allow, 2=block (stderr to model), other=stderr to user                          |
+| `PostToolUse`        | `tool_name`                                                                                                           | 0=stdout in transcript, 2=stderr to model, other=stderr to user                   |
+| `PostToolUseFailure` | `tool_name`                                                                                                           | 0=stdout in transcript, 2=stderr to model, other=stderr to user                   |
+| `Notification`       | `notification_type`                                                                                                   | 0=silent, other=stderr to user                                                    |
+| `UserPromptSubmit`   | —                                                                                                                     | 0=stdout shown to Claude, 2=block prompt (stderr to user), other=stderr to user   |
+| `SessionStart`       | `source` (startup, resume, clear, compact)                                                                            | 0=stdout shown to Claude, other=stderr to user                                    |
+| `SessionEnd`         | `reason` (clear, logout, prompt_input_exit, other)                                                                    | 0=success, other=stderr to user                                                   |
+| `Stop`               | —                                                                                                                     | 0=silent, 2=stderr to model (continues conversation), other=stderr to user        |
+| `StopFailure`        | `error` (rate_limit, authentication_failed, billing_error, invalid_request, server_error, max_output_tokens, unknown) | Fire-and-forget — output ignored                                                  |
+| `SubagentStart`      | `agent_type`                                                                                                          | 0=stdout shown to subagent, other=stderr to user                                  |
+| `SubagentStop`       | `agent_type`                                                                                                          | 0=silent, 2=stderr to subagent (continues), other=stderr to user                  |
+| `PreCompact`         | `trigger` (manual, auto)                                                                                              | 0=stdout as custom compact instructions, 2=block compaction, other=stderr to user |
+| `PostCompact`        | `trigger` (manual, auto)                                                                                              | 0=stdout to user, other=stderr to user                                            |
+| `PermissionRequest`  | `tool_name`                                                                                                           | 0=use hook decision if provided, other=stderr to user                             |
+| `PermissionDenied`   | `tool_name`                                                                                                           | 0=stdout in transcript, other=stderr to user                                      |
+| `Setup`              | `trigger` (init, maintenance)                                                                                         | 0=stdout shown to Claude, other=stderr to user                                    |
+| `TeammateIdle`       | —                                                                                                                     | 0=silent, 2=stderr to teammate (prevents idle), other=stderr to user              |
+| `TaskCreated`        | —                                                                                                                     | 0=silent, 2=stderr to model (blocks creation), other=stderr to user               |
+| `TaskCompleted`      | —                                                                                                                     | 0=silent, 2=stderr to model (blocks completion), other=stderr to user             |
+| `Elicitation`        | `mcp_server_name`                                                                                                     | 0=use hook response, 2=deny elicitation, other=stderr to user                     |
+| `ElicitationResult`  | `mcp_server_name`                                                                                                     | 0=use hook response, 2=block response, other=stderr to user                       |
+| `ConfigChange`       | `source` (user_settings, project_settings, local_settings, policy_settings, skills)                                   | 0=allow, 2=block change, other=stderr to user                                     |
+| `InstructionsLoaded` | `load_reason` (session_start, nested_traversal, path_glob_match, include, compact)                                    | Observability-only — does not support blocking                                    |
+| `WorktreeCreate`     | —                                                                                                                     | 0=stdout is worktree path, other=creation failed                                  |
+| `WorktreeRemove`     | —                                                                                                                     | 0=success, other=removal failed                                                   |
+| `CwdChanged`         | —                                                                                                                     | 0=silent, other=stderr to user                                                    |
+| `FileChanged`        | —                                                                                                                     | 0=silent, other=stderr to user                                                    |
+
+### Key Event Use Cases
+
+**PreToolUse** — The most powerful hook event. Runs before any tool executes. Exit code 2 blocks the tool call entirely and sends stderr as feedback to the model. Use cases: block destructive git commands, validate file paths before writes, enforce coding standards before edits.
+
+**UserPromptSubmit** — Runs when the user submits a prompt, before Claude processes it. Exit code 0 appends stdout to what Claude sees. Exit code 2 blocks the prompt entirely. Use cases: prompt linting, adding context to every prompt, blocking sensitive content.
+
+**SubagentStart** — Fires when any subagent (Agent tool call) starts. Matcher filters by agent type. Use cases: inject per-agent context, log agent activity, enforce agent-specific rules.
+
+**PreCompact** — Fires before compaction. Exit code 0 appends stdout as custom compact instructions (telling the summarizer what to preserve). Exit code 2 blocks compaction entirely. Use cases: preserve specific context during compaction, prevent compaction during critical operations.
+
+**SessionEnd** — Fires when a session ends. Matcher values: `clear` (user cleared), `logout`, `prompt_input_exit` (user quit), `other`. Use cases: cleanup temp files, save session state, send notifications.
+
+**InstructionsLoaded** — Observability-only hook that fires when CLAUDE.md or rule files are loaded. Cannot block loading. Input includes `file_path`, `memory_type`, `load_reason`, and optional `globs`/`trigger_file_path`/`parent_file_path`. Use cases: audit which instructions are active, log rule loading for debugging.
+
+---
+
+## Hook Types
+
+Claude Code supports 4 hook types. Each type has different fields and execution models.
+
+### Command Hook
+
+Shell command executed in bash. The most common type.
 
 ```json
-// Run tests after every file write
 {
-  "matcher": "Write|Edit",
-  "hooks": [{
-    "type": "command",
-    "command": "npm test 2>/dev/null || true"
-  }]
+  "type": "command",
+  "command": "npm test || true"
 }
+```
 
-// Log tool usage
+| Field           | Required | Type                       | Description                                                 |
+| --------------- | -------- | -------------------------- | ----------------------------------------------------------- |
+| `type`          | Yes      | `"command"`                | Hook type identifier                                        |
+| `command`       | Yes      | string                     | Shell command to execute                                    |
+| `if`            | No       | string                     | Permission rule syntax filter (e.g., `"Bash(git *)"`)       |
+| `shell`         | No       | `"bash"` or `"powershell"` | Shell interpreter override                                  |
+| `timeout`       | No       | number                     | Timeout in seconds                                          |
+| `statusMessage` | No       | string                     | Custom spinner text while hook runs                         |
+| `once`          | No       | boolean                    | If true, hook runs once then is removed                     |
+| `async`         | No       | boolean                    | If true, runs in background without blocking                |
+| `asyncRewake`   | No       | boolean                    | Background run; wakes model on exit code 2. Implies `async` |
+
+### Prompt Hook
+
+Sends a prompt to an LLM model for evaluation. The model returns `{ok: true}` or `{ok: false, reason: "..."}`.
+
+```json
 {
-  "matcher": "",
-  "hooks": [{
-    "type": "command",
-    "command": "echo \"$(date): tool used\" >> .claude-log.txt"
-  }]
+  "type": "prompt",
+  "prompt": "Check if this edit is safe: $ARGUMENTS"
+}
+```
+
+| Field           | Required | Type       | Description                                                    |
+| --------------- | -------- | ---------- | -------------------------------------------------------------- |
+| `type`          | Yes      | `"prompt"` | Hook type identifier                                           |
+| `prompt`        | Yes      | string     | Prompt text. `$ARGUMENTS` is replaced with hook input JSON     |
+| `if`            | No       | string     | Permission rule syntax filter                                  |
+| `timeout`       | No       | number     | Timeout in seconds                                             |
+| `model`         | No       | string     | Model ID (e.g., `"claude-sonnet-4-6"`). Defaults to fast model |
+| `statusMessage` | No       | string     | Custom spinner text                                            |
+| `once`          | No       | boolean    | Fire-once behavior                                             |
+
+### HTTP Hook
+
+POSTs hook input JSON to a URL. Useful for webhook integrations.
+
+```json
+{
+  "type": "http",
+  "url": "https://hooks.example.com/claude",
+  "headers": { "Authorization": "Bearer $MY_TOKEN" },
+  "allowedEnvVars": ["MY_TOKEN"]
+}
+```
+
+| Field            | Required | Type         | Description                                                              |
+| ---------------- | -------- | ------------ | ------------------------------------------------------------------------ |
+| `type`           | Yes      | `"http"`     | Hook type identifier                                                     |
+| `url`            | Yes      | string (URL) | Endpoint to POST to                                                      |
+| `if`             | No       | string       | Permission rule syntax filter                                            |
+| `timeout`        | No       | number       | Timeout in seconds                                                       |
+| `headers`        | No       | object       | Additional headers. Values support `$VAR` / `${VAR}` syntax              |
+| `allowedEnvVars` | No       | string[]     | Env vars allowed in header interpolation. Required for `$VAR` to resolve |
+| `statusMessage`  | No       | string       | Custom spinner text                                                      |
+| `once`           | No       | boolean      | Fire-once behavior                                                       |
+
+### Agent Hook
+
+Spawns a small agent to evaluate a prompt. More capable than prompt hooks — the agent can use tools.
+
+```json
+{
+  "type": "agent",
+  "prompt": "Verify that unit tests ran and passed. $ARGUMENTS"
+}
+```
+
+| Field           | Required | Type      | Description                                                   |
+| --------------- | -------- | --------- | ------------------------------------------------------------- |
+| `type`          | Yes      | `"agent"` | Hook type identifier                                          |
+| `prompt`        | Yes      | string    | What to verify. `$ARGUMENTS` is replaced with hook input JSON |
+| `if`            | No       | string    | Permission rule syntax filter                                 |
+| `timeout`       | No       | number    | Timeout in seconds (default 60)                               |
+| `model`         | No       | string    | Model ID (e.g., `"claude-sonnet-4-6"`). Defaults to Haiku     |
+| `statusMessage` | No       | string    | Custom spinner text                                           |
+| `once`          | No       | boolean   | Fire-once behavior                                            |
+
+---
+
+## Custom Hook Examples
+
+Block destructive git commands via PreToolUse:
+
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.command // empty'); case \"$cmd\" in *'git push --force'*|*'git reset --hard'*) echo 'Blocked: destructive git command' >&2; exit 2;; esac; exit 0",
+          "statusMessage": "Checking command safety..."
+        }
+      ]
+    }
+  ]
+}
+```
+
+Run tests after every file write:
+
+```json
+{
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "npm test 2>/dev/null || true"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Webhook notification on session end:
+
+```json
+{
+  "SessionEnd": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "http",
+          "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
 }
 ```
 

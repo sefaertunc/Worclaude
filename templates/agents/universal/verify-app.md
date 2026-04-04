@@ -112,6 +112,9 @@ You will feel the urge to skip checks. These are the excuses — recognize them:
 - **Config/Infrastructure**: validate syntax → dry-run where possible → check env vars
 - **Bug fixes**: reproduce original bug → verify fix → run regression tests
 - **Refactoring**: existing test suite must pass unchanged → diff public API surface
+- **Mobile (iOS/Android)**: clean build → install on simulator/emulator → dump accessibility/UI tree, tap by coords, re-dump to verify → check crash logs (logcat / device console)
+- **Database migrations**: run migration up → verify schema matches intent → run migration down (reversibility) → test against existing data, not just empty DB
+- **Data/ML pipeline**: run with sample input → verify output shape/schema/types → test empty input and NaN/null handling → check row counts in vs out for silent data loss
 
 ## Before Issuing PASS
 
