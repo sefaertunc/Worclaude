@@ -118,6 +118,29 @@ WORCLAUDE_HOOK_PROFILE=strict claude
 The default is `standard` if the variable is not set. You don't need to do
 anything for normal development — the default just works.
 
+## Token Budgets (Reference)
+
+Approximate values from Claude Code v2.1.88 source (March 2026). These may change between releases.
+
+| Resource | Budget |
+|---|---|
+| Context window (default) | 200,000 tokens |
+| Context window (Opus 4.6 / Sonnet 4.6 with 1M) | 1,000,000 tokens |
+| Max output tokens (Sonnet 4.6) | 32,000 default, 128,000 upper limit |
+| Max output tokens (Opus 4.6) | 64,000 default, 128,000 upper limit |
+| Tool presence overhead | ~500 tokens (added when any tools are enabled) |
+| Post-compact file restore | 5 files max, 50,000 token budget, 5,000 per file |
+| Post-compact skills restore | 25,000 token budget, 5,000 per skill |
+| Compact summary output | 20,000 tokens max |
+| CLAUDE.md total budget | ~40,000 characters across all loaded instruction files |
+| MEMORY.md | 200 lines / 25,000 bytes |
+
+Practical takeaways:
+- After compaction, only 5 files are restored at 5k tokens each. Structure your work
+  so the most important files are recently read.
+- Skills over 5k tokens get truncated after compaction. Keep skills focused.
+- The 70% rule still applies — these numbers help you estimate when you'll hit it.
+
 ## Gotchas
 
 - Compacting doesn't free as much context as you think. If you've read 20 large files,

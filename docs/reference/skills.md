@@ -2,7 +2,19 @@
 
 Skills are knowledge files installed to `.claude/skills/` using the **directory format** required by Claude Code. Each skill lives in its own directory as `skill-name/SKILL.md`. Flat `.md` files in the skills directory are silently ignored by Claude Code's runtime.
 
-Unlike CLAUDE.md (which is always loaded), skills are loaded on demand -- Claude reads them only when the task at hand requires that knowledge. Some skills are **conditional**: they load automatically only when working on files matching specific path patterns. See [Claude Code Integration](/guide/claude-code-integration) for details on how skills register with the runtime.
+Unlike CLAUDE.md (which is always loaded), skills are loaded on demand -- Claude reads them only when the task at hand requires that knowledge. Some skills are **conditional**: they load automatically only when working on files matching specific path patterns. See [Claude Code Integration](/guide/claude-code-integration) for the full 16-field frontmatter reference.
+
+## Skill File Format
+
+Each `SKILL.md` starts with YAML frontmatter. The 3 most important fields for worclaude skills:
+
+| Field         | Purpose                                             |
+| ------------- | --------------------------------------------------- |
+| `description` | Short summary shown in `/skills` listing (required) |
+| `when_to_use` | Tells Claude when to load this skill (required)     |
+| `paths`       | Glob patterns for conditional activation            |
+
+Additional runtime fields (`allowed-tools`, `model`, `context`, `agent`, `effort`, `shell`, `arguments`, `argument-hint`, `user-invocable`, `disable-model-invocation`, `hooks`, `version`, `name`) are documented in the [Claude Code Integration guide](/guide/claude-code-integration#skill-frontmatter).
 
 ## Universal Skills
 

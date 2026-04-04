@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.1.0
-**Last Updated:** 2026-04-04
+**Version:** 2.2.0
+**Last Updated:** 2026-04-05
 
 ## Completed
 
@@ -275,6 +275,17 @@
   - [x] Stale count fixes: README, CLAUDE.md, PROGRESS.md synced to actual values
   - [x] Added "What's New in v2.0.0" to README, Template Format Requirements to CONTRIBUTING.md
   - [x] Created BACKLOG-v2.1.md for future enhancements
+
+- [x] v2.2.0: Claude Code source gap analysis (2026-04-05)
+  - [x] Hooks reference: documented all 27 hook events (was 5) with matchers, exit codes, and use cases
+  - [x] Hook types: documented all 4 types (command, prompt, http, agent) with per-type field tables
+  - [x] Skill frontmatter: documented all 16 runtime fields (was 3) with applicability column
+  - [x] Agent frontmatter: documented 6 new fields (tools, effort, color, permissionMode, mcpServers, hooks)
+  - [x] CLAUDE.md @include directive and loading hierarchy documented
+  - [x] Token budgets reference table added to context-management skill
+  - [x] MEMORY.md template: "even when explicitly asked" exclusion nuance, memory vs plans/tasks section
+  - [x] Coordinator mode: 4-phase workflow (Research → Synthesis → Implementation → Verification)
+  - [x] Verify-app: added mobile, database migration, and data/ML pipeline verification types
 
 ## Stats
 
