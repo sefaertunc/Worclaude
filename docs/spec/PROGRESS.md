@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.0
+**Version:** 2.2.1
 **Last Updated:** 2026-04-05
 
 ## Completed

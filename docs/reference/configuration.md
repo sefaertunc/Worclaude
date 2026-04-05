@@ -65,7 +65,7 @@ Installation metadata used by `worclaude upgrade`, `worclaude status`, and `worc
 
 ```json
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "installedAt": "2026-03-25T14:30:22.000Z",
   "lastUpdated": "2026-03-25T14:30:22.000Z",
   "projectTypes": ["Backend / API", "CLI tool"],
