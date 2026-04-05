@@ -48,9 +48,9 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 
 ---
 
-## What's New in v2.0.0
+## What's New in v2.x
 
-v2.0.0 is a major integration release. Skills and agents now register with Claude Code's runtime systems — they show up in `/skills` and `/agents`, not just as files on disk.
+The v2.x series introduced Claude Code runtime integration and continues to refine the workflow.
 
 **Claude Code Runtime Integration**
 
@@ -82,6 +82,12 @@ v2.0.0 is a major integration release. Skills and agents now register with Claud
 
 - `worclaude upgrade` auto-migrates v1.x projects: flat skills → directory format, agents get required frontmatter
 - `worclaude doctor` detects old formats and missing fields
+
+**v2.2.0 — Leaner Defaults, Richer Skills**
+
+- Removed project-root MEMORY.md scaffolding — Claude Code's native memory system handles this automatically
+- Expanded context-management, claude-md-maintenance, and coordinator-mode skills with deeper guidance
+- Enhanced verify-app agent with mobile, database migration, and data/ML pipeline verification patterns
 
 See the [Claude Code Integration guide](https://sefaertunc.github.io/Worclaude/guide/claude-code-integration) for technical details.
 
