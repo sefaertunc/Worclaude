@@ -42,7 +42,7 @@ import { initCommand } from '../../src/commands/init.js';
 
 // ── Helpers ──
 
-function setupFreshMocks({ allAgents = false, multiStack = false, memoryMd = false } = {}) {
+function setupFreshMocks({ allAgents = false, multiStack = false } = {}) {
   const categoryNames = Object.keys(AGENT_CATEGORIES);
 
   const responses = [
@@ -64,7 +64,6 @@ function setupFreshMocks({ allAgents = false, multiStack = false, memoryMd = fal
     responses.push({ additionalCategories: [] });
   }
 
-  responses.push({ includeMemoryMd: memoryMd });
   responses.push({ confirmation: 'yes' });
 
   let i = 0;
@@ -291,13 +290,6 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     expect(content).toContain('.claude-backup-*/');
   });
 
-  it('MEMORY.md created when opted in', async () => {
-    setupFreshMocks({ memoryMd: true });
-    await initCommand();
-
-    expect(await fs.pathExists(path.join(tmpDir, 'MEMORY.md'))).toBe(true);
-  });
-
   it('read-only agents have criticalSystemReminder', async () => {
     setupFreshMocks({ allAgents: true });
     await initCommand();
@@ -415,7 +407,7 @@ describe('E2E Audit — Scenario B (existing project)', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { includeMemoryMd: false },
+
       { confirmation: 'yes' },
     ];
     let i = 0;

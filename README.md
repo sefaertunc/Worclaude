@@ -74,7 +74,7 @@ v2.0.0 is a major integration release. Skills and agents now register with Claud
 **New Content**
 
 - Coordinator-mode skill for multi-agent orchestration patterns
-- Optional MEMORY.md template for Claude Code's memory system
+- Agents with `memory: project` leverage Claude Code's native memory system
 - Enhanced verify-app agent with structured verdicts and adversarial probe requirements
 - Per-tech-stack permission presets (16 languages)
 

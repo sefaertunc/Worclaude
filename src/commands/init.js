@@ -211,27 +211,11 @@ async function runAgents(selections) {
   return { ...selections, selectedAgents };
 }
 
-async function runMemoryMd(selections) {
-  const { includeMemoryMd } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'includeMemoryMd',
-      message: 'Scaffold a MEMORY.md template? (for Claude Code memory system)',
-      choices: [
-        { name: 'No', value: false },
-        { name: 'Yes', value: true },
-      ],
-    },
-  ]);
-  return { ...selections, includeMemoryMd };
-}
-
 const STEP_RUNNERS = {
   projectInfo: runProjectInfo,
   projectType: runProjectType,
   techStack: runTechStack,
   agents: runAgents,
-  memoryMd: runMemoryMd,
 };
 
 // --- Confirmation ---
@@ -295,7 +279,6 @@ async function runInteractivePrompts(projectRoot) {
     languages: [],
     useDocker: false,
     selectedAgents: [],
-    includeMemoryMd: false,
   };
 
   let confirmed = false;
@@ -307,7 +290,6 @@ async function runInteractivePrompts(projectRoot) {
       selections = await runProjectType(selections);
       selections = await runTechStack(selections);
       selections = await runAgents(selections);
-      selections = await runMemoryMd(selections);
       firstRun = false;
     }
 
@@ -323,7 +305,6 @@ async function runInteractivePrompts(projectRoot) {
         languages: [],
         useDocker: false,
         selectedAgents: [],
-        includeMemoryMd: false,
       };
       display.newline();
       display.info('Starting over...');
@@ -332,7 +313,6 @@ async function runInteractivePrompts(projectRoot) {
       selections = await runProjectType(selections);
       selections = await runTechStack(selections);
       selections = await runAgents(selections);
-      selections = await runMemoryMd(selections);
     } else if (confirmation === 'adjust') {
       const { step } = await inquirer.prompt([
         {
@@ -520,11 +500,6 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
     spinner.text = 'Created .claude/sessions/';
 
-    if (selections.includeMemoryMd) {
-      await scaffoldFile('core/memory-md.md', 'MEMORY.md', {}, projectRoot);
-      spinner.text = 'Created MEMORY.md';
-    }
-
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -551,9 +526,6 @@ function displayFreshSuccess(selections, skipped) {
   display.success('.claude/sessions/');
   display.success('.mcp.json');
   display.success('.gitignore');
-  if (selections.includeMemoryMd) {
-    display.success('MEMORY.md');
-  }
   if (skipped.progressMd) {
     display.dim('  docs/spec/PROGRESS.md — already exists, skipped');
   }

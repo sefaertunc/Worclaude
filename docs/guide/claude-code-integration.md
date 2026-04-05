@@ -194,16 +194,13 @@ Background agents are ideal for validation tasks that do not need user oversight
 
 ## Memory System
 
-MEMORY.md is an optional file at your project root that provides persistent memory across Claude Code sessions. It serves as an **index** -- each entry is a one-line pointer to a detailed memory file.
+Claude Code has a built-in memory system that persists across sessions. It is enabled by default and requires no scaffolding -- Worclaude does not create or manage memory files.
 
-### Four Memory Types
+**Where memory lives:** `~/.claude/projects/<project>/memory/` -- outside your repository, per-user, never committed to git.
 
-| Type        | What It Stores                    | Example                                            |
-| ----------- | --------------------------------- | -------------------------------------------------- |
-| `user`      | Your role, preferences, expertise | "Senior backend engineer, prefers Go over Python"  |
-| `feedback`  | How you want Claude to work       | "Never mock the database in integration tests"     |
-| `project`   | Ongoing work context, decisions   | "Auth rewrite driven by compliance, not tech debt" |
-| `reference` | Pointers to external systems      | "Pipeline bugs tracked in Linear project INGEST"   |
+**How it works:** Claude Code automatically injects memory instructions into the system prompt and loads `MEMORY.md` (the index file in the memory directory) into context at session start. A background agent can also extract memories from your conversation automatically.
+
+**Four memory types:** user (your role and preferences), feedback (how you want Claude to work), project (ongoing work context), reference (pointers to external systems).
 
 ### Per-Agent Memory
 
@@ -215,19 +212,13 @@ Agents with project memory:
 - `security-reviewer` -- Remembers your project's security context
 - `doc-writer` -- Learns your documentation style
 
-### Limits
+### Memory vs Plans vs Tasks
 
-- MEMORY.md: 200 lines maximum, 25KB size limit
-- Each entry: one line, under 150 characters
-- Individual memory files: stored in `.claude/memory/` directory
+Memory is for information useful across conversations. Don't use it for:
 
-### What NOT to Store
-
-- Code patterns or architecture (derive from the code itself)
-- Git history or who-changed-what (use `git log`)
-- Debugging solutions (the fix is in the code)
-- Anything already in CLAUDE.md
-- Ephemeral task details
+- **Plans** -- use a plan file or plan mode for implementation strategies within a session
+- **Tasks** -- use the task system for tracking work steps within a session
+- **Session state** -- current conversation context belongs in the conversation, not memory
 
 ## CLAUDE.md @include Directive
 

@@ -268,8 +268,6 @@ After `/setup` completes, verify the workflow is functioning:
 6. Check that auto-formatting works by making a small edit
 7. Run `worclaude doctor` to validate skill format, agent descriptions, and file integrity
 
-If MEMORY.md was created during init, it will be read at session start for cross-session context.
-
 If everything looks good, you are ready to start building. See the [Workflow Tips](/guide/workflow-tips) guide for best practices, or [Claude Code Integration](/guide/claude-code-integration) for details on how skills and agents register with the runtime.
 
 ## Next Steps
