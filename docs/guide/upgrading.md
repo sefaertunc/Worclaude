@@ -19,7 +19,7 @@ worclaude diff
 This compares your current setup against the latest workflow version and shows what has changed:
 
 ```
-  Comparing current setup to workflow v1.1.0:
+  Comparing current setup to workflow v2.2.0:
 
   Modified (your changes):
   ~ CLAUDE.md (added 5 gotchas)
@@ -46,8 +46,8 @@ Worclaude reads your `.claude/workflow-meta.json` to understand what was origina
 ```
   Worclaude Upgrade
 
-  Current version: 1.0.0
-  New version:     1.1.0
+  Current version: 2.1.0
+  New version:     2.2.0
 ```
 
 If you are already on the latest version, Worclaude tells you and exits.
@@ -98,7 +98,7 @@ After you confirm, Worclaude:
 6. **Updates workflow-meta.json** with the new version number, timestamp, and recomputed file hashes.
 
 ```
-  Upgrade complete! (1.0.0 → 1.1.0)
+  Upgrade complete! (2.1.0 → 2.2.0)
 
   Updated:     14 files
   Conflicts:   1 files (saved as .workflow-ref.md)
