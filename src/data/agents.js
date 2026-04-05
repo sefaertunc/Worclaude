@@ -315,7 +315,6 @@ export const CONFIRMATION_STEPS = [
   { name: 'Project type', value: 'projectType' },
   { name: 'Tech stack', value: 'techStack' },
   { name: 'Agent selection', value: 'agents' },
-  { name: 'MEMORY.md (optional)', value: 'memoryMd' },
 ];
 
 export const NOTIFICATION_COMMANDS = {

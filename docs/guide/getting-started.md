@@ -26,7 +26,7 @@ worclaude --version
 You should see output like:
 
 ```
-1.1.0
+2.2.0
 ```
 
 ## Creating Your Project
@@ -52,7 +52,7 @@ worclaude init
 You will see the Worclaude header and the first prompt:
 
 ```
-  Worclaude v1.1.0
+  Worclaude v2.2.0
   ─────────────────────
 
 ? Project name: my-project
@@ -267,8 +267,6 @@ After `/setup` completes, verify the workflow is functioning:
 5. Check that `CLAUDE.md` contains your actual project details
 6. Check that auto-formatting works by making a small edit
 7. Run `worclaude doctor` to validate skill format, agent descriptions, and file integrity
-
-If MEMORY.md was created during init, it will be read at session start for cross-session context.
 
 If everything looks good, you are ready to start building. See the [Workflow Tips](/guide/workflow-tips) guide for best practices, or [Claude Code Integration](/guide/claude-code-integration) for details on how skills and agents register with the runtime.
 

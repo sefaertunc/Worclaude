@@ -263,16 +263,7 @@ Worker prompt best practices: give each agent a complete, self-contained task de
 
 ## Memory System
 
-MEMORY.md is an optional persistent memory file at your project root. It serves as an index of things Claude should remember across sessions.
-
-**Four memory types:**
-
-- **user** -- your role, preferences, and expertise level
-- **feedback** -- corrections and confirmations about how you want Claude to work
-- **project** -- ongoing work context, decisions, and deadlines
-- **reference** -- pointers to external systems (issue trackers, dashboards, Slack channels)
-
-**What NOT to store:** code patterns (derive from code), git history (use `git log`), debugging solutions (the fix is in the code), anything already in CLAUDE.md.
+Claude Code has a built-in memory system at `~/.claude/projects/<project>/memory/` that persists across sessions automatically. No scaffolding is needed -- it is enabled by default.
 
 Agents with `memory: project` in their frontmatter (test-writer, security-reviewer, doc-writer) learn from project memory across sessions. See [Memory System](/guide/claude-code-integration#memory-system) for details.
 

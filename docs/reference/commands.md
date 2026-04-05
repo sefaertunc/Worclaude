@@ -42,7 +42,6 @@ Creates all of the following:
 - `.claude/skills/` -- 11 universal + 3 template + 1 generated skills (directory format)
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
-- `MEMORY.md` -- optional persistent memory index (if selected during init)
 - `docs/spec/PROGRESS.md` -- if not already present
 - `docs/spec/SPEC.md` -- project-type-specific template, if not already present
 
@@ -116,7 +115,7 @@ worclaude upgrade
 
 # When already current
 worclaude upgrade
-# → "Already up to date (v1.1.0)."
+# → "Already up to date (v2.2.0)."
 ```
 
 **Notes**

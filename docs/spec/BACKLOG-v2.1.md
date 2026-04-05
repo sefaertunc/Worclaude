@@ -91,9 +91,7 @@ a limitation.
 
 ### ✅ MEMORY.md integration depth
 
-Template enriched with: per-section examples, memory file frontmatter format (name,
-description, type), drift and verification guidance ("memory says X exists" ≠ "X exists
-now"), structured content format (rule + Why + How to apply).
+~~Removed in v2.2.x — Claude Code's native memory system at `~/.claude/projects/<slug>/memory/` handles everything automatically. The project-root MEMORY.md template was redundant and pointed to the wrong directory.~~
 
 ## Competitive Awareness
 
