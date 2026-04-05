@@ -100,6 +100,28 @@ The /update-claude-md command helps at session end:
 Always review proposed changes before applying. Not every mistake needs a rule.
 Only add rules for recurring problems.
 
+## The @include Directive
+
+When CLAUDE.md grows beyond the 50-line target, use `@include` to split content
+into separate files while keeping it loadable:
+
+```markdown
+# CLAUDE.md
+## Key Files
+@./docs/conventions.md
+@./docs/api-standards.md
+```
+
+- `@./relative` — relative to the file containing the directive
+- `@~/path` — relative to home directory
+- `@/absolute` — absolute path
+- Works in CLAUDE.md, .claude/CLAUDE.md, .claude/rules/*.md, and CLAUDE.local.md
+- Does NOT work inside code blocks (only in leaf text nodes)
+- Non-existent files are silently ignored; circular references are prevented
+
+This is the recommended alternative to cramming everything into CLAUDE.md.
+Each included file still consumes context budget, so use judiciously.
+
 ## Gotchas
 
 - CLAUDE.md is read as system context, not as a document. Write it as instructions,
