@@ -286,6 +286,9 @@
   - [x] MEMORY.md template: "even when explicitly asked" exclusion nuance, memory vs plans/tasks section
   - [x] Coordinator mode: 4-phase workflow (Research → Synthesis → Implementation → Verification)
   - [x] Verify-app: added mobile, database migration, and data/ML pipeline verification types
+  - [x] Removed project-root MEMORY.md scaffolding — native Claude Code memory system handles this
+  - [x] Documentation version examples updated from v1.1.0 to v2.2.0 across all guide/reference pages
+  - [x] README "What's New" reframed as cumulative v2.x section with v2.2.0 highlights
 
 ## Stats
 
@@ -295,7 +298,7 @@
 - 11 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 384 tests across 26 test files
+- 381 tests across 26 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

@@ -1549,6 +1549,19 @@ worclaude/
 - MEMORY.md template: enriched with structured content format (rule + Why + How to apply)
 - Tech debt: removed dead code, deduplicated workflow validation, data-driven command registration
 
+### v2.2.0: Native Memory, Richer Skills
+
+- Removed project-root MEMORY.md scaffolding — Claude Code's native memory system at `~/.claude/projects/<slug>/memory/` handles everything automatically
+- Hooks reference: documented all 27 hook events (was 5) with matchers, exit codes, and use cases
+- Hook types: documented all 4 types (command, prompt, http, agent) with per-type field tables
+- Skill frontmatter: documented all 16 runtime fields (was 3) with applicability column
+- Agent frontmatter: documented 6 new fields (tools, effort, color, permissionMode, mcpServers, hooks)
+- CLAUDE.md @include directive and loading hierarchy documented
+- Token budgets reference table added to context-management skill
+- Coordinator mode: 4-phase workflow (Research → Synthesis → Implementation → Verification)
+- Verify-app: added mobile, database migration, and data/ML pipeline verification patterns
+- Documentation version examples updated from v1.1.0 to v2.2.0
+
 ---
 
 ## Design Decisions Reference
