@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.4
-**Last Updated:** 2026-04-10
+**Version:** 2.2.5
+**Last Updated:** 2026-04-11
 
 ## Completed
 
@@ -308,6 +308,14 @@
   - [x] Prettier excludes: `.github/` and community files excluded from `npm run format` checks
   - [x] Existing users note: `templates/commands/*.md` edits land as `.workflow-ref.md` sidecars on `worclaude upgrade` (Tier 2 merge behavior, unchanged) — existing installs require manual reconciliation
 
+- [x] v2.2.5: Fix upgrade silent-overwrite of user customizations (2026-04-11)
+  - [x] `src/commands/upgrade.js:244` previously called `computeFileHashes(projectRoot)` unconditionally at the end of every upgrade, rewriting `workflow-meta.json` stored hashes from the current on-disk state. This destroyed the distinction between "template hash at install time" and "user customization", causing subsequent upgrades with a changed template to silently auto-overwrite customizations via the `autoUpdate` path (categorizer saw `current == stored` and mistook the customization for pristine install state).
+  - [x] Fix: replaced the unconditional rehash with a targeted partial update that rehashes only files the upgrade actually wrote (`autoUpdate`, `newFiles`) and removes deleted entries. `modified`, `conflict`, `unchanged`, and `userAdded` files keep their original stored hash, preserving the install-state baseline across upgrades.
+  - [x] 2 new regression tests in `tests/commands/upgrade.test.js`: (1) `preserves stored hash for user-modified files` — catches the silent-overwrite bug; (2) `updates stored hash to new template hash for autoUpdate files` — companion guarding the happy path. Stashed-fix check confirmed test 1 fails without the fix while test 2 passes in both states.
+  - [x] Bonus fix: old `computeFileHashes` path would have accidentally added `userAdded` files to stored hashes on first upgrade; partial update eliminates this.
+  - [x] Self-healing rollout: users with already-locked-in customizations recover automatically on the next upgrade as long as on-disk ≠ stored (always true after customization). Users who already lost customizations entirely must restore from the timestamped backup that `worclaude upgrade` creates on every run (`.claude-backup-*/`).
+  - [x] Real incident that triggered the fix: this project's own `.claude/skills/git-conventions/SKILL.md` always-bump customization was reverted during the 2.2.3 → 2.2.4 upgrade, detected only via diff-before-commit.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -316,7 +324,7 @@
 - 11 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 381 tests across 26 test files
+- 383 tests across 26 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
