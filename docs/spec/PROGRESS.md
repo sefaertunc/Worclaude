@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.3
+**Version:** 2.2.4
 **Last Updated:** 2026-04-10
 
 ## Completed
@@ -299,6 +299,14 @@
   - [x] `.claude/skills/git-conventions/SKILL.md` Versioning Policy: `docs/CI/tests/refactor` row flipped from **no bump** to **patch**; table reordered (major → minor → patch); rule of thumb rewritten to "if it landed on main, it needs a version"
   - [x] CLAUDE.md rule #13: rewritten to match — every merge to `main` gets at least a patch bump, including docs-only, CI-only, and test-only changes
   - [x] `templates/skills/universal/git-conventions.md` intentionally NOT updated — the shipped template keeps conventional semver semantics so downstream worclaude users are not forced into the always-bump model
+
+- [x] v2.2.4: Workflow observability + community files (2026-04-10)
+  - [x] Session summary templates: added `## Workflow Observability` section to `templates/commands/commit-push-pr.md` (inside the format fenced block) and reminder bullet to `templates/commands/end.md` step 3 — self-reported section captures agents invoked (explicit `@agent` + implicit via commands), slash commands used (excluding the current `/commit-push-pr` or `/end`), and verification result. Advisory, not enforced. Lets observers see whether Claude Code is actually following the scaffolded workflow.
+  - [x] SPEC.md line 603: appended one sentence describing the new section so the spec does not drift from the template
+  - [x] Phase spec tracked: `docs/phases/PHASE-AGENT-OBSERVABILITY.md` moved from untracked repo root into `docs/phases/` as the source-of-truth for the change
+  - [x] Community health files: added `CODE_OF_CONDUCT.md` (Contributor Covenant), revised `SECURITY.md`, added `.github/ISSUE_TEMPLATE/{bug_report,feature_request}.md`, added `.github/pull_request_template.md`
+  - [x] Prettier excludes: `.github/` and community files excluded from `npm run format` checks
+  - [x] Existing users note: `templates/commands/*.md` edits land as `.workflow-ref.md` sidecars on `worclaude upgrade` (Tier 2 merge behavior, unchanged) — existing installs require manual reconciliation
 
 ## Stats
 
