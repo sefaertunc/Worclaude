@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.5
+**Version:** 2.2.6
 **Last Updated:** 2026-04-11
 
 ## Completed
@@ -315,6 +315,17 @@
   - [x] Bonus fix: old `computeFileHashes` path would have accidentally added `userAdded` files to stored hashes on first upgrade; partial update eliminates this.
   - [x] Self-healing rollout: users with already-locked-in customizations recover automatically on the next upgrade as long as on-disk ≠ stored (always true after customization). Users who already lost customizations entirely must restore from the timestamped backup that `worclaude upgrade` creates on every run (`.claude-backup-*/`).
   - [x] Real incident that triggered the fix: this project's own `.claude/skills/git-conventions/SKILL.md` always-bump customization was reverted during the 2.2.3 → 2.2.4 upgrade, detected only via diff-before-commit.
+
+- [x] v2.2.6: Documentation overhaul (2026-04-11)
+  - [x] Removed interactive demo entirely — `docs/demo/`, `docs/.vitepress/theme/` (WorkflowDemo.vue + workflow-demo-data.js + no-op theme wrapper), `docs/RECORDING-INSTRUCTIONS.md`, and the stale `docs/reference/claude-code-workflow-system.docx` binary. Also dropped the Demo nav entry from `config.mjs`, the "Try the Demo" hero action from `docs/index.md`, and the Interactive Demo links from README top/bottom. VitePress falls back to its bundled default theme automatically. −1983 lines total.
+  - [x] Trimmed README.md to essentials: removed the "What's New in v2.x" section (changelog material that belongs in release notes, not the README) and the dead GIF HTML comments that referenced a never-recorded `docs/public/demo.gif`. Final README layout matches the phase-spec 7-section structure: title + badges → top links → one-paragraph description → What You Get → Quick Start → Commands → Links.
+  - [x] Refreshed 15 VitePress doc pages against source: version-string sweep (`2.2.3` → `2.2.6`) across `getting-started.md`, `existing-projects.md`, `upgrading.md`, `claude-code-integration.md`, `commands.md`, and `configuration.md`; upgrade example bumped from `2.2.2 → 2.2.3` to `2.2.5 → 2.2.6`. Historical references to `v2.0.0 Migration` preserved.
+  - [x] Two real content fixes caught via source cross-reference beyond the version sweep:
+    - `docs/guide/claude-code-integration.md` — the Read-Only Agents table had `security-reviewer` listed as _"none (read-only by prompt)"_, but `templates/agents/optional/quality/security-reviewer.md` actually has `disallowedTools: [Edit, Write, NotebookEdit, Agent]`. Table now reflects architectural enforcement.
+    - `docs/reference/claude-md.md` — the Skills section listed 14 items but was missing `coordinator-mode`, and every skill was shown in stale flat `.md` format (e.g., `context-management.md`) instead of the `name/SKILL.md` directory format that the actual generated CLAUDE.md contains. Session Protocol reference to `agent-routing.md` also updated to `agent-routing/SKILL.md`.
+  - [x] The other 13 enumerated pages were verified clean — all counts of 25 agents / 16 commands / 15 skills / 8 CLI commands match source exactly. Scope addition: `docs/guide/existing-projects.md` was NOT in the phase prompt's enumerated list but is in the VitePress sidebar and had a stale `v2.2.3` line — added to scope after user approval.
+  - [x] Phase spec tracked: `PHASE-DOCS-OVERHAUL-PROMPT.md` moved from untracked repo root into `docs/phases/` as the source-of-truth for the change (mirrors the v2.2.4 `PHASE-AGENT-OBSERVABILITY.md` pattern).
+  - [x] PR #57 merged via merge commit (not squash) — all 4 atomic commits preserved in develop history. Validation: 383 tests passing, lint clean, `docs:build` clean at Checkpoint A (post-demo-removal), Checkpoint C (post-content-refresh), and Checkpoint D (final).
 
 ## Stats
 
