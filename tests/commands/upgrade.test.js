@@ -221,6 +221,136 @@ describe('upgrade command', () => {
     ).toBe(true);
   });
 
+  it('preserves stored hash for user-modified files (prevents silent overwrite on next template change)', async () => {
+    // Regression test for the "upgrade silently locks in user customizations" bug.
+    //
+    // Scenario:
+    //   1. User installs project (stored hash = original template hash)
+    //   2. User customizes a file (current != stored, template unchanged)
+    //   3. User runs upgrade (template for this file still unchanged)
+    //
+    // Expected: file is preserved AND stored hash stays at original template hash,
+    // so the next upgrade where the template DOES change correctly routes the file
+    // to the conflict path (sidecar) instead of autoUpdate (overwrite).
+    //
+    // Before the fix: upgrade recomputed ALL hashes from disk, "locking in" the
+    // customized hash as the new stored hash. The next template change would then
+    // see current == stored and auto-update via the autoUpdate path, silently
+    // overwriting the customization.
+
+    // Use the REAL shipped template so templateChanged = false in the categorizer
+    const realTemplateContent = await readTemplate('agents/universal/plan-reviewer.md');
+    const realTemplateHash = hashContent(realTemplateContent);
+    const customizedContent = 'user customization that must be preserved';
+    const customizedHash = hashContent(customizedContent);
+
+    const meta = {
+      version: '0.9.0',
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: ['CLI tool'],
+      techStack: ['node'],
+      universalAgents: ['plan-reviewer'],
+      optionalAgents: [],
+      useDocker: false,
+      fileHashes: {
+        'agents/plan-reviewer.md': realTemplateHash, // stored = current template hash
+      },
+    };
+
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'agents'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+    // User customized the file (current != stored)
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'),
+      customizedContent
+    );
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'settings.json'),
+      JSON.stringify({ permissions: { allow: [] }, hooks: {} })
+    );
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    // 1. Live file preserved as-is
+    const liveContent = await fs.readFile(
+      path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'),
+      'utf-8'
+    );
+    expect(liveContent).toBe(customizedContent);
+
+    // 2. CRITICAL: stored hash is UNCHANGED — still equals the original template hash,
+    // NOT the customized hash. This ensures the next upgrade will still detect the
+    // customization (current != stored) and preserve or sidecar it correctly.
+    const updatedMeta = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8')
+    );
+    expect(updatedMeta.fileHashes['agents/plan-reviewer.md']).toBe(realTemplateHash);
+    expect(updatedMeta.fileHashes['agents/plan-reviewer.md']).not.toBe(customizedHash);
+  });
+
+  it('updates stored hash to new template hash for autoUpdate files', async () => {
+    // Companion to the preservation test: verify the partial-rehash fix didn't
+    // regress the autoUpdate happy path. Files unchanged since install (current
+    // == stored) whose template has since changed must end up with stored =
+    // new template hash, so future upgrades correctly categorize them as
+    // unchanged until the next template change.
+
+    const realTemplateContent = await readTemplate('agents/universal/plan-reviewer.md');
+    const realTemplateHash = hashContent(realTemplateContent);
+    const fakeOldContent = 'old plan-reviewer template (pre-upgrade)';
+    const fakeOldHash = hashContent(fakeOldContent);
+
+    const meta = {
+      version: '0.9.0',
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: ['CLI tool'],
+      techStack: ['node'],
+      universalAgents: ['plan-reviewer'],
+      optionalAgents: [],
+      useDocker: false,
+      fileHashes: {
+        'agents/plan-reviewer.md': fakeOldHash, // stored = pre-upgrade template hash
+      },
+    };
+
+    await fs.ensureDir(path.join(tmpDir, '.claude', 'agents'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+    // File on disk matches stored (unmodified since install) → autoUpdate path
+    await fs.writeFile(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'), fakeOldContent);
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'settings.json'),
+      JSON.stringify({ permissions: { allow: [] }, hooks: {} })
+    );
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    // 1. Live file replaced with the real template content
+    const liveContent = await fs.readFile(
+      path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'),
+      'utf-8'
+    );
+    expect(liveContent).toBe(realTemplateContent);
+
+    // 2. Stored hash updated to new template hash
+    const updatedMeta = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8')
+    );
+    expect(updatedMeta.fileHashes['agents/plan-reviewer.md']).toBe(realTemplateHash);
+    expect(updatedMeta.fileHashes['agents/plan-reviewer.md']).not.toBe(fakeOldHash);
+  });
+
   it('runs v2.0.0 migrations when upgrading from pre-2.0.0', async () => {
     // Set up a v1.9.0 project with flat skill and agent without description
     const skillContent = '# Testing skill content';

@@ -2,17 +2,13 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import {
-  computeFileHashes,
-  requireWorkflowMeta,
-  writeWorkflowMeta,
-  getPackageVersion,
-} from '../core/config.js';
+import { requireWorkflowMeta, writeWorkflowMeta, getPackageVersion } from '../core/config.js';
 import { createBackup } from '../core/backup.js';
 import { categorizeFiles } from '../core/file-categorizer.js';
 import { buildSettingsJson, mergeSettingsPermissionsAndHooks } from '../core/merger.js';
 import { readTemplate, updateGitignore } from '../core/scaffolder.js';
 import { writeFile, fileExists } from '../utils/file.js';
+import { hashFile } from '../utils/hash.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
 import * as display from '../utils/display.js';
 import { semverLessThan, migrateSkillFormat, patchAgentDescriptions } from '../core/migration.js';
@@ -240,8 +236,24 @@ export async function upgradeCommand() {
     // Ensure sessions directory exists for session persistence
     await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
 
-    // Recompute file hashes
-    const fileHashes = await computeFileHashes(projectRoot);
+    // Partial hash update — rehash ONLY files we just wrote. User-customized
+    // ("modified") files and conflict-sidecar'd files keep their original
+    // stored hash so their "install state" baseline is preserved across
+    // upgrades. Otherwise the next template change would silently overwrite
+    // the customization via the autoUpdate path.
+    const fileHashes = { ...meta.fileHashes };
+    for (const { key } of categories.autoUpdate) {
+      const filePath = path.join(projectRoot, '.claude', ...key.split('/'));
+      fileHashes[key] = await hashFile(filePath);
+    }
+    for (const { key } of categories.newFiles) {
+      const filePath = path.join(projectRoot, '.claude', ...key.split('/'));
+      fileHashes[key] = await hashFile(filePath);
+    }
+    for (const { key } of categories.deleted) {
+      delete fileHashes[key];
+    }
+    // modified, conflict, unchanged, userAdded: stored hash deliberately left alone
 
     // Ensure .gitignore has worclaude entries
     await updateGitignore(projectRoot);
