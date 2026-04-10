@@ -26,7 +26,7 @@ worclaude --version
 You should see output like:
 
 ```
-2.2.3
+2.2.6
 ```
 
 ## Creating Your Project
@@ -52,7 +52,7 @@ worclaude init
 You will see the Worclaude header and the first prompt:
 
 ```
-  Worclaude v2.2.3
+  Worclaude v2.2.6
   ─────────────────────
 
 ? Project name: my-project

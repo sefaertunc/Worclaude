@@ -67,30 +67,31 @@ Populated from the tech stack selections. Provides exact commands for testing, l
 ```markdown
 ## Skills (read on demand, not upfront)
 See `.claude/skills/` — load only what's relevant:
-- context-management.md — Session lifecycle
-- claude-md-maintenance.md — CLAUDE.md self-healing
-- git-conventions.md — Commits, branches, versioning
-- planning-with-files.md — Implementation planning
-- prompt-engineering.md — Prompting patterns and quality
-- review-and-handoff.md — Session endings
-- verification.md — How to verify work
-- testing.md — Test philosophy and patterns
-- subagent-usage.md — When and how to use subagents
-- security-checklist.md — Security review checklist
-- agent-routing.md — When and how to use each installed agent (READ EVERY SESSION)
-- backend-conventions.md — Run /setup to fill automatically
-- frontend-design-system.md — Run /setup to fill automatically
-- project-patterns.md — Run /setup to fill automatically
+- context-management/SKILL.md — Session lifecycle
+- claude-md-maintenance/SKILL.md — CLAUDE.md self-healing
+- git-conventions/SKILL.md — Commits, branches, versioning
+- planning-with-files/SKILL.md — Implementation planning
+- prompt-engineering/SKILL.md — Prompting patterns and quality
+- review-and-handoff/SKILL.md — Session endings
+- verification/SKILL.md — How to verify work
+- testing/SKILL.md — Test philosophy and patterns
+- subagent-usage/SKILL.md — When and how to use subagents
+- security-checklist/SKILL.md — Security review checklist
+- coordinator-mode/SKILL.md — Multi-agent orchestration
+- agent-routing/SKILL.md — When and how to use each installed agent (READ EVERY SESSION)
+- backend-conventions/SKILL.md — Run /setup to fill automatically
+- frontend-design-system/SKILL.md — Run /setup to fill automatically
+- project-patterns/SKILL.md — Run /setup to fill automatically
 ````
 
-Lists all 11 universal skills, 1 generated skill (agent-routing), and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern. The exception is `agent-routing.md`, which is marked "READ EVERY SESSION" because Claude needs to know which agents to use from the start.
+Lists all 11 universal skills, 1 generated skill (agent-routing), and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern. The exception is `agent-routing/SKILL.md`, which is marked "READ EVERY SESSION" because Claude needs to know which agents to use from the start.
 
 ### Session Protocol
 
 ```markdown
 ## Session Protocol
 
-**Start:** Read PROGRESS.md → Read `.claude/skills/agent-routing.md` → Read active implementation prompt if any.
+**Start:** Read PROGRESS.md → Read `.claude/skills/agent-routing/SKILL.md` → Read active implementation prompt if any.
 **During:** One task at a time. Commit after each. Use subagents per routing guide.
 **End:** Update PROGRESS.md. Write handoff if ending mid-task.
 ```

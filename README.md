@@ -5,10 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/worclaude.svg)](https://www.npmjs.com/package/worclaude)
 [![license](https://img.shields.io/npm/l/worclaude.svg)](LICENSE)
 
-<!-- GIF goes here once recorded -->
-<!-- ![worclaude init demo](docs/public/demo.gif) -->
-
-[Full Documentation](https://sefaertunc.github.io/Worclaude/) · [Interactive Demo](https://sefaertunc.github.io/Worclaude/demo/) · [npm](https://www.npmjs.com/package/worclaude)
+[Full Documentation](https://sefaertunc.github.io/Worclaude/) · [npm](https://www.npmjs.com/package/worclaude)
 
 Worclaude scaffolds a complete Claude Code workflow into any project in seconds. It implements all [tips by Boris Cherny](https://www.howborisusesclaudecode.com/) — the creator of Claude Code at Anthropic — as a reusable, upgradable scaffold. One `init` command gives you 25 agents, 16 slash commands, 15 skills, hooks, permissions, and a CLAUDE.md template tuned for your tech stack. Whether you're starting fresh or adding structure to an existing project, Worclaude handles the setup so you can focus on building.
 
@@ -48,51 +45,6 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 
 ---
 
-## What's New in v2.x
-
-The v2.x series introduced Claude Code runtime integration and continues to refine the workflow.
-
-**Claude Code Runtime Integration**
-
-- Skills use directory format (`skill-name/SKILL.md`) and register with `/skills`
-- Agents include `description` frontmatter and register with `/agents`
-- Run `worclaude doctor` to verify everything is wired up correctly
-
-**Conditional Skills**
-
-- 6 skills activate only when relevant files are touched (testing, security, frontend, backend, verification, project-patterns)
-- 8 skills stay always-loaded for cross-cutting guidance
-- Saves context window budget by keeping domain-specific guidance out of unrelated work
-
-**Agent Enhancements**
-
-- Read-only agents blocked from file modifications via `disallowedTools`
-- Background execution for long-running agents (verify-app, build-validator, e2e-runner)
-- Turn limits (`maxTurns`) prevent runaway token consumption
-- Persistent memory for agents that learn across sessions (test-writer, security-reviewer, doc-writer)
-
-**New Content**
-
-- Coordinator-mode skill for multi-agent orchestration patterns
-- Agents with `memory: project` leverage Claude Code's native memory system
-- Enhanced verify-app agent with structured verdicts and adversarial probe requirements
-- Per-tech-stack permission presets (16 languages)
-
-**Upgrade Migration**
-
-- `worclaude upgrade` auto-migrates v1.x projects: flat skills → directory format, agents get required frontmatter
-- `worclaude doctor` detects old formats and missing fields
-
-**v2.2.0 — Leaner Defaults, Richer Skills**
-
-- Removed project-root MEMORY.md scaffolding — Claude Code's native memory system handles this automatically
-- Expanded context-management, claude-md-maintenance, and coordinator-mode skills with deeper guidance
-- Enhanced verify-app agent with mobile, database migration, and data/ML pipeline verification patterns
-
-See the [Claude Code Integration guide](https://sefaertunc.github.io/Worclaude/guide/claude-code-integration) for technical details.
-
----
-
 ## Quick Start
 
 ```bash
@@ -129,6 +81,5 @@ See the [full command reference](https://sefaertunc.github.io/Worclaude/referenc
 ## Links
 
 - [Full Documentation](https://sefaertunc.github.io/Worclaude/)
-- [Interactive Demo](https://sefaertunc.github.io/Worclaude/demo/)
 - [Contributing](CONTRIBUTING.md)
 - [License: MIT](LICENSE)
