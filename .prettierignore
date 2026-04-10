@@ -3,3 +3,5 @@ templates/
 .github/
 node_modules/
 coverage/
+CODE_OF_CONDUCT.md
+SECURITY.md
