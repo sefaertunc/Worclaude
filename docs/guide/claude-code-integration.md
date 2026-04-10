@@ -25,7 +25,7 @@ when_to_use: 'When this skill is relevant'
 paths:
   - 'src/**'
   - 'lib/**'
-version: '2.2.3'
+version: '2.2.6'
 ---
 ```
 
@@ -173,7 +173,7 @@ These agents have `disallowedTools` that prevent file modifications. They analyz
 | `database-analyst`       | Edit, Write, NotebookEdit, Agent | Analyzes schemas without modifying them  |
 | `ui-reviewer`            | Edit, Write, NotebookEdit, Agent | Reviews UI without making changes        |
 | `performance-auditor`    | Edit, Write, NotebookEdit, Agent | Audits performance without fixing        |
-| `security-reviewer`      | _none (read-only by prompt)_     | Reviews security via prompt instruction  |
+| `security-reviewer`      | Edit, Write, NotebookEdit, Agent | Reviews security without modifying code  |
 | `dependency-manager`     | Edit, Write, NotebookEdit, Agent | Reviews dependencies without updating    |
 | `deploy-validator`       | Edit, Write, NotebookEdit, Agent | Validates deployment readiness           |
 | `changelog-generator`    | Edit, NotebookEdit, Agent        | Generates changelog entries              |
