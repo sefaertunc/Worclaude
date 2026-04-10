@@ -1,10 +1,24 @@
 # Permissions
 
-Worclaude configures pre-approved tool permissions in `.claude/settings.json`. These permissions let Claude use common development tools without prompting for confirmation on every invocation. Permissions are organized as an allow list.
+Worclaude configures pre-approved tool permissions in `.claude/settings.json`. These permissions let Claude use common development tools without prompting for confirmation on every invocation. Claude Code's permission model has three rule types: `allow`, `ask`, and `deny`.
 
 ## Why Pre-Approved Permissions
 
 Without pre-approved permissions, Claude Code asks for user confirmation on every shell command and file edit. This creates friction during normal development. Worclaude pre-approves safe, common operations so Claude can work fluidly while still requiring confirmation for unusual or destructive commands.
+
+## Rule Types
+
+Each rule type handles a different point on the safety-vs-friction spectrum:
+
+| Type    | Behavior                                         | When to Use                                                           |
+| ------- | ------------------------------------------------ | --------------------------------------------------------------------- |
+| `allow` | Tool runs immediately without prompting          | Safe, common operations (reads, standard build/test commands, lint)   |
+| `ask`   | Tool prompts the user before each invocation     | Commands that are usually fine but occasionally risky                 |
+| `deny`  | Tool is blocked — Claude cannot invoke it at all | Commands that must never run (destructive, exfiltrating, credentials) |
+
+**Evaluation order:** `deny` → `ask` → `allow`. The first matching rule wins. A command that matches both an `allow` pattern and a `deny` pattern will be denied, because `deny` is checked first.
+
+Worclaude installs `allow` rules only. `ask` and `deny` are user-managed policy — add them manually as your project requires.
 
 ## Permission Syntax
 
@@ -120,7 +134,7 @@ Additional stack configs exist for C# / .NET, C / C++, PHP, Ruby, Kotlin, Swift,
 
 ## Adding Custom Permissions
 
-Edit `.claude/settings.json` directly to add permissions:
+Edit `.claude/settings.json` directly to add permissions. The full shape with all three rule types looks like this:
 
 ```json
 {
@@ -131,23 +145,57 @@ Edit `.claude/settings.json` directly to add permissions:
       "Bash(kubectl:*)",
       "Edit(*.tf)",
       "Edit(k8s/**)"
+    ],
+    "ask": ["Bash(git push:*)", "Bash(npm publish:*)"],
+    "deny": ["Bash(rm -rf:*)"]
+  }
+}
+```
+
+Comment strings (lines starting with `//`) are supported for organization. They are not valid JSON but Worclaude handles them for readability. The `worclaude status` command counts only non-comment `allow` rules.
+
+## Ask Rules
+
+The `ask` array lists commands that should prompt the user for confirmation at runtime instead of running silently. Use this for commands that are usually fine but occasionally risky — commands where the cost of an unintended invocation is high enough that you want a human in the loop, but low enough that blocking them outright would be too restrictive.
+
+Typical candidates:
+
+- `Bash(git push:*)` — pushes are reversible but visible to collaborators
+- `Bash(npm publish:*)` — publishes are hard to reverse and affect downstream consumers
+- `Bash(docker push:*)` — image pushes hit shared registries
+- `Bash(terraform apply:*)` — applies mutate real infrastructure
+- `Edit(.env*)` — secrets files deserve a pause
+
+Example:
+
+```json
+{
+  "permissions": {
+    "allow": [ ... ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(npm publish:*)",
+      "Edit(.env*)"
     ]
   }
 }
 ```
 
-Comment strings (lines starting with `//`) are supported for organization. They are not valid JSON but Worclaude handles them for readability. The `worclaude status` command counts only non-comment permission rules.
+Worclaude does not install any `ask` rules by default. Choosing which commands deserve a confirmation prompt is project policy, not scaffolding.
 
-## Deny List
+## Deny Rules
 
-The `permissions` object also supports a `deny` key for explicitly blocking commands. Worclaude does not install any deny rules by default, but they can be added manually:
+The `permissions` object also supports a `deny` key for explicitly blocking commands. Deny rules are checked before `ask` and `allow`, so a matched `deny` pattern always wins. Worclaude does not install any deny rules by default, but they can be added manually:
 
 ```json
 {
   "permissions": {
     "allow": [ ... ],
     "deny": [
-      "Bash(rm -rf:*)"
+      "Bash(rm -rf:*)",
+      "Bash(curl:*)",
+      "Read(.env*)",
+      "Read(secrets/**)"
     ]
   }
 }
