@@ -27,6 +27,7 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 node src/index.js init          # Test init command locally
 node src/index.js upgrade       # Test upgrade command
 node src/index.js status        # Test status command
+node src/index.js doctor        # Test doctor command (workflow health check)
 node src/index.js backup        # Test backup command
 node src/index.js restore       # Test restore command
 node src/index.js diff          # Test diff command
