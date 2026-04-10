@@ -51,7 +51,7 @@ Hook profiles (`WORCLAUDE_HOOK_PROFILE`) let you control strictness: `minimal` (
 
 ### Permissions and Sandbox
 
-A comprehensive `settings.json` with pre-approved permissions for common development tools (git, build tools, formatters, file operations) so Claude does not constantly ask for permission. Sandbox mode is enabled with auto-allow for structural safety.
+A comprehensive `settings.json` with pre-approved permissions for common development tools (git, build tools, formatters, file operations) so Claude does not constantly ask for permission. Claude Code's permission model is three-tier — `allow`, `ask`, and `deny` — and users can add `ask` or `deny` rules for sensitive commands on top of worclaude's default `allow` list. Sandbox mode is enabled with auto-allow for structural safety.
 
 ### CLAUDE.md
 
