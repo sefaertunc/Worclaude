@@ -16,7 +16,7 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 - **Spinners:** Ora ^8.2.0
 - **File operations:** fs-extra ^11.3.0
 - **Hashing:** Node.js crypto (built-in, CRLF-normalized)
-- **Testing:** Vitest (384 tests, 26 files)
+- **Testing:** Vitest (381 tests, 26 files)
 - **Linting:** ESLint flat config (eslint.config.js) + Prettier (single quotes, trailing commas ES5, 100 char width)
 - **Docs:** VitePress (GitHub Pages via GitHub Actions)
 - **Package manager:** npm (caret ranges, no lockfile pinning)
