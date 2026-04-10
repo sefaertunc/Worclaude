@@ -33,6 +33,11 @@ files (see git-conventions.md for the canonical list).
 
      ## Notes for Next Session
      - {anything the next session should know}
+
+     ## Workflow Observability
+     - **Agents invoked:** {ALL agents used this session — explicit @agent calls AND agents invoked implicitly by commands like /verify, /review-plan, /refactor-clean. Write "none" if no agents were used.}
+     - **Commands used:** {all slash commands run earlier in this session, e.g. /start, /verify, /refactor-clean. Do NOT include the current /commit-push-pr or /end that is writing this summary. Write "none" if no other commands were used.}
+     - **Verification result:** {if /verify was run: passed/failed with brief summary; otherwise "not run".}
      ```
    - Keep it concise — this is for machine consumption at session start,
      not a detailed report
