@@ -28,6 +28,9 @@ If you are working in a git worktree (not the main checkout):
    - Filename: YYYY-MM-DD-HHMM-{short-branch-name}.md
    - Same format as /commit-push-pr session summaries
    - Mark the task as "IN PROGRESS" since /end means work is unfinished
+   - Fill in the ## Workflow Observability section: list agents invoked and
+     slash commands used so far (excluding the current /end). Verification
+     result is "not run" unless /verify was executed earlier in the session.
 4. git add -A
 5. git commit -m "wip: handoff for [task description]"
    Use exactly this message format — no trailers or Co-Authored-By lines.
