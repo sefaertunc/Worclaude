@@ -114,18 +114,18 @@ This prevents merge conflicts when running parallel feature branches.
 
 ## Versioning Policy
 
-Follow [semver](https://semver.org/) when the project publishes releases:
+Follow [semver](https://semver.org/) when the project publishes releases. **Every merge to `main` gets at least a patch bump** — even docs-only, CI-only, or test-only changes. This gives every release a unique, tagged version so the npm history matches the git history one-to-one.
 
 | What changed | Bump | Example |
 |---|---|---|
-| Bug fix, patch to existing behavior | **patch** | Fixed edge case in date parser |
-| New feature, command, or API surface | **minor** | Added CSV export option |
 | Breaking change to public API or CLI | **major** | Renamed config key, removed flag |
-| Only docs, CI, tests, internal refactor | **no bump** | Updated README, added test |
+| New feature, command, or API surface | **minor** | Added CSV export option |
+| Bug fix, patch to existing behavior | **patch** | Fixed edge case in date parser |
+| Docs, CI, tests, internal refactor | **patch** | Updated README, added test |
 
 **Publish from the primary branch (usually `main`),** not from feature or development branches. What is published must always match what is on the release branch.
 
-**When to bump:** Include the version change in the same PR as the work — no separate "bump version" commits after the fact.
+**When to bump:** Include the version change in the same PR as the work — no separate "bump version" commits after the fact. The `/sync` command handles this during the develop → main promotion.
 
 **How to publish:**
 1. Merge the release PR into `main`
@@ -133,7 +133,7 @@ Follow [semver](https://semver.org/) when the project publishes releases:
 3. Publish using your ecosystem's tool (`npm publish`, `cargo publish`, `twine upload`, etc.)
 4. Sync develop: `git checkout develop && git merge main && git push origin develop`
 
-**Rule of thumb:** If the change affects what users see, install, or depend on, it needs a version bump. If it only affects the project's internal development workflow, it does not.
+**Rule of thumb:** If something landed on `main`, it needs a version. The only question is which semver level — patch by default, minor if it's a new feature, major if it breaks backward compatibility.
 
 ## Gotchas
 

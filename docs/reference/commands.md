@@ -115,7 +115,7 @@ worclaude upgrade
 
 # When already current
 worclaude upgrade
-# → "Already up to date (v2.2.2)."
+# → "Already up to date (v2.2.3)."
 ```
 
 **Notes**

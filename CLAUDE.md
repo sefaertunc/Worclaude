@@ -75,7 +75,7 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 10. Always add new agents to both `agents.js` AND `agent-registry.js`.
 11. Always add new template files to both scaffolder AND workflow-meta hash computation.
 12. Always handle the "Other / None" language edge case in stack-related code.
-13. Version bump required when templates or CLI behavior change. No bump for docs/CI/tests only. Always publish from `main`, never from `develop`. See git-conventions.md Versioning Policy.
+13. Every merge to `main` gets at least a patch version bump — including docs-only, CI-only, and test-only changes. Patch by default, minor for new features, major for breaking changes. Always publish from `main`, never from `develop`. See git-conventions.md Versioning Policy.
 14. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
 15. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
 
