@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.1
+**Version:** 2.2.2
 **Last Updated:** 2026-04-10
 
 ## Completed
@@ -290,7 +290,7 @@
   - [x] Documentation version examples updated from v1.1.0 to v2.2.0 across all guide/reference pages
   - [x] README "What's New" reframed as cumulative v2.x section with v2.2.0 highlights
 
-- [x] Post-v2.2.1 documentation fixes (2026-04-10)
+- [x] v2.2.2: Documentation fixes (2026-04-10)
   - [x] Permissions reference: documented Claude Code's three-tier permission model (allow/ask/deny) with evaluation order, rule types table, and ask-rule candidates — no behavior change, `mergeSettings()` already preserves user-configured ask/deny via deep copy
   - [x] CLAUDE.md Commands block: added missing `doctor` command entry (was documented in README and PROGRESS.md Stats but absent from the primary AI instructions file)
   - [x] CLAUDE.md Tech Stack: corrected stale test count (384 → 381 to match actual suite)

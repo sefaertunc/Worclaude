@@ -17,7 +17,7 @@ This page covers Scenario B.
 When Worclaude detects an existing setup, it scans your project and shows a report:
 
 ```
-  Worclaude v2.2.1
+  Worclaude v2.2.2
   ─────────────────────
 
   Detected existing Claude Code setup:
