@@ -133,7 +133,7 @@ Approximate values from Claude Code v2.1.88 source (March 2026). These may chang
 | Post-compact skills restore | 25,000 token budget, 5,000 per skill |
 | Compact summary output | 20,000 tokens max |
 | CLAUDE.md total budget | ~40,000 characters across all loaded instruction files |
-| MEMORY.md | 200 lines / 25,000 bytes |
+| MEMORY.md (native, ~/.claude/) | 200 lines / 25,000 bytes |
 
 Practical takeaways:
 - After compaction, only 5 files are restored at 5k tokens each. Structure your work

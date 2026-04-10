@@ -13,7 +13,9 @@ The Claude Code settings file. Controls what tools Claude can use without confir
 ```json
 {
   "permissions": {
-    "allow": ["// -- Section Comment --", "Bash(command:*)", "Edit(pattern)"]
+    "allow": ["// -- Section Comment --", "Bash(command:*)", "Edit(pattern)"],
+    "ask": ["Bash(git push:*)"],
+    "deny": ["Bash(rm -rf:*)"]
   },
   "hooks": {
     "PostToolUse": [
@@ -42,12 +44,12 @@ The Claude Code settings file. Controls what tools Claude can use without confir
 }
 ```
 
-| Section              | Purpose                             | Details                                   |
-| -------------------- | ----------------------------------- | ----------------------------------------- |
-| `permissions.allow`  | Pre-approved tool invocations       | See [Permissions](/reference/permissions) |
-| `hooks.SessionStart` | Commands triggered at session start | See [Hooks](/reference/hooks)             |
-| `hooks.PostToolUse`  | Commands triggered after tool use   | See [Hooks](/reference/hooks)             |
-| `hooks.PostCompact`  | Commands triggered after compaction | See [Hooks](/reference/hooks)             |
+| Section              | Purpose                                                   | Details                                   |
+| -------------------- | --------------------------------------------------------- | ----------------------------------------- |
+| `permissions`        | Three-tier rule set (allow/ask/deny) for tool invocations | See [Permissions](/reference/permissions) |
+| `hooks.SessionStart` | Commands triggered at session start                       | See [Hooks](/reference/hooks)             |
+| `hooks.PostToolUse`  | Commands triggered after tool use                         | See [Hooks](/reference/hooks)             |
+| `hooks.PostCompact`  | Commands triggered after compaction                       | See [Hooks](/reference/hooks)             |
 
 **Built from:** Base permissions (`templates/settings/base.json`) merged with per-stack permissions (e.g., `templates/settings/python.json`, `templates/settings/node.json`) based on selected tech stack. Formatter and notification commands are substituted from stack and OS detection.
 
@@ -65,7 +67,7 @@ Installation metadata used by `worclaude upgrade`, `worclaude status`, and `worc
 
 ```json
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "installedAt": "2026-03-25T14:30:22.000Z",
   "lastUpdated": "2026-03-25T14:30:22.000Z",
   "projectTypes": ["Backend / API", "CLI tool"],

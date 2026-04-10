@@ -25,7 +25,7 @@ when_to_use: 'When this skill is relevant'
 paths:
   - 'src/**'
   - 'lib/**'
-version: '2.2.1'
+version: '2.2.2'
 ---
 ```
 

@@ -17,7 +17,7 @@ This page covers Scenario B.
 When Worclaude detects an existing setup, it scans your project and shows a report:
 
 ```
-  Worclaude v2.2.1
+  Worclaude v2.2.2
   ─────────────────────
 
   Detected existing Claude Code setup:
@@ -68,7 +68,7 @@ Files that do not conflict with anything you already have are added silently:
 - **Missing skills** are added directly to `.claude/skills/` in directory format (`skill-name/SKILL.md`). Detection supports both flat files and directory format for backward compatibility.
 - **Missing agents** are added to `.claude/agents/` (both universal and your selected optional agents)
 - **Missing commands** are added to `.claude/commands/`
-- **settings.json permissions** -- new permission rules are appended to your existing allow list without removing any of your existing rules
+- **settings.json permissions** -- new permission rules are appended to your existing allow list without removing any of your existing rules; any `ask` or `deny` rules you have configured are preserved untouched
 - **settings.json hooks** -- new hooks are appended if their matcher does not conflict with an existing hook
 - **.mcp.json** -- missing MCP servers are added; your existing servers take priority if there is a name collision
 - **docs/spec/PROGRESS.md** -- created if missing, skipped if it already exists
