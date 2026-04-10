@@ -600,7 +600,7 @@ The SessionStart hook has **no profile gate** — it always fires because losing
 
 ### Session Summaries
 
-Written automatically by `/commit-push-pr` (after committing) and `/end` (mid-task handoff). Stored in `.claude/sessions/` with naming: `YYYY-MM-DD-HHMM-{short-branch-name}.md`.
+Written automatically by `/commit-push-pr` (after committing) and `/end` (mid-task handoff). Stored in `.claude/sessions/` with naming: `YYYY-MM-DD-HHMM-{short-branch-name}.md`. Summaries include a `## Workflow Observability` section listing agents invoked, commands used, and verification result.
 
 ### Drift Detection
 
