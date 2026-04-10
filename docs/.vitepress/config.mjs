@@ -5,13 +5,12 @@ export default defineConfig({
   description: 'Professional Claude Code workflow system',
   base: '/Worclaude/',
 
-  srcExclude: ['spec/**', 'RECORDING-INSTRUCTIONS.md'],
+  srcExclude: ['spec/**'],
 
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
       { text: 'Reference', link: '/reference/commands' },
-      { text: 'Demo', link: '/demo/' },
     ],
 
     sidebar: {
