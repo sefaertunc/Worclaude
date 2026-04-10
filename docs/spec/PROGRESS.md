@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.2
+**Version:** 2.2.3
 **Last Updated:** 2026-04-10
 
 ## Completed
@@ -294,6 +294,11 @@
   - [x] Permissions reference: documented Claude Code's three-tier permission model (allow/ask/deny) with evaluation order, rule types table, and ask-rule candidates — no behavior change, `mergeSettings()` already preserves user-configured ask/deny via deep copy
   - [x] CLAUDE.md Commands block: added missing `doctor` command entry (was documented in README and PROGRESS.md Stats but absent from the primary AI instructions file)
   - [x] CLAUDE.md Tech Stack: corrected stale test count (384 → 381 to match actual suite)
+
+- [x] v2.2.3: Versioning policy — always-bump on merge (2026-04-10)
+  - [x] `.claude/skills/git-conventions/SKILL.md` Versioning Policy: `docs/CI/tests/refactor` row flipped from **no bump** to **patch**; table reordered (major → minor → patch); rule of thumb rewritten to "if it landed on main, it needs a version"
+  - [x] CLAUDE.md rule #13: rewritten to match — every merge to `main` gets at least a patch bump, including docs-only, CI-only, and test-only changes
+  - [x] `templates/skills/universal/git-conventions.md` intentionally NOT updated — the shipped template keeps conventional semver semantics so downstream worclaude users are not forced into the always-bump model
 
 ## Stats
 
