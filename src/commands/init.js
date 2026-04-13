@@ -1,7 +1,7 @@
 import path from 'node:path';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { scaffoldFile, updateGitignore } from '../core/scaffolder.js';
+import { scaffoldFile, updateGitignore, scaffoldHooks } from '../core/scaffolder.js';
 import {
   computeFileHashes,
   createWorkflowMeta,
@@ -401,6 +401,9 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
     spinner.text = 'Created CLAUDE.md';
 
+    await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
+    spinner.text = 'Created AGENTS.md';
+
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
     spinner.text = 'Created .claude/settings.json';
 
@@ -500,6 +503,14 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
     spinner.text = 'Created .claude/sessions/';
 
+    // Copy hook scripts (.claude/hooks/)
+    await scaffoldHooks(projectRoot);
+    spinner.text = 'Created .claude/hooks/';
+
+    // Create learnings directory for correction capture
+    await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
+    spinner.text = 'Created .claude/learnings/';
+
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -518,12 +529,14 @@ function displayFreshSuccess(selections, skipped) {
 
   display.newline();
   display.success('CLAUDE.md');
+  display.success('AGENTS.md');
   display.success('.claude/settings.json');
   display.success('.claude/workflow-meta.json');
   display.success(`.claude/agents/${display.dimColor(`        ${totalAgents} agents`)}`);
   display.success(`.claude/commands/${display.dimColor(`      ${COMMAND_FILES.length} commands`)}`);
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.claude/sessions/');
+  display.success('.claude/hooks/');
   display.success('.mcp.json');
   display.success('.gitignore');
   if (skipped.progressMd) {

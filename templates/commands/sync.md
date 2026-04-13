@@ -52,3 +52,8 @@ and tell the user to run /conflict-resolver first.
    Use exactly this message format — no trailers or Co-Authored-By lines.
 10. git push origin develop
 11. gh pr create --base main with description of what was merged
+
+## Trigger Phrases
+- "sync progress"
+- "update shared files"
+- "post-merge sync"

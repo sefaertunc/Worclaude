@@ -38,3 +38,8 @@ for diagnosis and resolution.
 - Tests failing after dependency update
 - CI is red and you need to fix locally before pushing
 - After a large refactor that introduced errors
+
+## Trigger Phrases
+- "fix the build"
+- "build is broken"
+- "tests are failing"

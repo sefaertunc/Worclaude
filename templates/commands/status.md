@@ -8,3 +8,8 @@ Report current session state:
 - Test status (last run results)
 - Context usage estimate
 - Any blockers or pending decisions
+
+## Trigger Phrases
+- "what's the status"
+- "where am I"
+- "what am I working on"

@@ -194,6 +194,7 @@ export const COMMAND_FILES = [
   'build-fix',
   'refactor-clean',
   'test-coverage',
+  'learn',
 ];
 
 export const UNIVERSAL_SKILLS = [
@@ -215,6 +216,8 @@ export const TEMPLATE_SKILLS = [
   'frontend-design-system',
   'project-patterns',
 ];
+
+export const HOOK_FILES = ['pre-compact-save', 'correction-detect', 'learn-capture'];
 
 export const PROJECT_TYPES = [
   'Full-stack web application',

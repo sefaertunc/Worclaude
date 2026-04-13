@@ -7,6 +7,8 @@ runs INLINE in your current session — it reads uncommitted changes,
 improves them in place, and leaves everything uncommitted for
 /commit-push-pr.
 
+When invoked with arguments, use them to scope the cleanup. Example: `/refactor-clean src/core/merger.js`
+
 Do NOT spawn a subagent or worktree for this. Work directly on
 the files in the current working directory.
 
@@ -54,3 +56,9 @@ the files in the current working directory.
 - After implementing a feature, before /verify and /commit-push-pr
 - Weekly maintenance pass
 - When /review-changes flagged issues you want to fix
+
+## Trigger Phrases
+- "clean up the code"
+- "refactor this"
+- "simplify"
+- "tidy up"

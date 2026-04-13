@@ -207,6 +207,58 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'sessions', '.gitkeep'))).toBe(true);
   });
 
+  it('creates .claude/hooks/ with all hook scripts', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'pre-compact-save.cjs'))).toBe(
+      true
+    );
+    expect(
+      await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'correction-detect.cjs'))
+    ).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs'))).toBe(
+      true
+    );
+  });
+
+  it('creates .claude/learnings/ with .gitkeep', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'learnings'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'learnings', '.gitkeep'))).toBe(true);
+  });
+
+  it('creates AGENTS.md with cross-tool content', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(content).toContain('test-project');
+    // Cross-tool: should NOT contain Worclaude-specific references
+    expect(content).not.toContain('.claude/skills/');
+    expect(content).not.toContain('/start');
+    expect(content).not.toContain('/setup');
+  });
+
+  it('CLAUDE.md stays under 200 lines after interpolation', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    const lineCount = content.split('\n').length;
+    expect(lineCount).toBeLessThan(200);
+  });
+
+  it('settings.json has all 8 hook events', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+    const settings = JSON.parse(content);
+    const hookEvents = Object.keys(settings.hooks);
+    expect(hookEvents).toContain('PostToolUse');
+    expect(hookEvents).toContain('PostCompact');
+    expect(hookEvents).toContain('SessionStart');
+    expect(hookEvents).toContain('PreCompact');
+    expect(hookEvents).toContain('Stop');
+    expect(hookEvents).toContain('UserPromptSubmit');
+    expect(hookEvents).toContain('Notification');
+    expect(hookEvents).toContain('SessionEnd');
+  });
+
   it('uses project-type-specific SPEC.md template', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'), 'utf-8');

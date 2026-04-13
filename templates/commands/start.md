@@ -5,6 +5,8 @@ description: "Load session context, check for handoff files, detect drift since 
 The SessionStart hook has already loaded CLAUDE.md, PROGRESS.md,
 and the most recent session summary into context.
 
+When invoked with arguments, use them as the task focus. Example: `/start implement auth module`
+
 Your job is to supplement that with drift detection and additional context.
 
 ## 1. Drift Detection
@@ -73,3 +75,9 @@ Summarize:
 - What was last completed (from session summary loaded by hook)
 - What's next (from PROGRESS.md loaded by hook)
 - Any blockers or notes
+
+## Trigger Phrases
+- "start a new session"
+- "begin working"
+- "load context"
+- "what changed since last time"

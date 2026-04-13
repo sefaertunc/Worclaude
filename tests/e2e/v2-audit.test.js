@@ -532,6 +532,14 @@ describe('E2E Audit — template counts match constants', () => {
     expect(mdFiles.length).toBe(COMMAND_FILES.length);
   });
 
+  it('HOOK_FILES count matches template files', async () => {
+    const { HOOK_FILES } = await import('../../src/data/agents.js');
+    const templateDir = path.resolve(import.meta.dirname, '..', '..', 'templates', 'hooks');
+    const files = await fs.readdir(templateDir);
+    const hookFiles = files.filter((f) => f.endsWith('.cjs') || f.endsWith('.js'));
+    expect(hookFiles.length).toBe(HOOK_FILES.length);
+  });
+
   it('UNIVERSAL_AGENTS count matches template files', async () => {
     const templateDir = path.resolve(
       import.meta.dirname,

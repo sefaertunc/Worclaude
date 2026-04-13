@@ -4,6 +4,8 @@ description: "Mid-task stop — writes handoff file and session summary for next
 
 Use this ONLY when stopping work mid-task without committing.
 
+When invoked with arguments, use them as the description of current work. Example: `/end implementing user registration`
+
 Do NOT update PROGRESS.md — /sync handles that on develop after merging.
 
 ## Pre-flight: Worktree Safety
@@ -35,3 +37,9 @@ If you are working in a git worktree (not the main checkout):
 5. git commit -m "wip: handoff for [task description]"
    Use exactly this message format — no trailers or Co-Authored-By lines.
 6. git push
+
+## Trigger Phrases
+- "stop working"
+- "end session"
+- "save and stop"
+- "I need to go"

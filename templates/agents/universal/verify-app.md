@@ -116,6 +116,18 @@ You will feel the urge to skip checks. These are the excuses — recognize them:
 - **Database migrations**: run migration up → verify schema matches intent → run migration down (reversibility) → test against existing data, not just empty DB
 - **Data/ML pipeline**: run with sample input → verify output shape/schema/types → test empty input and NaN/null handling → check row counts in vs out for silent data loss
 
+## Verification Depth Levels
+
+Every check targets a depth level. Cover all 4 for critical features:
+
+1. **Exists** — file/function/endpoint is present
+2. **Substantive** — real implementation, not a stub or placeholder
+3. **Wired** — connected to the rest of the system (imported, routed, configured)
+4. **Functional** — actually works when invoked with real input
+
+Before issuing PASS, scan for stubs: `grep -rn "TODO\|FIXME\|placeholder\|not.implemented" --include="*.js" --include="*.ts" --include="*.py" src/ || true`
+Do not flag test fixtures, documentation examples, or planned future work in SPEC.md.
+
 ## Before Issuing PASS
 
 Your report must include at least one adversarial probe (boundary value, concurrent request,

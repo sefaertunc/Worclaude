@@ -24,7 +24,7 @@ const correctionPatterns = [
   /revert/i,
   /don't do that/i,
   /stop/i,
-  /wait/i
+  /wait/i,
 ];
 ```
 
@@ -36,7 +36,7 @@ const learnPatterns = [
   /add (this|that) to (your )?rules/i,
   /don't (do|make) that (again|mistake)/i,
   /learn from this/i,
-  /\[LEARN\]/i
+  /\[LEARN\]/i,
 ];
 ```
 
@@ -54,35 +54,35 @@ Corrections are stored in **SQLite** via `better-sqlite3`. The database lives at
 
 **Table: `learnings`**
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | INTEGER PRIMARY KEY AUTOINCREMENT | |
-| `created_at` | TEXT | `datetime('now')` default |
-| `project` | TEXT | nullable, basename of project dir |
-| `category` | TEXT NOT NULL | Navigation, Editing, Testing, Git, Quality, Context, Architecture, Performance, Claude-Code, Prompting |
-| `rule` | TEXT NOT NULL | one-line description |
-| `mistake` | TEXT | nullable |
-| `correction` | TEXT | nullable |
-| `times_applied` | INTEGER DEFAULT 0 | incremented via `incrementTimesApplied()` |
+| Column          | Type                              | Notes                                                                                                  |
+| --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `id`            | INTEGER PRIMARY KEY AUTOINCREMENT |                                                                                                        |
+| `created_at`    | TEXT                              | `datetime('now')` default                                                                              |
+| `project`       | TEXT                              | nullable, basename of project dir                                                                      |
+| `category`      | TEXT NOT NULL                     | Navigation, Editing, Testing, Git, Quality, Context, Architecture, Performance, Claude-Code, Prompting |
+| `rule`          | TEXT NOT NULL                     | one-line description                                                                                   |
+| `mistake`       | TEXT                              | nullable                                                                                               |
+| `correction`    | TEXT                              | nullable                                                                                               |
+| `times_applied` | INTEGER DEFAULT 0                 | incremented via `incrementTimesApplied()`                                                              |
 
 **Table: `sessions`**
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | TEXT PRIMARY KEY | `CLAUDE_SESSION_ID` or `process.ppid` |
-| `project` | TEXT | nullable |
-| `started_at` | TEXT | `datetime('now')` |
-| `ended_at` | TEXT | nullable |
-| `edit_count` | INTEGER DEFAULT 0 | incremented by quality-gate.js |
-| `corrections_count` | INTEGER DEFAULT 0 | incremented by prompt-submit.js |
-| `prompts_count` | INTEGER DEFAULT 0 | incremented by prompt-submit.js |
+| Column              | Type              | Notes                                 |
+| ------------------- | ----------------- | ------------------------------------- |
+| `id`                | TEXT PRIMARY KEY  | `CLAUDE_SESSION_ID` or `process.ppid` |
+| `project`           | TEXT              | nullable                              |
+| `started_at`        | TEXT              | `datetime('now')`                     |
+| `ended_at`          | TEXT              | nullable                              |
+| `edit_count`        | INTEGER DEFAULT 0 | incremented by quality-gate.js        |
+| `corrections_count` | INTEGER DEFAULT 0 | incremented by prompt-submit.js       |
+| `prompts_count`     | INTEGER DEFAULT 0 | incremented by prompt-submit.js       |
 
 **Virtual table: `learnings_fts`** -- FTS5 full-text search index over `category`, `rule`, `mistake`, `correction` with BM25 ranking. Maintained via INSERT/UPDATE/DELETE triggers.
 
 The `[LEARN]` blocks are captured from assistant responses via the **Stop hook** (`learn-capture.js`) using this regex (line 28):
 
 ```js
-/\[LEARN\]\s*([\w][\w\s-]*?)\s*:\s*(.+?)(?:\nMistake:\s*(.+?))?(?:\nCorrection:\s*(.+?))?(?=\n\[LEARN\]|\n\n|$)/gim
+/\[LEARN\]\s*([\w][\w\s-]*?)\s*:\s*(.+?)(?:\nMistake:\s*(.+?))?(?:\nCorrection:\s*(.+?))?(?=\n\[LEARN\]|\n\n|$)/gim;
 ```
 
 **Fallback:** When SQLite is unavailable, `session-start.js` falls back to reading `~/.claude/LEARNED.md` (plain markdown). No `.claude/rules/` directory usage.
@@ -113,46 +113,46 @@ The **SessionStart hook** (`scripts/session-start.js`) runs at every session sta
 
 From `hooks/hooks.json`:
 
-| Event Type | Hook Count | Scripts/Actions |
-|---|---|---|
-| `PreToolUse` | 5 (3 matchers) | quality-gate.js (Edit/Write), pre-commit-check.js (git commit), LLM commit validator (haiku), pre-push-check.js (git push), LLM secret scanner (Write) |
-| `PostToolUse` | 2 | post-edit-check.js, test-failure-check.js |
-| `Stop` | 2 | session-check.js, learn-capture.js |
-| `SessionStart` | 1 | session-start.js |
-| `SessionEnd` | 1 | session-end.js |
-| `UserPromptSubmit` | 2 | prompt-submit.js, drift-detector.js |
-| `PreCompact` | 1 | pre-compact.js |
-| `PostCompact` | 1 | post-compact.js |
-| `ConfigChange` | 1 | config-watcher.js |
-| `Notification` | 1 | notification-handler.js |
-| `SubagentStart` | 1 | subagent-start.js |
-| `SubagentStop` | 1 | subagent-stop.js |
-| `TaskCompleted` | 1 | task-completed.js |
-| `TaskCreated` | 1 | task-created.js |
-| `PermissionRequest` | 1 | permission-request.js |
-| `PermissionDenied` | 1 | permission-denied.js |
-| `PostToolUseFailure` | 1 | tool-failure.js |
-| `TeammateIdle` | 1 | teammate-idle.js |
-| `StopFailure` | 1 | stop-failure.js |
-| `FileChanged` | 1 | file-changed.js (.env, package.json, tsconfig.json) |
-| `Setup` | 1 | setup-hook.js |
-| `WorktreeCreate` | 1 | worktree-create.js |
-| `WorktreeRemove` | 1 | worktree-remove.js |
-| `CwdChanged` | 1 | cwd-changed.js |
+| Event Type           | Hook Count     | Scripts/Actions                                                                                                                                        |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PreToolUse`         | 5 (3 matchers) | quality-gate.js (Edit/Write), pre-commit-check.js (git commit), LLM commit validator (haiku), pre-push-check.js (git push), LLM secret scanner (Write) |
+| `PostToolUse`        | 2              | post-edit-check.js, test-failure-check.js                                                                                                              |
+| `Stop`               | 2              | session-check.js, learn-capture.js                                                                                                                     |
+| `SessionStart`       | 1              | session-start.js                                                                                                                                       |
+| `SessionEnd`         | 1              | session-end.js                                                                                                                                         |
+| `UserPromptSubmit`   | 2              | prompt-submit.js, drift-detector.js                                                                                                                    |
+| `PreCompact`         | 1              | pre-compact.js                                                                                                                                         |
+| `PostCompact`        | 1              | post-compact.js                                                                                                                                        |
+| `ConfigChange`       | 1              | config-watcher.js                                                                                                                                      |
+| `Notification`       | 1              | notification-handler.js                                                                                                                                |
+| `SubagentStart`      | 1              | subagent-start.js                                                                                                                                      |
+| `SubagentStop`       | 1              | subagent-stop.js                                                                                                                                       |
+| `TaskCompleted`      | 1              | task-completed.js                                                                                                                                      |
+| `TaskCreated`        | 1              | task-created.js                                                                                                                                        |
+| `PermissionRequest`  | 1              | permission-request.js                                                                                                                                  |
+| `PermissionDenied`   | 1              | permission-denied.js                                                                                                                                   |
+| `PostToolUseFailure` | 1              | tool-failure.js                                                                                                                                        |
+| `TeammateIdle`       | 1              | teammate-idle.js                                                                                                                                       |
+| `StopFailure`        | 1              | stop-failure.js                                                                                                                                        |
+| `FileChanged`        | 1              | file-changed.js (.env, package.json, tsconfig.json)                                                                                                    |
+| `Setup`              | 1              | setup-hook.js                                                                                                                                          |
+| `WorktreeCreate`     | 1              | worktree-create.js                                                                                                                                     |
+| `WorktreeRemove`     | 1              | worktree-remove.js                                                                                                                                     |
+| `CwdChanged`         | 1              | cwd-changed.js                                                                                                                                         |
 
 **Comparison with Worclaude:**
 
-| Event Type | Worclaude | Pro-Workflow | Gap |
-|---|---|---|---|
-| `PreToolUse` | 0 | 5 | **Missing** -- quality gates, commit validation, secret scanning |
-| `PostToolUse` | 2 | 2 | Covered differently (formatter/TS vs edit-check/test-failure) |
-| `PostCompact` | 1 | 1 | Parity |
-| `SessionStart` | 1 | 1 | Parity |
-| `Stop` | 0 | 2 | **Missing** -- learning capture, session check |
-| `SessionEnd` | 0 | 1 | **Missing** |
-| `UserPromptSubmit` | 0 | 2 | **Missing** -- correction detection, drift detection |
-| `PreCompact` | 0 | 1 | **Missing** |
-| Other 16 events | 0 | 1 each | Missing (many are niche) |
+| Event Type         | Worclaude | Pro-Workflow | Gap                                                              |
+| ------------------ | --------- | ------------ | ---------------------------------------------------------------- |
+| `PreToolUse`       | 0         | 5            | **Missing** -- quality gates, commit validation, secret scanning |
+| `PostToolUse`      | 2         | 2            | Covered differently (formatter/TS vs edit-check/test-failure)    |
+| `PostCompact`      | 1         | 1            | Parity                                                           |
+| `SessionStart`     | 1         | 1            | Parity                                                           |
+| `Stop`             | 0         | 2            | **Missing** -- learning capture, session check                   |
+| `SessionEnd`       | 0         | 1            | **Missing**                                                      |
+| `UserPromptSubmit` | 0         | 2            | **Missing** -- correction detection, drift detection             |
+| `PreCompact`       | 0         | 1            | **Missing**                                                      |
+| Other 16 events    | 0         | 1 each       | Missing (many are niche)                                         |
 
 **Worclaude total:** 3 event types, 5 entries. **Pro-workflow total:** 24 event types, 28 entries.
 
@@ -164,17 +164,17 @@ From `hooks/hooks.json`:
 
 8 agents examined. All frontmatter fields found:
 
-| Field | Used In | Worclaude Has? |
-|---|---|---|
-| `name` | All agents | Yes |
-| `description` | All agents | Yes |
-| `tools` | All agents | **No** (Worclaude uses `disallowedTools` denylist instead) |
-| `model` | orchestrator, debugger, scout | Yes |
-| `memory` | orchestrator, debugger | **No** -- value: `"project"` |
-| `skills` | orchestrator | **No** -- pre-loads skill files |
-| `background` | scout | Yes |
-| `isolation` | scout | Yes (but value `"worktree"`) |
-| `omitClaudeMd` | 6 agents | Yes |
+| Field          | Used In                       | Worclaude Has?                                             |
+| -------------- | ----------------------------- | ---------------------------------------------------------- |
+| `name`         | All agents                    | Yes                                                        |
+| `description`  | All agents                    | Yes                                                        |
+| `tools`        | All agents                    | **No** (Worclaude uses `disallowedTools` denylist instead) |
+| `model`        | orchestrator, debugger, scout | Yes                                                        |
+| `memory`       | orchestrator, debugger        | **No** -- value: `"project"`                               |
+| `skills`       | orchestrator                  | **No** -- pre-loads skill files                            |
+| `background`   | scout                         | Yes                                                        |
+| `isolation`    | scout                         | Yes (but value `"worktree"`)                               |
+| `omitClaudeMd` | 6 agents                      | Yes                                                        |
 
 **Missing in Worclaude:** `tools` (allowlist), `memory: "project"` (cross-session agent memory), `skills` (pre-load specific skills).
 
@@ -185,6 +185,7 @@ From `hooks/hooks.json`:
 **`/commit` (pro-workflow) vs `/commit-push-pr` (Worclaude):**
 
 Pro-workflow's `/commit` is a 6-step checklist:
+
 1. Pre-commit checks (git status, git diff)
 2. Quality gates (lint, typecheck, test --changed)
 3. Code review scan (console.log, debug, secrets, TODOs)
@@ -197,6 +198,7 @@ Patterns Worclaude lacks: inline bash commands with output limiting, explicit co
 **`/develop` (pro-workflow) vs `/start` (Worclaude):**
 
 Pro-workflow's `/develop` accepts `$ARGUMENTS` and runs 4 phases:
+
 1. Research -- confidence scoring (5 dimensions, 0-100 scale, GO/NO-GO gate at 70)
 2. Plan -- structured plan with explicit "wait for approval" gate
 3. Implement -- test after each file, pause every 5 edits, quality gates at end
@@ -211,6 +213,7 @@ Pro-workflow includes: database queries to pull session learnings, structured se
 Worclaude's `/end` lacks: database integration, explicit "Resume Command" section, `--compact` option.
 
 **Patterns Worclaude lacks across all commands:**
+
 1. Trigger phrases at the bottom of each command file
 2. `$ARGUMENTS` interpolation
 3. Embedded SQL/DB queries
@@ -275,6 +278,7 @@ Use functional patterns over classes when appropriate.
 ```
 
 **Confidence scoring:**
+
 - 0.3 = tentative (suggested, not enforced)
 - 0.5 = moderate (applied when relevant)
 - 0.7 = strong (auto-approved)
@@ -283,6 +287,7 @@ Use functional patterns over classes when appropriate.
 - Decreases via explicit corrections, long inactivity, contradicting evidence
 
 **How detection works:** Hook-based. `PreToolUse` and `PostToolUse` hooks with matcher `*` call `skills/continuous-learning-v2/hooks/observe.sh`, which:
+
 1. Reads JSON from stdin (hook format)
 2. Extracts tool_name, input, output, session_id, cwd
 3. Detects project via git remote URL hash
@@ -293,6 +298,7 @@ Use functional patterns over classes when appropriate.
 **Instinct CLI** (`skills/continuous-learning-v2/scripts/instinct-cli.py`): commands `status`, `import`, `export`, `evolve`, `promote`, `projects`, `prune`.
 
 **How `/evolve` works:** Reads all instincts, clusters by trigger/domain, classifies clusters into:
+
 - **Commands** -- user-invoked actions (repeatable sequences)
 - **Skills** -- auto-triggered behaviors (pattern-matching, error responses)
 - **Agents** -- complex multi-step processes (debugging, refactoring)
@@ -306,6 +312,7 @@ With `--generate`, writes to `~/.claude/homunculus/projects/<hash>/evolved/` or 
 **Location:** `agents/` directory (48 agents as markdown files with YAML frontmatter).
 
 **Frontmatter fields across all 48 agents:**
+
 - `name` (48/48)
 - `description` (48/48) -- often with "Use PROACTIVELY when..." guidance
 - `tools` (48/48) -- JSON array of allowed tools
@@ -327,6 +334,7 @@ With `--generate`, writes to `~/.claude/homunculus/projects/<hash>/evolved/` or 
 5. **code-reviewer** (238 lines, sonnet): **Confidence-based filtering** ("Report if >80% confident it is a real issue") > Review checklist by severity > Code examples per category > Structured output format.
 
 **Key instruction patterns Worclaude lacks:**
+
 - Confidence thresholds for reporting (">80% sure it is a real problem")
 - Worked examples showing complete expected output
 - Anti-pattern / "when NOT to use" sections
@@ -341,6 +349,7 @@ With `--generate`, writes to `~/.claude/homunculus/projects/<hash>/evolved/` or 
 **Location:** `skills/` directory (183 skills), each as a subdirectory containing `SKILL.md`.
 
 **Directory structure:**
+
 ```
 skills/
   tdd-workflow/
@@ -358,12 +367,14 @@ skills/
 Most skills (167/183) contain only `SKILL.md`. A few have supporting files.
 
 **Skill frontmatter fields:**
+
 - `name` (182/183) -- kebab-case
 - `description` (183/183)
 - `origin` (164/183) -- `ECC` or `community`
 - `version` (14/183) -- only versioned skills
 
 **Skill body structure (consistent):**
+
 1. `# Title`
 2. `## When to Activate` -- trigger conditions
 3. `## How It Works` / `## Core Concept`
@@ -371,6 +382,7 @@ Most skills (167/183) contain only `SKILL.md`. A few have supporting files.
 5. `## Best Practices` / `## Success Metrics`
 
 **Notable skills:**
+
 - **tdd-workflow** (464 lines): Complete TDD methodology with Git checkpoint protocol, framework-specific code examples, coverage thresholds.
 - **security-review** (496 lines): 10-section security checklist with PASS/FAIL code blocks.
 - **gateguard** (~60 lines): Documents a PreToolUse hook that blocks first edits and demands investigation. Cites A/B test evidence (+2.25 points gated vs ungated).
@@ -384,13 +396,13 @@ Most skills (167/183) contain only `SKILL.md`. A few have supporting files.
 
 **What it scans (5 file types):**
 
-| File | Checks |
-|------|--------|
-| `CLAUDE.md` | Hardcoded secrets, auto-run instructions, prompt injection |
-| `settings.json` | Overly permissive allow lists, missing deny lists, dangerous bypass flags |
-| `mcp.json` | Risky MCP servers, hardcoded env secrets, npx supply chain risks |
-| `hooks/` | Command injection via interpolation, data exfiltration, silent error suppression |
-| `agents/*.md` | Unrestricted tool access, prompt injection surface, missing model specs |
+| File            | Checks                                                                           |
+| --------------- | -------------------------------------------------------------------------------- |
+| `CLAUDE.md`     | Hardcoded secrets, auto-run instructions, prompt injection                       |
+| `settings.json` | Overly permissive allow lists, missing deny lists, dangerous bypass flags        |
+| `mcp.json`      | Risky MCP servers, hardcoded env secrets, npx supply chain risks                 |
+| `hooks/`        | Command injection via interpolation, data exfiltration, silent error suppression |
+| `agents/*.md`   | Unrestricted tool access, prompt injection surface, missing model specs          |
 
 **Rule count:** 102 rules (v1.6.0). Severity grading A (90-100) through F (0-39).
 
@@ -424,16 +436,17 @@ GSD implements quality gates through **instruction-based enforcement in workflow
 
 **Gate Taxonomy (4 types, `references/gates.md`):**
 
-| Gate Type | Purpose | Behavior |
-|-----------|---------|----------|
-| Pre-flight | Validates preconditions before starting | Blocks entry if conditions unmet; deterministic file checks |
-| Revision | Evaluates output quality, routes to revision | Loops back with feedback; bounded by iteration cap (max 3) |
-| Escalation | Surfaces unresolvable issues to developer | Pauses, presents options, waits for human input |
-| Abort | Terminates operation to prevent damage | Stops immediately, preserves state, reports reason |
+| Gate Type  | Purpose                                      | Behavior                                                    |
+| ---------- | -------------------------------------------- | ----------------------------------------------------------- |
+| Pre-flight | Validates preconditions before starting      | Blocks entry if conditions unmet; deterministic file checks |
+| Revision   | Evaluates output quality, routes to revision | Loops back with feedback; bounded by iteration cap (max 3)  |
+| Escalation | Surfaces unresolvable issues to developer    | Pauses, presents options, waits for human input             |
+| Abort      | Terminates operation to prevent damage       | Stops immediately, preserves state, reports reason          |
 
 **Gate Matrix:** Maps every workflow to specific gates at specific phases. E.g., `plan-phase` entry = Pre-flight (checks REQUIREMENTS.md exists); `plan-phase` step 12 = Revision (PLAN.md quality, max 3 iterations).
 
 **Bounded revision loop (`references/revision-loop.md`):**
+
 1. Checker evaluates output
 2. If BLOCKER/WARNING: increment iteration counter
 3. If iteration > 3: escalate to user
@@ -444,6 +457,7 @@ GSD implements quality gates through **instruction-based enforcement in workflow
 **Gate prompts (`references/gate-prompts.md`):** 12 standardized prompt patterns (approve-revise-abort, yes-no, stale-continue, multi-option-escalation). Rules: max 12-char header, max 4 options, always handle "Other" freeform.
 
 **Configurable gates (`templates/config.json`):** Individually toggleable:
+
 ```json
 "gates": {
   "confirm_project": true,
@@ -457,6 +471,7 @@ GSD implements quality gates through **instruction-based enforcement in workflow
 ```
 
 **Verification patterns (`references/verification-patterns.md`):** 4-level verification depth:
+
 1. **Exists** -- file present
 2. **Substantive** -- real implementation, not placeholder
 3. **Wired** -- connected to rest of system
@@ -467,6 +482,7 @@ Includes grep patterns for stub detection (TODO/FIXME, placeholder text, empty h
 **Verification overrides (`references/verification-overrides.md`):** Accept must-have failures with documented rationale. Fuzzy matching (80% token overlap). Items marked `PASSED (override)`.
 
 **Hook roles (environmental, not workflow):**
+
 - `gsd-workflow-guard.js` (PreToolUse): Soft advisory when edits happen outside GSD context. Does NOT block.
 - `gsd-validate-commit.sh` (PreToolUse): Hard block (exit 2) on non-Conventional-Commits. The only blocking hook.
 - `gsd-context-monitor.js` (PostToolUse): Warning/critical thresholds at 35%/25% remaining context. Auto-records session state on CRITICAL. Debounce (5 tool uses between warnings).
@@ -482,6 +498,7 @@ Includes grep patterns for stub detection (TODO/FIXME, placeholder text, empty h
 5. **STATE.md** -- Living project memory (under 100 lines), read first every workflow
 
 **Spec-to-implementation flow:**
+
 ```
 /gsd-new-project -> PROJECT.md + ROADMAP.md + REQUIREMENTS.md + STATE.md
     |
@@ -501,6 +518,7 @@ Includes grep patterns for stub detection (TODO/FIXME, placeholder text, empty h
 GSD uses XML extensively for structural prompts. Consistent across all files.
 
 Agent files use XML blocks:
+
 ```xml
 <role>...</role>
 <required_reading>...</required_reading>
@@ -509,6 +527,7 @@ Agent files use XML blocks:
 ```
 
 Workflow files use XML for process structure:
+
 ```xml
 <purpose>...</purpose>
 <core_principle>...</core_principle>
@@ -519,6 +538,7 @@ Workflow files use XML for process structure:
 ```
 
 Plan files (PLAN.md) use XML for tasks:
+
 ```xml
 <tasks>
   <task type="auto">
@@ -539,11 +559,12 @@ Plan files (PLAN.md) use XML for tasks:
 ```
 
 **Must-haves (goal-backward verification):** PLAN.md frontmatter includes:
+
 ```yaml
 must_haves:
-  truths: []       # Observable behaviors that must be true
-  artifacts: []    # Files that must exist with real implementation
-  key_links: []    # Critical connections between artifacts
+  truths: [] # Observable behaviors that must be true
+  artifacts: [] # Files that must exist with real implementation
+  key_links: [] # Critical connections between artifacts
 ```
 
 These carry the contract from planning through execution to verification. The verifier checks each against the actual codebase, not against SUMMARY.md claims.
@@ -553,6 +574,7 @@ These carry the contract from planning through execution to verification. The ve
 **31 agent definition files** in `agents/`, each as `gsd-{name}.md`.
 
 **Agent frontmatter (5 fields):**
+
 ```yaml
 ---
 name: gsd-verifier
@@ -609,6 +631,7 @@ Only `name`, `description`, `tools`, `color`, `hooks` (commented out). Model sel
 ### 4.1 Hook Patterns
 
 **Save hook (`hooks/mempal_save_hook.sh`):**
+
 - Event: `Stop` (fires after every assistant response)
 - Every `SAVE_INTERVAL` (default 15) human messages, blocks the stop with `{"decision": "block", "reason": "AUTO-SAVE checkpoint..."}`, injecting a save instruction
 - Uses `stop_hook_active` field to prevent infinite loops -- second stop attempt has `stop_hook_active=true`, hook lets through
@@ -617,6 +640,7 @@ Only `name`, `description`, `tools`, `color`, `hooks` (commented out). Model sel
 - Python for JSON parsing (no jq dependency), regex sanitization of session IDs
 
 **PreCompact hook (`hooks/mempal_precompact_hook.sh`):**
+
 - Event: `PreCompact`
 - ALWAYS blocks with `{"decision": "block", "reason": "COMPACTION IMMINENT. Save ALL topics..."}`
 - Runs `mempalace mine` synchronously (memories must land before compaction)
@@ -625,6 +649,7 @@ Only `name`, `description`, `tools`, `color`, `hooks` (commented out). Model sel
 **`async: true` usage:** Not observed. Both hooks are synchronous bash scripts.
 
 **Pattern:**
+
 ```
 Stop event -> Count exchanges -> Threshold met? -> Block AI -> AI saves -> AI stops again -> stop_hook_active=true -> Allow stop
 PreCompact event -> Always block -> AI saves everything -> Compaction proceeds
@@ -702,19 +727,20 @@ PreCompact event -> Always block -> AI saves everything -> Compaction proceeds
 
 **Hook template additions (template scripts in `templates/hooks/`):**
 
-| Hook | Event | Script | Priority |
-|------|-------|--------|----------|
-| Correction detector | UserPromptSubmit | `correction-detect.js` | P0 |
-| Drift detector | UserPromptSubmit | `drift-detect.js` | P1 |
-| Learning capture | Stop | `learn-capture.js` | P0 |
-| Commit validator | PreToolUse (git commit) | `commit-validate.js` | P1 |
-| Edit quality gate | PreToolUse (Edit/Write) | `quality-gate.js` | P2 |
-| Pre-compact save | PreCompact | `pre-compact-save.js` | P1 |
-| Session end | SessionEnd | `session-end.js` | P2 |
+| Hook                | Event                   | Script                 | Priority |
+| ------------------- | ----------------------- | ---------------------- | -------- |
+| Correction detector | UserPromptSubmit        | `correction-detect.js` | P0       |
+| Drift detector      | UserPromptSubmit        | `drift-detect.js`      | P1       |
+| Learning capture    | Stop                    | `learn-capture.js`     | P0       |
+| Commit validator    | PreToolUse (git commit) | `commit-validate.js`   | P1       |
+| Edit quality gate   | PreToolUse (Edit/Write) | `quality-gate.js`      | P2       |
+| Pre-compact save    | PreCompact              | `pre-compact-save.js`  | P1       |
+| Session end         | SessionEnd              | `session-end.js`       | P2       |
 
 All scripts should use Node.js (already in Worclaude's stack). JSON on stdin, JSON on stdout. No external dependencies.
 
 **Agent template enrichment:**
+
 - Add worked examples to plan-reviewer (like ECC's planner Stripe example)
 - Add confidence thresholds to code-simplifier and test-writer
 - Add false-positive guidance to verify-app
@@ -722,6 +748,7 @@ All scripts should use Node.js (already in Worclaude's stack). JSON on stdin, JS
 - Consider `tools` allowlist alongside existing `disallowedTools` denylist
 
 **Skill/command additions:**
+
 - Add `must_haves` pattern to planning-with-files skill
 - Add gate taxonomy to verification skill
 - Add 4-level verification depth to verify-app agent
@@ -729,6 +756,7 @@ All scripts should use Node.js (already in Worclaude's stack). JSON on stdin, JS
 - Add `$ARGUMENTS` support to start, end, commit-push-pr commands
 
 **Storage format for learnings (no SQLite):**
+
 ```
 .claude/learnings/
   2026-04-13-git-conventions.md    # One file per learning

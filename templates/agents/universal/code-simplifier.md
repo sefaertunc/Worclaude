@@ -65,6 +65,17 @@ After completing improvements, provide a summary:
 | 2 | src/api.js | Early return for null check | Reduced nesting from 4→2 levels |
 | 3 | src/config.js | Removed 12 unused imports | Dead code |
 
+## When NOT to Simplify
+
+Do not refactor:
+- **Hot paths** with performance-sensitive code — profiling data overrules readability
+- **Stable legacy code** that works and has no active bugs — risk exceeds benefit
+- **Framework boilerplate** — generated patterns that look verbose but are idiomatic
+- **Security-critical code** — verbose explicit validation is safer than clever abstraction
+- **Code you don't fully understand** — if you can't explain what it does, don't touch it
+
+When in doubt: leave it. A working system is more valuable than a clean system.
+
 ## Rules
 - Never change behavior — if tests break, you changed behavior, revert
 - Never refactor code you don't understand — read the full context first
