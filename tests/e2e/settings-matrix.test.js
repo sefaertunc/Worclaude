@@ -26,9 +26,10 @@ describe('Settings validation matrix', () => {
         expect(settingsObject.permissions?.allow).toBeDefined();
         expect(settingsObject.permissions.allow.length).toBeGreaterThan(0);
 
-        // Has hooks
+        // Has hooks — 8 event types (PostToolUse, PostCompact, SessionStart,
+        // PreCompact, Stop, UserPromptSubmit, Notification, SessionEnd)
         expect(settingsObject.hooks).toBeDefined();
-        expect(Object.keys(settingsObject.hooks).length).toBeGreaterThan(0);
+        expect(Object.keys(settingsObject.hooks).length).toBe(8);
       });
 
       it(`produces valid settings for ${stack} + docker`, async () => {

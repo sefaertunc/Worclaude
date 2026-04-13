@@ -12,3 +12,8 @@ review the plan for:
 - SPEC.md alignment
 
 Wait for the review and address all feedback before proceeding.
+
+## Trigger Phrases
+- "review this plan"
+- "check my implementation plan"
+- "plan review"

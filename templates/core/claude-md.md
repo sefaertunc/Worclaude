@@ -46,5 +46,18 @@ See `.claude/skills/` — load only what's relevant:
 8. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
 9. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
 
+## Memory Architecture
+
+- This file: static project rules. Keep under 200 lines.
+- Native memory (`/memory`): auto-captured project knowledge.
+- Persistent corrections: `.claude/learnings/` via [LEARN] blocks or `/learn`.
+- Path-scoped rules: `.claude/rules/` with YAML frontmatter.
+- Session state: `.claude/sessions/` (gitignored).
+- Do NOT write session learnings or auto-captured patterns here.
+
+## Learnings
+
+Corrections captured via [LEARN] blocks live in `.claude/learnings/`. SessionStart loads recent ones automatically.
+
 ## Gotchas
 [Grows during development]

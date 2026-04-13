@@ -19,8 +19,31 @@ export async function detectScenario(projectRoot) {
 }
 
 export async function scanExistingSetup(projectRoot) {
-  const hasClaudeDir = await dirExists(path.join(projectRoot, '.claude'));
-  const hasClaudeMd = await fileExists(path.join(projectRoot, 'CLAUDE.md'));
+  const [
+    hasClaudeDir,
+    hasClaudeMd,
+    hasSettingsJson,
+    hasMcpJson,
+    existingSkills,
+    existingSkillDirs,
+    existingAgents,
+    existingCommands,
+    hasAgentsMd,
+    hasProgressMd,
+    hasSpecMd,
+  ] = await Promise.all([
+    dirExists(path.join(projectRoot, '.claude')),
+    fileExists(path.join(projectRoot, 'CLAUDE.md')),
+    fileExists(path.join(projectRoot, '.claude', 'settings.json')),
+    fileExists(path.join(projectRoot, '.mcp.json')),
+    listFiles(path.join(projectRoot, '.claude', 'skills')),
+    listSkillDirs(path.join(projectRoot, '.claude', 'skills')),
+    listFiles(path.join(projectRoot, '.claude', 'agents')),
+    listFiles(path.join(projectRoot, '.claude', 'commands')),
+    fileExists(path.join(projectRoot, 'AGENTS.md')),
+    fileExists(path.join(projectRoot, 'docs', 'spec', 'PROGRESS.md')),
+    fileExists(path.join(projectRoot, 'docs', 'spec', 'SPEC.md')),
+  ]);
 
   let claudeMdLineCount = 0;
   if (hasClaudeMd) {
@@ -32,13 +55,14 @@ export async function scanExistingSetup(projectRoot) {
     hasClaudeDir,
     hasClaudeMd,
     claudeMdLineCount,
-    hasSettingsJson: await fileExists(path.join(projectRoot, '.claude', 'settings.json')),
-    hasMcpJson: await fileExists(path.join(projectRoot, '.mcp.json')),
-    existingSkills: await listFiles(path.join(projectRoot, '.claude', 'skills')),
-    existingSkillDirs: await listSkillDirs(path.join(projectRoot, '.claude', 'skills')),
-    existingAgents: await listFiles(path.join(projectRoot, '.claude', 'agents')),
-    existingCommands: await listFiles(path.join(projectRoot, '.claude', 'commands')),
-    hasProgressMd: await fileExists(path.join(projectRoot, 'docs', 'spec', 'PROGRESS.md')),
-    hasSpecMd: await fileExists(path.join(projectRoot, 'docs', 'spec', 'SPEC.md')),
+    hasSettingsJson,
+    hasMcpJson,
+    existingSkills,
+    existingSkillDirs,
+    existingAgents,
+    existingCommands,
+    hasAgentsMd,
+    hasProgressMd,
+    hasSpecMd,
   };
 }

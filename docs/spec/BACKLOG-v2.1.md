@@ -1,7 +1,22 @@
 # Backlog — v2.1.0+ Enhancements
 
 Items informed by Claude Code source code analysis (April 2026).
-Items marked ✅ were implemented in v2.0.1.
+Items marked ✅ were implemented in v2.0.1 or later.
+
+## Phase 2 (implemented in feat/phase-2, pending release)
+
+- ✅ Hook lifecycle expansion: 3 → 8 event types (PostToolUse, PostCompact, SessionStart, PreCompact, Stop, UserPromptSubmit, Notification, SessionEnd). Fixed Stop-matcher-on-PostToolUse bug.
+- ✅ PreCompact emergency save hook (`templates/hooks/pre-compact-save.cjs`) — writes git context snapshot to `.claude/sessions/` before compaction
+- ✅ Correction detection hook (`templates/hooks/correction-detect.cjs`) — regex-based pattern matching on UserPromptSubmit
+- ✅ Learning capture hook (`templates/hooks/learn-capture.cjs`) — parses `[LEARN]` blocks from transcript on Stop, persists to `.claude/learnings/`
+- ✅ `/learn` command for explicit learning capture
+- ✅ `HOOK_FILES` manifest + `scaffoldHooks()` pipeline in scaffolder.js
+- ✅ SessionStart hook loads recent learnings from `.claude/learnings/index.json`
+- ✅ CLAUDE.md Memory Architecture + Learnings sections
+- ✅ AGENTS.md generation for cross-tool compatibility (Cursor, Codex, etc.)
+- ✅ Agent enrichment: confidence thresholds, worked examples, severity classification, 4-level verification depth
+- ✅ Skill enrichment: Must-Haves Contract (planning-with-files), Gate Taxonomy (verification), Context Budget Tiers (context-management)
+- ✅ Command enrichment: trigger phrases on all 17 commands, `$ARGUMENTS` support on start/end/verify/refactor-clean
 
 ## Agent Enhancements
 

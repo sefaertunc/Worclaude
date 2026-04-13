@@ -141,6 +141,22 @@ Practical takeaways:
 - Skills over 5k tokens get truncated after compaction. Keep skills focused.
 - The 70% rule still applies — these numbers help you estimate when you'll hit it.
 
+## Context Budget Tiers
+
+Monitor your context usage and adjust behavior accordingly:
+
+| Tier | Context Free | Behavior |
+|------|-------------|----------|
+| PEAK | >75% | Normal operation — read files freely, keep full context |
+| GOOD | 50-75% | Be selective about file reads — summarize large files |
+| DEGRADING | 25-50% | Summarize before reading new files, consider /compact |
+| CRITICAL | <25% | Save state immediately, /compact, reload only essentials |
+
+Heuristics (you cannot measure exact tokens):
+- Many large file reads in this session = likely DEGRADING
+- Long conversation with multiple tasks = likely DEGRADING
+- Just started or just compacted = likely PEAK
+
 ## Gotchas
 
 - Compacting doesn't free as much context as you think. If you've read 20 large files,

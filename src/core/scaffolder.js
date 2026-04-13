@@ -52,6 +52,7 @@ export async function updateGitignore(projectDir) {
     '.claude/workflow-meta.json',
     '.claude/worktrees/',
     '.claude-backup-*/',
+    '.claude/learnings/',
   ];
   const header = '# Worclaude (generated workflow files)';
 
@@ -84,6 +85,21 @@ export async function updateGitignore(projectDir) {
 
   await fs.writeFile(gitignorePath, content);
   return true;
+}
+
+export async function scaffoldHooks(projectRoot) {
+  const hooksTemplateDir = path.join(getTemplatesDir(), 'hooks');
+  const destDir = path.join(projectRoot, '.claude', 'hooks');
+  await fs.ensureDir(destDir);
+
+  const entries = await fs.readdir(hooksTemplateDir);
+  for (const entry of entries) {
+    if (!entry.endsWith('.cjs') && !entry.endsWith('.js')) continue;
+    await fs.copy(path.join(hooksTemplateDir, entry), path.join(destDir, entry), {
+      overwrite: false,
+      errorOnExist: false,
+    });
+  }
 }
 
 export function mergeSettings(base, ...stacks) {

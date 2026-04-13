@@ -1,7 +1,13 @@
 import path from 'node:path';
 import os from 'node:os';
 import { readFile, writeFile } from '../utils/file.js';
-import { readTemplate, substituteVariables, scaffoldFile, mergeSettings } from './scaffolder.js';
+import {
+  readTemplate,
+  substituteVariables,
+  scaffoldFile,
+  mergeSettings,
+  scaffoldHooks,
+} from './scaffolder.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
   detectMissingSections,
@@ -411,6 +417,16 @@ async function handleClaudeMd(projectRoot, existingScan, variables, report) {
   }
 }
 
+async function mergeAgentsMd(projectRoot, existingScan, variables, report) {
+  if (!existingScan.hasAgentsMd) {
+    await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
+    report.agentsMdHandling = 'created';
+  } else {
+    await scaffoldFile('core/agents-md.md', 'AGENTS.md.workflow-ref', variables, projectRoot);
+    report.agentsMdHandling = 'saved-alongside';
+  }
+}
+
 // --- Main merge function ---
 
 export async function performMerge(
@@ -425,6 +441,7 @@ export async function performMerge(
     conflicts: { skills: [], agents: [], commands: [] },
     skipped: { progressMd: false, specMd: false },
     claudeMdHandling: 'kept',
+    agentsMdHandling: 'kept',
     hookConflicts: [],
   };
 
@@ -442,11 +459,18 @@ export async function performMerge(
   // Ensure sessions directory exists for session persistence
   await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
 
+  // Copy hook scripts (preserves existing user modifications)
+  await scaffoldHooks(projectRoot);
+
+  // Create learnings directory for correction capture
+  await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
+
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
 
   // Stop spinner before CLAUDE.md merge — interactive prompts for section selection
   if (spinner) spinner.stop();
   await handleClaudeMd(projectRoot, existingScan, variables, report);
+  await mergeAgentsMd(projectRoot, existingScan, variables, report);
   if (spinner) spinner.start();
 
   return report;

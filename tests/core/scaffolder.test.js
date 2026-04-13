@@ -152,7 +152,7 @@ describe('updateGitignore', () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
     await fs.writeFile(
       path.join(tmpDir, '.gitignore'),
-      '.claude/sessions/\n.claude/settings.local.json\n.claude/workflow-meta.json\n.claude/worktrees/\n.claude-backup-*/\n'
+      '.claude/sessions/\n.claude/settings.local.json\n.claude/workflow-meta.json\n.claude/worktrees/\n.claude-backup-*/\n.claude/learnings/\n'
     );
     const result = await updateGitignore(tmpDir);
     expect(result).toBe(false);
@@ -196,18 +196,19 @@ describe('updateGitignore', () => {
     expect(headerMatches.length).toBe(1);
   });
 
-  it('writes exactly 5 gitignore entries', async () => {
+  it('writes exactly 6 gitignore entries', async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-gitignore-'));
     await updateGitignore(tmpDir);
     const content = await fs.readFile(path.join(tmpDir, '.gitignore'), 'utf8');
     const entryLines = content.split('\n').filter((l) => l.trim() && !l.startsWith('#'));
-    expect(entryLines).toHaveLength(5);
+    expect(entryLines).toHaveLength(6);
     expect(entryLines).toEqual([
       '.claude/sessions/',
       '.claude/settings.local.json',
       '.claude/workflow-meta.json',
       '.claude/worktrees/',
       '.claude-backup-*/',
+      '.claude/learnings/',
     ]);
   });
 });

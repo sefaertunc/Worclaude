@@ -114,3 +114,8 @@ these files with real, project-specific content:
    features from the interview, marking completed items.
 
 Show the user what files were updated and offer to review each one.
+
+## Trigger Phrases
+- "set up the project"
+- "configure this project"
+- "project interview"
