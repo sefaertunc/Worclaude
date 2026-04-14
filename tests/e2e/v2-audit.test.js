@@ -176,6 +176,30 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     expect(content).toContain('description:');
   });
 
+  it('coding-principles skill is present with all 4 Karpathy sections', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const skillPath = path.join(tmpDir, '.claude', 'skills', 'coding-principles', 'SKILL.md');
+    expect(await fs.pathExists(skillPath)).toBe(true);
+    const content = await fs.readFile(skillPath, 'utf8');
+    expect(content).toContain('description:');
+    expect(content).toContain('## 1. Think Before Coding');
+    expect(content).toContain('## 2. Simplicity First');
+    expect(content).toContain('## 3. Surgical Changes');
+    expect(content).toContain('## 4. Goal-Driven Execution');
+  });
+
+  it('scaffolded CLAUDE.md contains all 3 Karpathy-derived critical rules', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf8');
+    expect(claudeMd).toContain('10. Surgical changes only');
+    expect(claudeMd).toContain('11. Push back when simpler approaches exist');
+    expect(claudeMd).toContain('12. Transform tasks to success criteria');
+  });
+
   it('every agent has name AND description frontmatter', async () => {
     setupFreshMocks({ allAgents: true });
     await initCommand();
