@@ -1,6 +1,7 @@
 ---
 description: "Design system, component library, styling approach, accessibility and responsive design standards"
 when_to_use: "When building, modifying, or reviewing UI components, styling, layouts, or frontend architecture"
+version: "1.0.0"
 paths:
   - "src/components/**"
   - "src/pages/**"

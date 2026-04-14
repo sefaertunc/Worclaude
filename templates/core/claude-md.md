@@ -16,6 +16,7 @@
 See `.claude/skills/` — load only what's relevant:
 - context-management/SKILL.md — Session lifecycle
 - claude-md-maintenance/SKILL.md — CLAUDE.md self-healing
+- coding-principles/SKILL.md — Behavioral principles: assumptions, simplicity, surgical changes, verification
 - git-conventions/SKILL.md — Commits, branches, versioning
 - planning-with-files/SKILL.md — Implementation planning
 - prompt-engineering/SKILL.md — Prompting patterns and quality
@@ -45,6 +46,9 @@ See `.claude/skills/` — load only what's relevant:
 7. Mediocre fix → scrap it, implement elegantly.
 8. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
 9. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
+10. Surgical changes only — every changed line must trace to the request. Don't "improve" adjacent code, comments, or formatting.
+11. Push back when simpler approaches exist. Present alternatives, don't pick silently.
+12. Transform tasks to success criteria. "Fix the bug" → "Write a failing test, then make it pass."
 
 ## Memory Architecture
 

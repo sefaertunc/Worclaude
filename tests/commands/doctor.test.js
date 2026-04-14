@@ -390,6 +390,29 @@ describe('doctor command', () => {
     expect(output).toContain('should use async: true');
   });
 
+  // SessionStart blocks by design — must not be flagged async even if the
+  // command contains tokens like `console.log` that trip the async regex.
+  it('does NOT flag SessionStart as needing async even when command contains "log"', async () => {
+    await scaffoldProject(tmpDir, {
+      extraHooks: {
+        SessionStart: [
+          {
+            matcher: '',
+            hooks: [
+              {
+                type: 'command',
+                command: 'node -e "console.log(\'session loaded\')"',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).not.toContain('Hook async: SessionStart');
+  });
+
   // Agent deprecated models (Task 7)
   it('warns on agents using deprecated model names', async () => {
     await scaffoldProject(tmpDir);

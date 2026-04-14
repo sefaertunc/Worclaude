@@ -16,7 +16,7 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 - **Spinners:** Ora ^8.2.0
 - **File operations:** fs-extra ^11.3.0
 - **Hashing:** Node.js crypto (built-in, CRLF-normalized)
-- **Testing:** Vitest (381 tests, 26 files)
+- **Testing:** Vitest (497 tests, 31 files)
 - **Linting:** ESLint flat config (eslint.config.js) + Prettier (single quotes, trailing commas ES5, 100 char width)
 - **Docs:** VitePress (GitHub Pages via GitHub Actions)
 - **Package manager:** npm (caret ranges, no lockfile pinning)
@@ -32,7 +32,7 @@ node src/index.js backup        # Test backup command
 node src/index.js restore       # Test restore command
 node src/index.js diff          # Test diff command
 node src/index.js delete        # Test delete command
-npm test                        # Run tests (384 tests, 26 files)
+npm test                        # Run tests (497 tests, 31 files)
 npm run lint                    # Lint
 npm run format                  # Format
 npm run docs:dev                # VitePress dev server
