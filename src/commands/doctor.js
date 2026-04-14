@@ -108,101 +108,91 @@ async function checkClaudeMd(projectRoot) {
   }
 }
 
-async function checkClaudeMdSize(projectRoot) {
-  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
-  if (!(await fileExists(claudeMdPath))) {
-    return []; // Already covered by existing checkClaudeMd
-  }
+// Returns CLAUDE.md content or null when missing/unreadable. Missing-file
+// reporting is owned by checkClaudeMd — callers that use this helper should
+// skip reporting (return []) to avoid duplicate complaints.
+async function readClaudeMd(projectRoot) {
   try {
-    const content = await readFile(claudeMdPath);
-    const charCount = content.length;
-    const WARN_THRESHOLD = 30000;
-    const FAIL_THRESHOLD = 38000;
-    const HARD_LIMIT = 40000;
+    return await readFile(path.join(projectRoot, 'CLAUDE.md'));
+  } catch {
+    return null;
+  }
+}
 
-    if (charCount > FAIL_THRESHOLD) {
-      return [
-        result(
-          FAIL,
-          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
-          `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`
-        ),
-      ];
-    }
-    if (charCount > WARN_THRESHOLD) {
-      return [
-        result(
-          WARN,
-          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
-          `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`
-        ),
-      ];
-    }
+async function checkClaudeMdSize(projectRoot) {
+  const content = await readClaudeMd(projectRoot);
+  if (content === null) return [];
+  const charCount = content.length;
+  const WARN_THRESHOLD = 30000;
+  const FAIL_THRESHOLD = 38000;
+  const HARD_LIMIT = 40000;
+
+  if (charCount > FAIL_THRESHOLD) {
     return [
       result(
-        PASS,
-        `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`,
-        null
+        FAIL,
+        `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+        `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`
       ),
     ];
-  } catch {
-    return [];
   }
-}
-
-async function checkClaudeMdLineCount(projectRoot) {
-  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
-  if (!(await fileExists(claudeMdPath))) {
-    return []; // Already covered by checkClaudeMd
-  }
-  try {
-    const content = await readFile(claudeMdPath);
-    const lines = content.split(/\r?\n/).length;
-    const WARN_LINES = 150;
-    const FAIL_LINES = 200;
-    const detail = `CLAUDE.md is ${lines} lines. Recommended max: 200. Claude Code performance degrades with bloated context files. Move domain content to .claude/rules/ or .claude/skills/.`;
-
-    if (lines > FAIL_LINES) {
-      return [result(FAIL, `CLAUDE.md line count: ${lines}/200`, detail)];
-    }
-    if (lines > WARN_LINES) {
-      return [result(WARN, `CLAUDE.md line count: ${lines}/200`, detail)];
-    }
-    return [result(PASS, `CLAUDE.md line count: ${lines}/200`, null)];
-  } catch {
-    return [];
-  }
-}
-
-async function checkClaudeMdMemoryGuidance(projectRoot) {
-  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
-  if (!(await fileExists(claudeMdPath))) {
-    return []; // Already covered by checkClaudeMd
-  }
-  try {
-    const content = await readFile(claudeMdPath);
-    const indicators = [
-      'memory architecture',
-      'native memory',
-      '.claude/learnings',
-      '[LEARN]',
-      '/learn',
-    ];
-    const lower = content.toLowerCase();
-    const hasGuidance = indicators.some((i) => lower.includes(i.toLowerCase()));
-    if (hasGuidance) {
-      return [result(PASS, 'CLAUDE.md memory guidance', null)];
-    }
+  if (charCount > WARN_THRESHOLD) {
     return [
       result(
         WARN,
-        'CLAUDE.md memory guidance',
-        'CLAUDE.md has no memory architecture guidance. Auto-learnings may pollute this file. Run worclaude upgrade to add.'
+        `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+        `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`
       ),
     ];
-  } catch {
-    return [];
   }
+  return [
+    result(
+      PASS,
+      `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`,
+      null
+    ),
+  ];
+}
+
+async function checkClaudeMdLineCount(projectRoot) {
+  const content = await readClaudeMd(projectRoot);
+  if (content === null) return [];
+  const lines = content.split(/\r?\n/).length;
+  const WARN_LINES = 150;
+  const FAIL_LINES = 200;
+  const detail = `CLAUDE.md is ${lines} lines. Recommended max: 200. Claude Code performance degrades with bloated context files. Move domain content to .claude/rules/ or .claude/skills/.`;
+
+  if (lines > FAIL_LINES) {
+    return [result(FAIL, `CLAUDE.md line count: ${lines}/200`, detail)];
+  }
+  if (lines > WARN_LINES) {
+    return [result(WARN, `CLAUDE.md line count: ${lines}/200`, detail)];
+  }
+  return [result(PASS, `CLAUDE.md line count: ${lines}/200`, null)];
+}
+
+async function checkClaudeMdMemoryGuidance(projectRoot) {
+  const content = await readClaudeMd(projectRoot);
+  if (content === null) return [];
+  const indicators = [
+    'memory architecture',
+    'native memory',
+    '.claude/learnings',
+    '[LEARN]',
+    '/learn',
+  ];
+  const lower = content.toLowerCase();
+  const hasGuidance = indicators.some((i) => lower.includes(i.toLowerCase()));
+  if (hasGuidance) {
+    return [result(PASS, 'CLAUDE.md memory guidance', null)];
+  }
+  return [
+    result(
+      WARN,
+      'CLAUDE.md memory guidance',
+      'CLAUDE.md has no memory architecture guidance. Auto-learnings may pollute this file. Run worclaude upgrade to add.'
+    ),
+  ];
 }
 
 async function checkSettingsJson(projectRoot) {
@@ -662,57 +652,45 @@ async function checkAgentCompleteness(projectRoot) {
 }
 
 async function checkClaudeMdSections(projectRoot) {
-  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
   const SECTION_THRESHOLD = 20000; // Only analyze sections if file > 20KB
-  const results = [];
+  const content = await readClaudeMd(projectRoot);
+  if (content === null || content.length < SECTION_THRESHOLD) return [];
 
-  try {
-    const content = await readFile(claudeMdPath);
-    if (content.length < SECTION_THRESHOLD) return results;
+  // Split into ## sections
+  const sections = [];
+  const lines = content.split('\n');
+  let currentHeading = '(top-level)';
+  let currentLines = [];
 
-    // Split into ## sections
-    const sections = [];
-    const lines = content.split('\n');
-    let currentHeading = '(top-level)';
-    let currentLines = [];
-
-    for (const line of lines) {
-      const headingMatch = line.match(/^##\s+(.+)/);
-      if (headingMatch) {
-        if (currentLines.length > 0) {
-          sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
-        }
-        currentHeading = headingMatch[1];
-        currentLines = [];
-      } else {
-        currentLines.push(line);
+  for (const line of lines) {
+    const headingMatch = line.match(/^##\s+(.+)/);
+    if (headingMatch) {
+      if (currentLines.length > 0) {
+        sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
       }
+      currentHeading = headingMatch[1];
+      currentLines = [];
+    } else {
+      currentLines.push(line);
     }
-    if (currentLines.length > 0) {
-      sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
-    }
-
-    // Sort by size, suggest extracting the top 3 sections > 2KB
-    const large = sections.filter((s) => s.size > 2000).sort((a, b) => b.size - a.size);
-
-    if (large.length > 0) {
-      const top = large.slice(0, 3);
-      const sectionList = top
-        .map((s) => `"${s.heading}" (${(s.size / 1024).toFixed(1)}KB)`)
-        .join(', ');
-      results.push(
-        result(
-          WARN,
-          `CLAUDE.md has large sections: ${sectionList}`,
-          'Consider extracting to conditional skills with paths frontmatter to save context budget'
-        )
-      );
-    }
-  } catch {
-    // Already covered by checkClaudeMd
+  }
+  if (currentLines.length > 0) {
+    sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
   }
 
-  return results;
+  // Sort by size, suggest extracting the top 3 sections > 2KB
+  const large = sections.filter((s) => s.size > 2000).sort((a, b) => b.size - a.size);
+  if (large.length === 0) return [];
+
+  const top = large.slice(0, 3);
+  const sectionList = top.map((s) => `"${s.heading}" (${(s.size / 1024).toFixed(1)}KB)`).join(', ');
+  return [
+    result(
+      WARN,
+      `CLAUDE.md has large sections: ${sectionList}`,
+      'Consider extracting to conditional skills with paths frontmatter to save context budget'
+    ),
+  ];
 }
 
 async function checkAgentModels(projectRoot) {
