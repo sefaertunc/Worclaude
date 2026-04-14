@@ -382,7 +382,7 @@ async function mergeDocSpecs(projectRoot, existingScan, variables, selections, r
   report.skipped.specMd = existingScan.hasSpecMd;
 }
 
-async function handleClaudeMd(projectRoot, existingScan, variables, report) {
+async function handleClaudeMd(projectRoot, existingScan, variables, selections, report) {
   if (!existingScan.hasClaudeMd) {
     // No CLAUDE.md — scaffold fresh
     await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
@@ -393,6 +393,13 @@ async function handleClaudeMd(projectRoot, existingScan, variables, report) {
   const existingContent = await readFile(path.join(projectRoot, 'CLAUDE.md'));
   const renderedTemplate = substituteVariables(await readTemplate('core/claude-md.md'), variables);
   const missingSections = detectMissingSections(existingContent);
+
+  // Tier 3 notice: if user opted into GTD memory AND their CLAUDE.md already has
+  // a Memory Architecture section, the pointer bullets from the rendered template
+  // won't be merged in automatically. Surface this so the user can add them manually.
+  if (selections.scaffoldGtdMemory && !missingSections.includes('Memory Architecture')) {
+    report.memoryArchitectureSectionExists = true;
+  }
 
   if (missingSections.length === 0) {
     display.newline();
@@ -472,31 +479,18 @@ export async function performMerge(
     await scaffoldPluginJson(projectRoot, selections);
   }
 
-  // Opt-in: GTD memory scaffold (idempotent per-file)
+  // Opt-in: GTD memory scaffold (idempotent per-file). Tier 3 notice for
+  // existing Memory Architecture section is handled inside handleClaudeMd,
+  // which already reads CLAUDE.md and runs section detection.
   if (selections.scaffoldGtdMemory) {
     await scaffoldMemoryDocs(projectRoot);
-    // Tier 3 notice: if the user's existing CLAUDE.md already has a Memory
-    // Architecture section, our template-rendered pointer bullets won't be
-    // merged in automatically — surface this as a report entry so the user
-    // knows to add them manually.
-    if (existingScan.hasClaudeMd) {
-      const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
-      try {
-        const content = await readFile(claudeMdPath);
-        if (/##\s+Memory Architecture/i.test(content)) {
-          report.memoryArchitectureSectionExists = true;
-        }
-      } catch {
-        // if we cannot read it, skip the notice silently
-      }
-    }
   }
 
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
 
   // Stop spinner before CLAUDE.md merge — interactive prompts for section selection
   if (spinner) spinner.stop();
-  await handleClaudeMd(projectRoot, existingScan, variables, report);
+  await handleClaudeMd(projectRoot, existingScan, variables, selections, report);
   await mergeAgentsMd(projectRoot, existingScan, variables, report);
   if (spinner) spinner.start();
 

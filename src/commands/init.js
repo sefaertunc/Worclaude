@@ -304,8 +304,8 @@ async function showConfirmation(selections) {
 
 // --- Shared functions ---
 
-async function runInteractivePrompts(projectRoot) {
-  let selections = {
+function createInitialSelections(projectRoot) {
+  return {
     projectName: path.basename(projectRoot),
     description: '',
     projectTypes: [],
@@ -315,17 +315,26 @@ async function runInteractivePrompts(projectRoot) {
     generatePluginJson: false,
     scaffoldGtdMemory: false,
   };
+}
+
+async function runAllSteps(selections) {
+  selections = await runProjectInfo(selections);
+  selections = await runProjectType(selections);
+  selections = await runTechStack(selections);
+  selections = await runAgents(selections);
+  selections = await runOptionalExtras(selections);
+  return selections;
+}
+
+async function runInteractivePrompts(projectRoot) {
+  let selections = createInitialSelections(projectRoot);
 
   let confirmed = false;
   let firstRun = true;
 
   while (!confirmed) {
     if (firstRun) {
-      selections = await runProjectInfo(selections);
-      selections = await runProjectType(selections);
-      selections = await runTechStack(selections);
-      selections = await runAgents(selections);
-      selections = await runOptionalExtras(selections);
+      selections = await runAllSteps(selections);
       firstRun = false;
     }
 
@@ -334,24 +343,11 @@ async function runInteractivePrompts(projectRoot) {
     if (confirmation === 'yes') {
       confirmed = true;
     } else if (confirmation === 'restart') {
-      selections = {
-        projectName: path.basename(projectRoot),
-        description: '',
-        projectTypes: [],
-        languages: [],
-        useDocker: false,
-        selectedAgents: [],
-        generatePluginJson: false,
-        scaffoldGtdMemory: false,
-      };
+      selections = createInitialSelections(projectRoot);
       display.newline();
       display.info('Starting over...');
       display.newline();
-      selections = await runProjectInfo(selections);
-      selections = await runProjectType(selections);
-      selections = await runTechStack(selections);
-      selections = await runAgents(selections);
-      selections = await runOptionalExtras(selections);
+      selections = await runAllSteps(selections);
     } else if (confirmation === 'adjust') {
       const { step } = await inquirer.prompt([
         {
