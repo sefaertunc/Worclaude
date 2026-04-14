@@ -12,6 +12,7 @@ import {
   slugifyPluginName,
   scaffoldPluginJson,
   scaffoldMemoryDocs,
+  scaffoldHooks,
 } from '../../src/core/scaffolder.js';
 import { UNIVERSAL_AGENTS } from '../../src/data/agents.js';
 
@@ -439,5 +440,25 @@ describe('scaffoldMemoryDocs', () => {
     );
     const prefsTemplate = await readTemplate('memory/preferences.md');
     expect(prefsWritten).toBe(prefsTemplate);
+  });
+});
+
+describe('scaffoldHooks filters non-script files', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) await fs.remove(tmpDir);
+  });
+
+  it('does NOT copy README.md or examples/ from templates/hooks/', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-hooks-'));
+    await scaffoldHooks(tmpDir);
+    const hooksDir = path.join(tmpDir, '.claude', 'hooks');
+    const entries = await fs.readdir(hooksDir);
+    expect(entries).not.toContain('README.md');
+    expect(entries).not.toContain('examples');
+    // But the real hook scripts must be there
+    expect(entries).toContain('skill-hint.cjs');
+    expect(entries).toContain('pre-compact-save.cjs');
   });
 });
