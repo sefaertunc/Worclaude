@@ -9,7 +9,10 @@ import {
   scaffoldFile,
   getTemplatesDir,
   updateGitignore,
+  slugifyPluginName,
+  scaffoldPluginJson,
 } from '../../src/core/scaffolder.js';
+import { UNIVERSAL_AGENTS } from '../../src/data/agents.js';
 
 describe('substituteVariables', () => {
   it('replaces single variable', () => {
@@ -210,5 +213,169 @@ describe('updateGitignore', () => {
       '.claude-backup-*/',
       '.claude/learnings/',
     ]);
+  });
+});
+
+describe('slugifyPluginName', () => {
+  it('lowercases', () => {
+    expect(slugifyPluginName('MyProject')).toBe('myproject');
+  });
+
+  it('replaces non-alphanumeric runs with single hyphen', () => {
+    expect(slugifyPluginName('my project  v2')).toBe('my-project-v2');
+  });
+
+  it('trims leading and trailing hyphens', () => {
+    expect(slugifyPluginName('--foo--')).toBe('foo');
+  });
+
+  it('collapses special characters', () => {
+    expect(slugifyPluginName('foo@bar!baz')).toBe('foo-bar-baz');
+  });
+
+  it('falls back to worclaude-plugin for empty input', () => {
+    expect(slugifyPluginName('')).toBe('worclaude-plugin');
+    expect(slugifyPluginName(null)).toBe('worclaude-plugin');
+    expect(slugifyPluginName(undefined)).toBe('worclaude-plugin');
+    expect(slugifyPluginName('---')).toBe('worclaude-plugin');
+  });
+});
+
+describe('scaffoldPluginJson', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) await fs.remove(tmpDir);
+  });
+
+  it('creates .claude-plugin/plugin.json with required fields', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'my-app',
+      description: 'Test description',
+      selectedAgents: ['bug-fixer'],
+    });
+    const content = await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8');
+    const parsed = JSON.parse(content);
+    expect(parsed.name).toBe('my-app-workflow');
+    expect(parsed.version).toBe('0.1.0');
+    expect(parsed.description).toBe('Test description');
+  });
+
+  it('name is slugified project name plus -workflow suffix', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'My Cool App!',
+      description: '',
+      selectedAgents: [],
+    });
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(parsed.name).toBe('my-cool-app-workflow');
+  });
+
+  it('agents array contains explicit ./.claude/agents/<name>.md paths for universal + selected', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'app',
+      description: '',
+      selectedAgents: ['bug-fixer', 'doc-writer'],
+    });
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(parsed.agents).toEqual(
+      expect.arrayContaining([
+        './.claude/agents/plan-reviewer.md',
+        './.claude/agents/bug-fixer.md',
+        './.claude/agents/doc-writer.md',
+      ])
+    );
+    expect(parsed.agents).toHaveLength(UNIVERSAL_AGENTS.length + 2);
+    for (const p of parsed.agents) {
+      expect(p).toMatch(/^\.\/\.claude\/agents\/[\w-]+\.md$/);
+    }
+  });
+
+  it('does NOT include a hooks field', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'app',
+      description: '',
+      selectedAgents: [],
+    });
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(parsed).not.toHaveProperty('hooks');
+  });
+
+  it('skills is ./.claude/skills/ and commands is ./.claude/commands/', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'app',
+      description: '',
+      selectedAgents: [],
+    });
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(parsed.skills).toEqual(['./.claude/skills/']);
+    expect(parsed.commands).toEqual(['./.claude/commands/']);
+  });
+
+  it('does NOT include author, homepage, repository, or license fields', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'app',
+      description: '',
+      selectedAgents: [],
+    });
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(parsed).not.toHaveProperty('author');
+    expect(parsed).not.toHaveProperty('homepage');
+    expect(parsed).not.toHaveProperty('repository');
+    expect(parsed).not.toHaveProperty('license');
+  });
+
+  it('is idempotent — preserves existing plugin.json', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await fs.ensureDir(path.join(tmpDir, '.claude-plugin'));
+    const existing = '{"custom": true, "version": "9.9.9"}';
+    await fs.writeFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), existing);
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'app',
+      description: '',
+      selectedAgents: [],
+    });
+    const content = await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8');
+    expect(content).toBe(existing);
+  });
+
+  it('falls back to default description when selections.description is empty', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'myapp',
+      description: '',
+      selectedAgents: [],
+    });
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+    );
+    expect(parsed.description).toBe('Claude Code workflow for myapp');
+  });
+
+  it('output is valid parseable JSON', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-plugin-'));
+    await scaffoldPluginJson(tmpDir, {
+      projectName: 'app',
+      description: 'D',
+      selectedAgents: [],
+    });
+    const content = await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8');
+    expect(() => JSON.parse(content)).not.toThrow();
   });
 });

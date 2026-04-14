@@ -7,6 +7,7 @@ import {
   scaffoldFile,
   mergeSettings,
   scaffoldHooks,
+  scaffoldPluginJson,
 } from './scaffolder.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
@@ -464,6 +465,11 @@ export async function performMerge(
 
   // Create learnings directory for correction capture
   await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
+
+  // Opt-in: plugin.json (idempotent — scaffolder skips if file exists)
+  if (selections.generatePluginJson) {
+    await scaffoldPluginJson(projectRoot, selections);
+  }
 
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
 

@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'fs-extra';
-import { readFile, writeFile } from '../utils/file.js';
+import { fileExists, readFile, writeFile } from '../utils/file.js';
+import { UNIVERSAL_AGENTS } from '../data/agents.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -100,6 +101,35 @@ export async function scaffoldHooks(projectRoot) {
       errorOnExist: false,
     });
   }
+}
+
+export function slugifyPluginName(projectName) {
+  const slug = String(projectName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'worclaude-plugin';
+}
+
+export async function scaffoldPluginJson(projectRoot, selections) {
+  const destPath = path.join(projectRoot, '.claude-plugin', 'plugin.json');
+  if (await fileExists(destPath)) return;
+
+  const agents = [...UNIVERSAL_AGENTS, ...(selections.selectedAgents || [])].map(
+    (a) => `./.claude/agents/${a}.md`
+  );
+
+  const plugin = {
+    name: `${slugifyPluginName(selections.projectName)}-workflow`,
+    version: '0.1.0',
+    description: selections.description || `Claude Code workflow for ${selections.projectName}`,
+    keywords: ['claude-code', 'workflow', 'worclaude'],
+    agents,
+    skills: ['./.claude/skills/'],
+    commands: ['./.claude/commands/'],
+  };
+
+  await writeFile(destPath, JSON.stringify(plugin, null, 2) + '\n');
 }
 
 export function mergeSettings(base, ...stacks) {

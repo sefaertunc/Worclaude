@@ -1,7 +1,12 @@
 import path from 'node:path';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { scaffoldFile, updateGitignore, scaffoldHooks } from '../core/scaffolder.js';
+import {
+  scaffoldFile,
+  updateGitignore,
+  scaffoldHooks,
+  scaffoldPluginJson,
+} from '../core/scaffolder.js';
 import {
   computeFileHashes,
   createWorkflowMeta,
@@ -211,11 +216,30 @@ async function runAgents(selections) {
   return { ...selections, selectedAgents };
 }
 
+async function runOptionalExtras(selections) {
+  const { generatePluginJson, scaffoldGtdMemory } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'generatePluginJson',
+      message: 'Generate .claude-plugin/plugin.json for marketplace compatibility?',
+      default: selections.generatePluginJson || false,
+    },
+    {
+      type: 'confirm',
+      name: 'scaffoldGtdMemory',
+      message: 'Scaffold structured memory files (decisions.md, preferences.md)?',
+      default: selections.scaffoldGtdMemory || false,
+    },
+  ]);
+  return { ...selections, generatePluginJson, scaffoldGtdMemory };
+}
+
 const STEP_RUNNERS = {
   projectInfo: runProjectInfo,
   projectType: runProjectType,
   techStack: runTechStack,
   agents: runAgents,
+  optionalExtras: runOptionalExtras,
 };
 
 // --- Confirmation ---
@@ -251,6 +275,14 @@ async function showConfirmation(selections) {
   console.log(
     `  ${'Agents'.padEnd(10)}${display.white(`${universalCount} universal + ${optionalCount} optional`)} ${display.dimColor(`(${totalCount} total)`)}`
   );
+
+  const extrasLabels = [];
+  if (selections.generatePluginJson) extrasLabels.push('plugin.json');
+  if (selections.scaffoldGtdMemory) extrasLabels.push('memory docs');
+  if (extrasLabels.length > 0) {
+    console.log(`  ${'Extras'.padEnd(10)}${display.white(extrasLabels.join(', '))}`);
+  }
+
   display.newline();
 
   const { confirmation } = await inquirer.prompt([
@@ -279,6 +311,8 @@ async function runInteractivePrompts(projectRoot) {
     languages: [],
     useDocker: false,
     selectedAgents: [],
+    generatePluginJson: false,
+    scaffoldGtdMemory: false,
   };
 
   let confirmed = false;
@@ -290,6 +324,7 @@ async function runInteractivePrompts(projectRoot) {
       selections = await runProjectType(selections);
       selections = await runTechStack(selections);
       selections = await runAgents(selections);
+      selections = await runOptionalExtras(selections);
       firstRun = false;
     }
 
@@ -305,6 +340,8 @@ async function runInteractivePrompts(projectRoot) {
         languages: [],
         useDocker: false,
         selectedAgents: [],
+        generatePluginJson: false,
+        scaffoldGtdMemory: false,
       };
       display.newline();
       display.info('Starting over...');
@@ -313,6 +350,7 @@ async function runInteractivePrompts(projectRoot) {
       selections = await runProjectType(selections);
       selections = await runTechStack(selections);
       selections = await runAgents(selections);
+      selections = await runOptionalExtras(selections);
     } else if (confirmation === 'adjust') {
       const { step } = await inquirer.prompt([
         {
@@ -511,6 +549,12 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
     spinner.text = 'Created .claude/learnings/';
 
+    // Opt-in: plugin.json for Claude Code marketplace compatibility
+    if (selections.generatePluginJson) {
+      await scaffoldPluginJson(projectRoot, selections);
+      spinner.text = 'Created .claude-plugin/plugin.json';
+    }
+
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -537,6 +581,9 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.claude/sessions/');
   display.success('.claude/hooks/');
+  if (selections.generatePluginJson) {
+    display.success('.claude-plugin/plugin.json');
+  }
   display.success('.mcp.json');
   display.success('.gitignore');
   if (skipped.progressMd) {

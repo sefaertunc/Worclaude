@@ -318,6 +318,7 @@ export const CONFIRMATION_STEPS = [
   { name: 'Project type', value: 'projectType' },
   { name: 'Tech stack', value: 'techStack' },
   { name: 'Agent selection', value: 'agents' },
+  { name: 'Optional extras (plugin.json, memory)', value: 'optionalExtras' },
 ];
 
 export const NOTIFICATION_COMMANDS = {

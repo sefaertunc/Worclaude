@@ -39,7 +39,8 @@ function setupDefaultMocks() {
     { selectedAgents: ['bug-fixer'] }, // 6: fine-tune Quality
     { selectedAgents: ['doc-writer'] }, // 7: fine-tune Documentation
     { additionalCategories: [] }, // 8: unselected categories offer
-    { confirmation: 'yes' }, // 9: confirmation
+    { generatePluginJson: false, scaffoldGtdMemory: false }, // 9: optional extras
+    { confirmation: 'yes' }, // 10: confirmation
   ];
   let callCount = 0;
   inquirer.prompt.mockImplementation(() => {
@@ -270,6 +271,40 @@ describe('init command', () => {
     expect(hookEvents).toContain('SessionEnd');
   });
 
+  it('does NOT create .claude-plugin/ when generatePluginJson is false (default)', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude-plugin'))).toBe(false);
+  });
+
+  it('creates .claude-plugin/plugin.json when generatePluginJson opt-in is true', async () => {
+    const responses = [
+      { projectName: 'my-app', description: 'Cool app' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { generatePluginJson: true, scaffoldGtdMemory: false },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const pluginPath = path.join(tmpDir, '.claude-plugin', 'plugin.json');
+    expect(await fs.pathExists(pluginPath)).toBe(true);
+    const parsed = JSON.parse(await fs.readFile(pluginPath, 'utf-8'));
+    expect(parsed.name).toBe('my-app-workflow');
+    expect(parsed.version).toBe('0.1.0');
+    expect(parsed.description).toBe('Cool app');
+    expect(parsed).not.toHaveProperty('hooks');
+    expect(parsed.skills).toEqual(['./.claude/skills/']);
+    expect(parsed.commands).toEqual(['./.claude/commands/']);
+    for (const p of parsed.agents) {
+      expect(p).toMatch(/^\.\/\.claude\/agents\/[\w-]+\.md$/);
+    }
+  });
+
   it('uses project-type-specific SPEC.md template', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'), 'utf-8');
@@ -298,7 +333,7 @@ describe('init command', () => {
       { selectedCategories: ['Quality'] },
       { selectedAgents: ['bug-fixer'] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -322,7 +357,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -342,7 +377,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -377,7 +412,7 @@ describe('init command', () => {
       { useDocker: true },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -414,6 +449,7 @@ describe('init command', () => {
         { selectedCategories: ['Quality'] }, // categories
         { selectedAgents: ['bug-fixer'] }, // fine-tune
         { additionalCategories: [] }, // extra categories
+        { generatePluginJson: false, scaffoldGtdMemory: false }, // optional extras
         { confirmation: 'yes' }, // confirm
         { choice: 'keep' }, // CLAUDE.md handling
       ];
@@ -466,6 +502,60 @@ describe('init command', () => {
       // Original CLAUDE.md preserved
       const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
       expect(claudeMd).toBe('# My Project');
+    });
+
+    it('creates .claude-plugin/plugin.json in Scenario B when generatePluginJson opt-in is true', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: true, scaffoldGtdMemory: false },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      const pluginPath = path.join(tmpDir, '.claude-plugin', 'plugin.json');
+      expect(await fs.pathExists(pluginPath)).toBe(true);
+      const parsed = JSON.parse(await fs.readFile(pluginPath, 'utf-8'));
+      expect(parsed.name).toBe('existing-app-workflow');
+    });
+
+    it('does NOT overwrite existing .claude-plugin/plugin.json during merge', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+      await fs.ensureDir(path.join(tmpDir, '.claude-plugin'));
+      const customContent = '{"custom": true, "version": "9.9.9"}';
+      await fs.writeFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), customContent);
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: true, scaffoldGtdMemory: false },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      const content = await fs.readFile(
+        path.join(tmpDir, '.claude-plugin', 'plugin.json'),
+        'utf-8'
+      );
+      expect(content).toBe(customContent);
     });
 
     it('cancels when user declines to proceed', async () => {
