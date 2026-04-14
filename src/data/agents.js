@@ -206,6 +206,7 @@ export const UNIVERSAL_SKILLS = [
   'verification',
   'testing',
   'claude-md-maintenance',
+  'coding-principles',
   'subagent-usage',
   'security-checklist',
   'coordinator-mode',
