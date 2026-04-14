@@ -324,7 +324,8 @@ async function checkKeyHookCoverage(projectRoot) {
   };
   const results = [];
   for (const event of ['PreCompact', 'UserPromptSubmit', 'Stop']) {
-    if (settings.hooks?.[event]) {
+    const arr = settings.hooks?.[event];
+    if (Array.isArray(arr) && arr.length > 0) {
       results.push(result(PASS, `${event} hook`, null));
     } else {
       results.push(result(WARN, `${event} hook`, messages[event]));

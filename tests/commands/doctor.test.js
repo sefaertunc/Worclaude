@@ -365,6 +365,17 @@ describe('doctor command', () => {
     expect(output).toContain('Stop hook missing');
   });
 
+  // Key hook coverage — empty-array regression (Step-0 Fix 1)
+  it('warns when Stop hook key is present but the array is empty', async () => {
+    await scaffoldProject(tmpDir, {
+      skipPhase2Hooks: true,
+      extraHooks: { Stop: [] },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Stop hook missing');
+  });
+
   // Hook async (Task 6)
   it('warns when Notification hook lacks async: true', async () => {
     await scaffoldProject(tmpDir, {
@@ -428,10 +439,11 @@ describe('doctor command', () => {
   it('emits valid JSON with --json flag', async () => {
     await scaffoldProject(tmpDir);
     await doctorCommand({ json: true });
-    // console.log is spied — last call is the JSON payload
+    // console.log is spied — in JSON mode exactly one call should fire (the payload).
+    // Anything else means section headers / printResult lines leaked.
     const calls = console.log.mock.calls;
-    const jsonCall = calls[calls.length - 1][0];
-    const parsed = JSON.parse(jsonCall);
+    expect(calls.length).toBe(1);
+    const parsed = JSON.parse(calls[0][0]);
     expect(parsed).toHaveProperty('version');
     expect(parsed).toHaveProperty('path');
     expect(parsed).toHaveProperty('timestamp');
@@ -442,6 +454,24 @@ describe('doctor command', () => {
       parsed.checks.length
     );
     expect(parsed.installed).toBe(true);
+  });
+
+  // JSON output — negative path (Step-0 Fix 4)
+  it('emits valid JSON for a missing-install project', async () => {
+    // no scaffoldProject call — tmpDir is empty
+    await doctorCommand({ json: true });
+    const calls = console.log.mock.calls;
+    expect(calls.length).toBe(1);
+    const parsed = JSON.parse(calls[0][0]);
+    expect(parsed.installed).toBe(false);
+    expect(parsed.summary.fail).toBeGreaterThanOrEqual(1);
+  });
+
+  // Exit codes (Task 13, Step-0 Fix 2)
+  it('FAIL cases produce exit code 2', async () => {
+    await scaffoldProject(tmpDir, { skipAgents: true });
+    await doctorCommand();
+    expect(process.exitCode).toBe(2);
   });
 
   // Pre-Phase-2 scaffold backward-compat (additive policy)
