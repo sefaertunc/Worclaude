@@ -12,6 +12,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/sponsors/sefaertunc"><img src="https://img.shields.io/badge/GitHub%20Sponsors-support-ea4aaa?logo=githubsponsors&style=for-the-badge" alt="GitHub Sponsors" height="40" /></a>
+  &nbsp;
+  <a href="https://buymeacoffee.com/sefaertunc"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?logo=buymeacoffee&style=for-the-badge" alt="Buy Me a Coffee" height="40" /></a>
+</p>
+
+<p align="center">
   <a href="https://sefaertunc.github.io/Worclaude/">Documentation</a> ·
   <a href="https://www.npmjs.com/package/worclaude">npm</a> ·
   <a href="https://github.com/sefaertunc/Worclaude/issues">Issues</a>
@@ -138,15 +144,6 @@ See the [full command reference](https://sefaertunc.github.io/Worclaude/referenc
 - **Hook profiles.** Dial strictness up or down via one environment variable. `minimal` for CI, `standard` for daily work, `strict` for type-heavy projects.
 - **Smart merge.** Detects existing Claude Code setups and merges additively — existing files never overwritten without confirmation. Three-tier strategy: additive for missing content, safe-alongside for conflicts, interactive for CLAUDE.md.
 - **Self-healing doctor.** Catches drift, stale hashes, deprecated models, broken learnings — before they bite.
-
----
-
-## Support
-
-If Worclaude saves you time, consider supporting the project:
-
-<a href="https://buymeacoffee.com/sefaertunc"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?logo=buymeacoffee" alt="Buy Me a Coffee" /></a>
-<a href="https://github.com/sponsors/sefaertunc"><img src="https://img.shields.io/badge/GitHub%20Sponsors-support-ea4aaa?logo=githubsponsors" alt="GitHub Sponsors" /></a>
 
 ---
 
