@@ -37,6 +37,7 @@ export default defineConfig({
             { text: 'Slash Commands', link: '/reference/slash-commands' },
             { text: 'CLAUDE.md Template', link: '/reference/claude-md' },
             { text: 'Hooks', link: '/reference/hooks' },
+            { text: 'Learnings', link: '/reference/learnings' },
             { text: 'Permissions', link: '/reference/permissions' },
             { text: 'Configuration', link: '/reference/configuration' },
           ],

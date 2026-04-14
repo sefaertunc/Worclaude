@@ -18,7 +18,7 @@ Additional runtime fields (`allowed-tools`, `model`, `context`, `agent`, `effort
 
 ## Universal Skills
 
-11 skills installed with every project. These cover workflow mechanics that apply regardless of tech stack. Additionally, 1 generated skill (`agent-routing`) is dynamically built from your agent selections during init.
+12 skills installed with every project. These cover workflow mechanics that apply regardless of tech stack. Additionally, 1 generated skill (`agent-routing`) is dynamically built from your agent selections during init.
 
 ### context-management
 
@@ -99,6 +99,16 @@ Teaches test philosophy (behavior not implementation), meaningful coverage vs li
 | **When loaded** | When updating CLAUDE.md. Triggered by the `/update-claude-md` command.        |
 
 Explains the self-healing pattern (same mistake twice becomes a rule), the 50-line target for CLAUDE.md, what belongs in CLAUDE.md vs skills, Gotchas section format and maintenance, and when to prune. Distinguishes between CLAUDE.md (always loaded, instructions) and skills (loaded on demand, knowledge).
+
+### coding-principles
+
+|                 |                                                                                                                |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| **File**        | `.claude/skills/coding-principles/SKILL.md`                                                                    |
+| **Description** | Core behavioral principles: when to ask, when to push back, when to simplify, how to make surgical changes     |
+| **When loaded** | Always relevant. Load when starting substantive coding tasks, reviewing code, or when output feels off-target. |
+
+Reference card consolidating four Karpathy-derived principles: (1) Think Before Coding — state assumptions, present multiple interpretations, push back when warranted; (2) Simplicity First — minimum code, no speculative abstractions, no error handling for impossible cases; (3) Surgical Changes — touch only what traces to the request, never mix cleanup with feature work; (4) Goal-Driven Execution — define success criteria up front, close the feedback loop before committing. Depth and examples live in linked skills; this file consolidates the rules.
 
 ### subagent-usage
 
@@ -250,6 +260,7 @@ The `description` and `when_to_use` fields appear in Claude's skill listing, hel
   verification/SKILL.md             # universal (conditional: test/**)
   testing/SKILL.md                  # universal (conditional: test/**)
   claude-md-maintenance/SKILL.md    # universal (always loaded)
+  coding-principles/SKILL.md        # universal (always loaded)
   subagent-usage/SKILL.md           # universal (always loaded)
   security-checklist/SKILL.md       # universal (conditional: auth/security/**)
   coordinator-mode/SKILL.md         # universal (always loaded)
@@ -273,6 +284,7 @@ Skills can be customized after installation. Additional custom skills can be add
 | review-and-handoff     | Always      | —                                                                                                                |
 | prompt-engineering     | Always      | —                                                                                                                |
 | claude-md-maintenance  | Always      | —                                                                                                                |
+| coding-principles      | Always      | —                                                                                                                |
 | subagent-usage         | Always      | —                                                                                                                |
 | coordinator-mode       | Always      | —                                                                                                                |
 | agent-routing          | Always      | —                                                                                                                |
