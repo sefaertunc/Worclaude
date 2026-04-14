@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { readWorkflowMeta, workflowMetaExists, getPackageVersion } from '../core/config.js';
 import { hashFile } from '../utils/hash.js';
 import { fileExists, readFile, listFilesRecursive } from '../utils/file.js';
@@ -15,6 +16,40 @@ import * as display from '../utils/display.js';
 const PASS = 'pass';
 const WARN = 'warn';
 const FAIL = 'fail';
+
+// Claude Code v2.1.101 documented hook events (closed set)
+const VALID_HOOK_EVENTS = new Set([
+  'PreToolUse',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'Stop',
+  'PreCompact',
+  'PostCompact',
+  'SessionStart',
+  'SessionEnd',
+  'UserPromptSubmit',
+  'Notification',
+  'PermissionRequest',
+  'PermissionDenied',
+  'SubagentStart',
+  'SubagentStop',
+  'Setup',
+  'CwdChanged',
+  'FileChanged',
+  'WorktreeCreate',
+  'WorktreeRemove',
+  'TeammateIdle',
+]);
+
+// Models deprecated in favor of alias-only references (opus, sonnet, haiku)
+const DEPRECATED_MODELS = new Set([
+  'opus-4',
+  'opus-4.1',
+  'claude-3-opus',
+  'claude-3-haiku',
+  'claude-opus-4',
+  'claude-opus-4-1',
+]);
 
 function result(status, label, detail) {
   return { status, label, detail };
@@ -73,46 +108,91 @@ async function checkClaudeMd(projectRoot) {
   }
 }
 
-async function checkClaudeMdSize(projectRoot) {
-  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
-  if (!(await fileExists(claudeMdPath))) {
-    return []; // Already covered by existing checkClaudeMd
-  }
+// Returns CLAUDE.md content or null when missing/unreadable. Missing-file
+// reporting is owned by checkClaudeMd — callers that use this helper should
+// skip reporting (return []) to avoid duplicate complaints.
+async function readClaudeMd(projectRoot) {
   try {
-    const content = await readFile(claudeMdPath);
-    const charCount = content.length;
-    const WARN_THRESHOLD = 30000;
-    const FAIL_THRESHOLD = 38000;
-    const HARD_LIMIT = 40000;
+    return await readFile(path.join(projectRoot, 'CLAUDE.md'));
+  } catch {
+    return null;
+  }
+}
 
-    if (charCount > FAIL_THRESHOLD) {
-      return [
-        result(
-          FAIL,
-          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
-          `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`
-        ),
-      ];
-    }
-    if (charCount > WARN_THRESHOLD) {
-      return [
-        result(
-          WARN,
-          `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
-          `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`
-        ),
-      ];
-    }
+async function checkClaudeMdSize(projectRoot) {
+  const content = await readClaudeMd(projectRoot);
+  if (content === null) return [];
+  const charCount = content.length;
+  const WARN_THRESHOLD = 30000;
+  const FAIL_THRESHOLD = 38000;
+  const HARD_LIMIT = 40000;
+
+  if (charCount > FAIL_THRESHOLD) {
     return [
       result(
-        PASS,
-        `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`,
-        null
+        FAIL,
+        `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+        `Exceeds recommended limit (${FAIL_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Claude Code caps at ${HARD_LIMIT.toLocaleString()} chars. Move domain-specific content to conditional skills with paths frontmatter.`
       ),
     ];
-  } catch {
-    return [];
   }
+  if (charCount > WARN_THRESHOLD) {
+    return [
+      result(
+        WARN,
+        `CLAUDE.md size: ${charCount.toLocaleString()} chars`,
+        `Approaching limit (${WARN_THRESHOLD.toLocaleString()}/${HARD_LIMIT.toLocaleString()}). Consider moving content to skills.`
+      ),
+    ];
+  }
+  return [
+    result(
+      PASS,
+      `CLAUDE.md size: ${charCount.toLocaleString()} chars (limit: ${HARD_LIMIT.toLocaleString()})`,
+      null
+    ),
+  ];
+}
+
+async function checkClaudeMdLineCount(projectRoot) {
+  const content = await readClaudeMd(projectRoot);
+  if (content === null) return [];
+  const lines = content.split(/\r?\n/).length;
+  const WARN_LINES = 150;
+  const FAIL_LINES = 200;
+  const detail = `CLAUDE.md is ${lines} lines. Recommended max: 200. Claude Code performance degrades with bloated context files. Move domain content to .claude/rules/ or .claude/skills/.`;
+
+  if (lines > FAIL_LINES) {
+    return [result(FAIL, `CLAUDE.md line count: ${lines}/200`, detail)];
+  }
+  if (lines > WARN_LINES) {
+    return [result(WARN, `CLAUDE.md line count: ${lines}/200`, detail)];
+  }
+  return [result(PASS, `CLAUDE.md line count: ${lines}/200`, null)];
+}
+
+async function checkClaudeMdMemoryGuidance(projectRoot) {
+  const content = await readClaudeMd(projectRoot);
+  if (content === null) return [];
+  const indicators = [
+    'memory architecture',
+    'native memory',
+    '.claude/learnings',
+    '[LEARN]',
+    '/learn',
+  ];
+  const lower = content.toLowerCase();
+  const hasGuidance = indicators.some((i) => lower.includes(i.toLowerCase()));
+  if (hasGuidance) {
+    return [result(PASS, 'CLAUDE.md memory guidance', null)];
+  }
+  return [
+    result(
+      WARN,
+      'CLAUDE.md memory guidance',
+      'CLAUDE.md has no memory architecture guidance. Auto-learnings may pollute this file. Run worclaude upgrade to add.'
+    ),
+  ];
 }
 
 async function checkSettingsJson(projectRoot) {
@@ -145,6 +225,130 @@ async function checkSettingsJson(projectRoot) {
   } catch {
     return result(FAIL, 'settings.json', 'Contains invalid JSON');
   }
+}
+
+async function readSettingsJson(projectRoot) {
+  const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+  if (!(await fileExists(settingsPath))) return null;
+  try {
+    return JSON.parse(await readFile(settingsPath));
+  } catch {
+    return null;
+  }
+}
+
+async function checkHookEventNames(projectRoot) {
+  const settings = await readSettingsJson(projectRoot);
+  if (!settings) {
+    return [result(WARN, 'Hook event names', 'settings.json missing or invalid')];
+  }
+  const events = Object.keys(settings.hooks ?? {});
+  if (events.length === 0) {
+    return [result(WARN, 'Hook event names', 'No hooks configured')];
+  }
+  const invalid = events.filter((e) => !VALID_HOOK_EVENTS.has(e));
+  if (invalid.length === 0) {
+    return [result(PASS, `Hook event names (${events.length} events)`, null)];
+  }
+  return invalid.map((name) =>
+    result(
+      FAIL,
+      `Hook event: ${name}`,
+      `Unknown hook event '${name}'. Check Claude Code docs for valid event names.`
+    )
+  );
+}
+
+function extractHookCommands(settings) {
+  const out = [];
+  for (const [event, arr] of Object.entries(settings.hooks ?? {})) {
+    if (!Array.isArray(arr)) continue;
+    for (const group of arr) {
+      const inner = Array.isArray(group?.hooks) ? group.hooks : [];
+      for (const h of inner) {
+        if (h && typeof h === 'object') {
+          out.push({ event, type: h.type, command: h.command, async: h.async === true });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+async function checkHookScriptFiles(projectRoot) {
+  const settings = await readSettingsJson(projectRoot);
+  if (!settings) return [];
+  const entries = extractHookCommands(settings).filter((h) => h.type === 'command' && h.command);
+  const pathRegex = /\.claude\/hooks\/[A-Za-z0-9._-]+\.(?:cjs|js|mjs|sh)\b/g;
+  const referenced = new Set();
+  for (const { command } of entries) {
+    const matches = command.match(pathRegex);
+    if (matches) for (const m of matches) referenced.add(m);
+  }
+  if (referenced.size === 0) {
+    return [result(PASS, 'Hook script files (no file-based hooks)', null)];
+  }
+  const missing = [];
+  for (const rel of referenced) {
+    if (!(await fileExists(path.join(projectRoot, rel)))) {
+      missing.push(rel);
+    }
+  }
+  if (missing.length === 0) {
+    return [result(PASS, `Hook script files (${referenced.size} referenced)`, null)];
+  }
+  return missing.map((rel) =>
+    result(FAIL, 'Hook script', `Hook references '${rel}' but file does not exist`)
+  );
+}
+
+async function checkKeyHookCoverage(projectRoot) {
+  const settings = await readSettingsJson(projectRoot);
+  if (!settings) {
+    return [result(WARN, 'Key hook coverage', 'settings.json missing or invalid')];
+  }
+  const messages = {
+    PreCompact: 'PreCompact hook missing — context may be lost during auto-compaction',
+    UserPromptSubmit: 'UserPromptSubmit hook missing — correction detection disabled',
+    Stop: 'Stop hook missing — learning capture disabled',
+  };
+  const results = [];
+  for (const event of ['PreCompact', 'UserPromptSubmit', 'Stop']) {
+    const arr = settings.hooks?.[event];
+    if (Array.isArray(arr) && arr.length > 0) {
+      results.push(result(PASS, `${event} hook`, null));
+    } else {
+      results.push(result(WARN, `${event} hook`, messages[event]));
+    }
+  }
+  return results;
+}
+
+async function checkHookAsync(projectRoot) {
+  const settings = await readSettingsJson(projectRoot);
+  if (!settings) return [];
+  const entries = extractHookCommands(settings);
+  const asyncCandidateRegex = /\b(notify|notification|backup|log)\b/i;
+  const warnings = [];
+  for (const h of entries) {
+    const isCandidate =
+      h.event === 'Notification' ||
+      h.event === 'SessionEnd' ||
+      (h.command && asyncCandidateRegex.test(h.command));
+    if (isCandidate && !h.async) {
+      warnings.push(
+        result(
+          WARN,
+          `Hook async: ${h.event}`,
+          `Hook '${h.event}' should use async: true — it blocks Claude unnecessarily`
+        )
+      );
+    }
+  }
+  if (warnings.length === 0) {
+    return [result(PASS, 'Hook async flags', null)];
+  }
+  return warnings;
 }
 
 async function checkAgents(projectRoot, meta) {
@@ -448,56 +652,160 @@ async function checkAgentCompleteness(projectRoot) {
 }
 
 async function checkClaudeMdSections(projectRoot) {
-  const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
   const SECTION_THRESHOLD = 20000; // Only analyze sections if file > 20KB
-  const results = [];
+  const content = await readClaudeMd(projectRoot);
+  if (content === null || content.length < SECTION_THRESHOLD) return [];
 
-  try {
-    const content = await readFile(claudeMdPath);
-    if (content.length < SECTION_THRESHOLD) return results;
+  // Split into ## sections
+  const sections = [];
+  const lines = content.split('\n');
+  let currentHeading = '(top-level)';
+  let currentLines = [];
 
-    // Split into ## sections
-    const sections = [];
-    const lines = content.split('\n');
-    let currentHeading = '(top-level)';
-    let currentLines = [];
-
-    for (const line of lines) {
-      const headingMatch = line.match(/^##\s+(.+)/);
-      if (headingMatch) {
-        if (currentLines.length > 0) {
-          sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
-        }
-        currentHeading = headingMatch[1];
-        currentLines = [];
-      } else {
-        currentLines.push(line);
+  for (const line of lines) {
+    const headingMatch = line.match(/^##\s+(.+)/);
+    if (headingMatch) {
+      if (currentLines.length > 0) {
+        sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
       }
+      currentHeading = headingMatch[1];
+      currentLines = [];
+    } else {
+      currentLines.push(line);
     }
-    if (currentLines.length > 0) {
-      sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
-    }
+  }
+  if (currentLines.length > 0) {
+    sections.push({ heading: currentHeading, size: currentLines.join('\n').length });
+  }
 
-    // Sort by size, suggest extracting the top 3 sections > 2KB
-    const large = sections.filter((s) => s.size > 2000).sort((a, b) => b.size - a.size);
+  // Sort by size, suggest extracting the top 3 sections > 2KB
+  const large = sections.filter((s) => s.size > 2000).sort((a, b) => b.size - a.size);
+  if (large.length === 0) return [];
 
-    if (large.length > 0) {
-      const top = large.slice(0, 3);
-      const sectionList = top
-        .map((s) => `"${s.heading}" (${(s.size / 1024).toFixed(1)}KB)`)
-        .join(', ');
-      results.push(
+  const top = large.slice(0, 3);
+  const sectionList = top.map((s) => `"${s.heading}" (${(s.size / 1024).toFixed(1)}KB)`).join(', ');
+  return [
+    result(
+      WARN,
+      `CLAUDE.md has large sections: ${sectionList}`,
+      'Consider extracting to conditional skills with paths frontmatter to save context budget'
+    ),
+  ];
+}
+
+async function checkAgentModels(projectRoot) {
+  const agents = await readAgentFrontmatters(projectRoot);
+  const withFrontmatter = agents.filter((a) => a.frontmatter);
+  if (withFrontmatter.length === 0) return [];
+
+  const warnings = [];
+  for (const { name, frontmatter } of withFrontmatter) {
+    const m = frontmatter.match(/^model:\s*["']?([^"'\n]+?)["']?\s*$/m);
+    if (!m) continue;
+    const model = m[1].trim();
+    if (DEPRECATED_MODELS.has(model)) {
+      warnings.push(
         result(
           WARN,
-          `CLAUDE.md has large sections: ${sectionList}`,
-          'Consider extracting to conditional skills with paths frontmatter to save context budget'
+          `Agent model: ${name}`,
+          `Agent '${name}' uses deprecated model '${model}'. Use 'opus', 'sonnet', or 'haiku' instead.`
         )
       );
     }
-  } catch {
-    // Already covered by checkClaudeMd
   }
+  if (warnings.length === 0) {
+    return [result(PASS, `Agent models (${withFrontmatter.length} agents scanned)`, null)];
+  }
+  return warnings;
+}
 
+async function checkAgentsMd(projectRoot) {
+  const agentsMdPath = path.join(projectRoot, 'AGENTS.md');
+  if (await fileExists(agentsMdPath)) {
+    return result(PASS, 'AGENTS.md', null);
+  }
+  return result(
+    WARN,
+    'AGENTS.md',
+    'AGENTS.md not found. This file enables cross-tool compatibility (Cursor, Codex, Copilot). Run worclaude upgrade to generate.'
+  );
+}
+
+async function checkLearnings(projectRoot) {
+  const learningsDir = path.join(projectRoot, '.claude', 'learnings');
+  if (!(await fileExists(learningsDir))) {
+    return [
+      result(WARN, 'Learnings directory', '`.claude/learnings/` not found — run worclaude upgrade'),
+    ];
+  }
+  const indexPath = path.join(learningsDir, 'index.json');
+  if (!(await fileExists(indexPath))) {
+    return [result(PASS, 'Learnings: 0 entries captured', null)];
+  }
+  let index;
+  try {
+    index = JSON.parse(await readFile(indexPath));
+  } catch {
+    return [
+      result(FAIL, 'Learnings index', '`.claude/learnings/index.json` contains invalid JSON'),
+    ];
+  }
+  const entries = Array.isArray(index?.learnings) ? index.learnings : [];
+  const orphans = [];
+  for (const entry of entries) {
+    if (entry?.file && !(await fileExists(path.join(learningsDir, entry.file)))) {
+      orphans.push(entry.file);
+    }
+  }
+  if (orphans.length > 0) {
+    return orphans.map((f) =>
+      result(WARN, `Learnings entry: ${f}`, `Entry references missing file '${f}'`)
+    );
+  }
+  return [result(PASS, `Learnings: ${entries.length} entries captured`, null)];
+}
+
+function isPathIgnored(projectRoot, relPath) {
+  try {
+    const r = spawnSync('git', ['check-ignore', '-q', relPath], { cwd: projectRoot });
+    if (r.error) return null;
+    // status 0 = ignored, 1 = not ignored, 128 = not a git repo
+    if (r.status === 128) return null;
+    return r.status === 0;
+  } catch {
+    return null;
+  }
+}
+
+async function checkGitignore(projectRoot) {
+  const checks = [
+    {
+      path: '.claude/sessions/',
+      detail: 'Session files contain local context and should be gitignored',
+    },
+    {
+      path: '.claude/learnings/',
+      detail: 'Learnings are personal and should be gitignored',
+    },
+  ];
+  const results = [];
+  for (const c of checks) {
+    const ignored = isPathIgnored(projectRoot, c.path);
+    if (ignored === null) {
+      return [
+        result(
+          WARN,
+          'Gitignore check',
+          'git check-ignore unavailable — install git or initialize the repo'
+        ),
+      ];
+    }
+    results.push(
+      ignored
+        ? result(PASS, `Gitignore: ${c.path}`, null)
+        : result(WARN, `Gitignore: ${c.path}`, c.detail)
+    );
+  }
   return results;
 }
 
@@ -527,51 +835,131 @@ async function checkPendingReviewFiles(projectRoot) {
   return pending.map((f) => result(WARN, `Pending review: ${f}`, 'Merge or delete this file'));
 }
 
-export async function doctorCommand() {
+function stripAnsi(s) {
+  if (typeof s !== 'string') return s;
+  return s.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
+export async function doctorCommand(options = {}) {
   const projectRoot = process.cwd();
   const version = await getPackageVersion();
+  const jsonMode = !!options?.json;
 
-  display.newline();
-  display.sectionHeader('WORCLAUDE DOCTOR');
-  display.dim(`CLI version: v${version}`);
-  display.newline();
+  const allResults = [];
+  const record = (category, r) => {
+    const items = Array.isArray(r) ? r : r ? [r] : [];
+    for (const item of items) {
+      allResults.push({ category, ...item });
+      if (!jsonMode) printResult(item);
+    }
+  };
+  const section = (title) => {
+    if (!jsonMode) display.barLine(display.white(title));
+  };
+  const spacer = () => {
+    if (!jsonMode) display.newline();
+  };
 
-  // Core files
-  display.barLine(display.white('Core Files'));
+  if (!jsonMode) {
+    display.newline();
+    display.sectionHeader('WORCLAUDE DOCTOR');
+    display.dim(`CLI version: v${version}`);
+    display.newline();
+  }
+
+  // Core Files
+  section('Core Files');
   const metaResult = await checkWorkflowMeta(projectRoot);
-  printResult(metaResult);
+  record('core', metaResult);
 
   const meta = await readWorkflowMeta(projectRoot);
 
-  printResult(await checkClaudeMd(projectRoot));
-  for (const r of await checkClaudeMdSize(projectRoot)) printResult(r);
-  for (const r of await checkClaudeMdSections(projectRoot)) printResult(r);
-  printResult(await checkSettingsJson(projectRoot));
-  printResult(await checkSessions(projectRoot));
-  display.newline();
+  record('core', await checkClaudeMd(projectRoot));
+  record('core', await checkClaudeMdSize(projectRoot));
+  record('core', await checkClaudeMdLineCount(projectRoot));
+  record('core', await checkClaudeMdSections(projectRoot));
+  record('core', await checkClaudeMdMemoryGuidance(projectRoot));
+  record('core', await checkAgentsMd(projectRoot));
+  record('core', await checkSettingsJson(projectRoot));
+  record('core', await checkSessions(projectRoot));
+  spacer();
+
+  // Hooks
+  section('Hooks');
+  record('hooks', await checkHookEventNames(projectRoot));
+  record('hooks', await checkKeyHookCoverage(projectRoot));
+  record('hooks', await checkHookScriptFiles(projectRoot));
+  record('hooks', await checkHookAsync(projectRoot));
+  spacer();
 
   // Components
-  display.barLine(display.white('Components'));
-  for (const r of await checkAgents(projectRoot, meta)) printResult(r);
-  for (const r of await checkAgentDescription(projectRoot)) printResult(r);
-  for (const r of await checkCommands(projectRoot)) printResult(r);
-  for (const r of await checkSkills(projectRoot)) printResult(r);
-  for (const r of await checkSkillFormat(projectRoot)) printResult(r);
-  for (const r of await checkAgentCompleteness(projectRoot)) printResult(r);
-  display.newline();
+  section('Components');
+  record('components', await checkAgents(projectRoot, meta));
+  record('components', await checkAgentDescription(projectRoot));
+  record('components', await checkCommands(projectRoot));
+  record('components', await checkSkills(projectRoot));
+  record('components', await checkSkillFormat(projectRoot));
+  record('components', await checkAgentCompleteness(projectRoot));
+  record('components', await checkAgentModels(projectRoot));
+  spacer();
 
-  // Docs
-  display.barLine(display.white('Documentation'));
-  for (const r of await checkDocSpecs(projectRoot)) printResult(r);
-  display.newline();
+  // Documentation
+  section('Documentation');
+  record('docs', await checkDocSpecs(projectRoot));
+  spacer();
+
+  // Learnings
+  section('Learnings');
+  record('learnings', await checkLearnings(projectRoot));
+  spacer();
+
+  // Git Integration
+  section('Git Integration');
+  record('git', await checkGitignore(projectRoot));
+  spacer();
 
   // Integrity
-  display.barLine(display.white('Integrity'));
-  for (const r of await checkHashIntegrity(projectRoot, meta)) printResult(r);
-  for (const r of await checkPendingReviewFiles(projectRoot)) printResult(r);
-  display.newline();
+  section('Integrity');
+  record('integrity', await checkHashIntegrity(projectRoot, meta));
+  record('integrity', await checkPendingReviewFiles(projectRoot));
+  spacer();
 
-  // Summary
+  // Exit code
+  const fails = allResults.filter((r) => r.status === FAIL).length;
+  const warns = allResults.filter((r) => r.status === WARN).length;
+  process.exitCode = fails > 0 ? 2 : warns > 0 ? 1 : 0;
+
+  if (jsonMode) {
+    const installed = metaResult.status === PASS;
+    const summary = { pass: 0, warn: 0, fail: 0 };
+    const checks = allResults.map((r) => {
+      summary[r.status] += 1;
+      const out = {
+        category: r.category,
+        status: r.status,
+        label: stripAnsi(r.label),
+      };
+      if (r.detail) out.detail = stripAnsi(r.detail);
+      return out;
+    });
+    console.log(
+      JSON.stringify(
+        {
+          version,
+          path: projectRoot,
+          timestamp: new Date().toISOString(),
+          installed,
+          summary,
+          checks,
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
+  // Summary (text mode)
   if (metaResult.status === FAIL) {
     display.info('Workflow is not installed. Run `worclaude init` to set up.');
   } else {
