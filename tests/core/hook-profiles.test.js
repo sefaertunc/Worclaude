@@ -85,11 +85,14 @@ describe('hook profiles', () => {
     expect(stop[0].hooks[0].command).toContain('WORCLAUDE_HOOK_PROFILE');
   });
 
-  it('UserPromptSubmit hook has standard+strict profile gate', async () => {
+  it('UserPromptSubmit hooks have standard+strict profile gate', async () => {
     const { settingsObject } = await buildSettingsJson(['node'], false);
     const ups = settingsObject.hooks.UserPromptSubmit;
-    expect(ups).toHaveLength(1);
+    expect(ups).toHaveLength(2);
     expect(ups[0].hooks[0].command).toContain('WORCLAUDE_HOOK_PROFILE');
+    expect(ups[0].hooks[0].command).toContain('correction-detect');
+    expect(ups[1].hooks[0].command).toContain('WORCLAUDE_HOOK_PROFILE');
+    expect(ups[1].hooks[0].command).toContain('skill-hint');
   });
 
   it('SessionEnd hook has standard+strict profile gate and async', async () => {

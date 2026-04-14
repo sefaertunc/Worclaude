@@ -219,6 +219,17 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs'))).toBe(
       true
     );
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'skill-hint.cjs'))).toBe(true);
+  });
+
+  it('settings.json has two UserPromptSubmit entries (correction-detect + skill-hint)', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+    const settings = JSON.parse(content);
+    const ups = settings.hooks.UserPromptSubmit;
+    expect(ups).toHaveLength(2);
+    expect(ups[0].hooks[0].command).toContain('correction-detect');
+    expect(ups[1].hooks[0].command).toContain('skill-hint');
   });
 
   it('creates .claude/learnings/ with .gitkeep', async () => {

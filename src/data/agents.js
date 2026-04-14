@@ -217,7 +217,7 @@ export const TEMPLATE_SKILLS = [
   'project-patterns',
 ];
 
-export const HOOK_FILES = ['pre-compact-save', 'correction-detect', 'learn-capture'];
+export const HOOK_FILES = ['pre-compact-save', 'correction-detect', 'learn-capture', 'skill-hint'];
 
 export const PROJECT_TYPES = [
   'Full-stack web application',
