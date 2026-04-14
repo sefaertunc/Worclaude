@@ -31,6 +31,11 @@ function listSnapshots() {
   return fs.readdirSync(sessionsDir).filter((f) => f.startsWith('pre-compact-'));
 }
 
+function readFirstSnapshot() {
+  const files = listSnapshots();
+  return fs.readFileSync(path.join(tmpDir, '.claude', 'sessions', files[0]), 'utf8');
+}
+
 describe('pre-compact-save hook', () => {
   beforeEach(async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pre-compact-'));
@@ -49,16 +54,12 @@ describe('pre-compact-save hook', () => {
 
   it('records the trigger value in the snapshot', () => {
     runScript({ session_id: 't', trigger: 'manual' });
-    const files = listSnapshots();
-    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'sessions', files[0]), 'utf8');
-    expect(content).toContain('**Trigger:** manual');
+    expect(readFirstSnapshot()).toContain('**Trigger:** manual');
   });
 
   it('defaults trigger to "unknown" when omitted', () => {
     runScript({ session_id: 't' });
-    const files = listSnapshots();
-    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'sessions', files[0]), 'utf8');
-    expect(content).toContain('**Trigger:** unknown');
+    expect(readFirstSnapshot()).toContain('**Trigger:** unknown');
   });
 
   it('creates .claude/sessions/ if missing', () => {
@@ -70,9 +71,7 @@ describe('pre-compact-save hook', () => {
 
   it('includes a branch line in the snapshot', () => {
     runScript({ session_id: 't', trigger: 'auto' });
-    const files = listSnapshots();
-    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'sessions', files[0]), 'utf8');
-    expect(content).toMatch(/^\*\*Branch:\*\* /m);
+    expect(readFirstSnapshot()).toMatch(/^\*\*Branch:\*\* /m);
   });
 
   it('handles malformed JSON without throwing', () => {

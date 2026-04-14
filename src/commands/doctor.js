@@ -51,6 +51,20 @@ const DEPRECATED_MODELS = new Set([
   'claude-opus-4-1',
 ]);
 
+// Events where blocking is by design — their output or side-effects must
+// complete before Claude proceeds. Flagging these as async would break
+// their purpose (e.g., SessionStart output becomes session context).
+const BLOCKING_BY_DESIGN_EVENTS = new Set([
+  'SessionStart',
+  'PreToolUse',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'UserPromptSubmit',
+  'PreCompact',
+  'PermissionRequest',
+  'Setup',
+]);
+
 function result(status, label, detail) {
   return { status, label, detail };
 }
@@ -323,20 +337,6 @@ async function checkKeyHookCoverage(projectRoot) {
   }
   return results;
 }
-
-// Events where blocking is by design — their output or side-effects must
-// complete before Claude proceeds. Flagging these as async would break
-// their purpose (e.g., SessionStart output becomes session context).
-const BLOCKING_BY_DESIGN_EVENTS = new Set([
-  'SessionStart',
-  'PreToolUse',
-  'PostToolUse',
-  'PostToolUseFailure',
-  'UserPromptSubmit',
-  'PreCompact',
-  'PermissionRequest',
-  'Setup',
-]);
 
 async function checkHookAsync(projectRoot) {
   const settings = await readSettingsJson(projectRoot);
