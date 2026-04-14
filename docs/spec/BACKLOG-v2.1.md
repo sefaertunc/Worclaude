@@ -3,6 +3,28 @@
 Items informed by Claude Code source code analysis (April 2026).
 Items marked ✅ were implemented in v2.0.1 or later.
 
+## Phase 4 (implemented in feat/phase-4, pending release)
+
+- ✅ plugin.json generation (opt-in) — scaffolds `.claude-plugin/plugin.json` during `worclaude init` with paths matching Worclaude's `.claude/` layout (`./.claude/agents/<name>.md`, `./.claude/skills/`, `./.claude/commands/`). Built via `JSON.stringify` (never string-substitution on JSON). No `hooks` field (Claude Code v2.1+ auto-loads `hooks/hooks.json`; declaring it causes "Duplicate hooks file" errors). Idempotent — skips if file exists. Default off.
+- ✅ Skill activation hint hook (`templates/hooks/skill-hint.cjs`) — `UserPromptSubmit` token-overlap match against installed skill directory names. Gated on `standard`/`strict` profiles.
+- ✅ `disableSkillShellExecution` awareness notes on shell-heavy skill templates (verification, git-conventions, review-and-handoff, and related). Advises users to run commands manually if the setting is enabled.
+- ✅ GTD memory scaffold (opt-in) — creates `docs/memory/decisions.md` and `docs/memory/preferences.md` for team-shared, version-controlled decision logs. Idempotent per file. CLAUDE.md Memory Architecture section gets pointer bullets via `{memory_architecture_extras}` variable substitution when opted in. Default off.
+- ✅ Prompt-hook example + `templates/hooks/README.md` — ships a complete valid `PreToolUse` prompt hook for commit-message validation using the verified schema (`$ARGUMENTS` placeholder, `model` sibling of `type`, `{ok, reason}` response). README documents all four scaffolded hooks, the three handler types, hook profiles, and the `disableSkillShellExecution` non-interaction with hook scripts.
+
+Follow-up items discovered during Phase 4 implementation:
+
+### `worclaude upgrade --with-plugin` / `--with-memory` flags
+
+Retrofit opt-in extras onto existing workflows. Currently once `workflow-meta.json` exists the `init` scenario short-circuits with an upgrade message, so users cannot re-run `init` to add plugin.json or memory scaffolding later. These flags would let existing users opt in via `upgrade`.
+
+### skill-hint frontmatter enrichment
+
+`skill-hint.cjs` currently matches user-prompt keywords against skill directory names only. Reading each skill's `description:` frontmatter would produce richer keyword coverage and a higher auto-activation hit rate.
+
+### Claude Code plugin validator CI
+
+Once `worclaude init --plugin-json` is used in CI, add a step that runs `claude plugin validate` on the generated `.claude-plugin/plugin.json` to catch schema drift as Claude Code evolves.
+
 ## Phase 2 (implemented in feat/phase-2, pending release)
 
 - ✅ Hook lifecycle expansion: 3 → 8 event types (PostToolUse, PostCompact, SessionStart, PreCompact, Stop, UserPromptSubmit, Notification, SessionEnd). Fixed Stop-matcher-on-PostToolUse bug.

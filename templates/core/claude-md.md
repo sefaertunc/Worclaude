@@ -52,7 +52,7 @@ See `.claude/skills/` — load only what's relevant:
 - Native memory (`/memory`): auto-captured project knowledge.
 - Persistent corrections: `.claude/learnings/` via [LEARN] blocks or `/learn`.
 - Path-scoped rules: `.claude/rules/` with YAML frontmatter.
-- Session state: `.claude/sessions/` (gitignored).
+- Session state: `.claude/sessions/` (gitignored).{memory_architecture_extras}
 - Do NOT write session learnings or auto-captured patterns here.
 
 ## Learnings

@@ -1,7 +1,13 @@
 import path from 'node:path';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { scaffoldFile, updateGitignore, scaffoldHooks } from '../core/scaffolder.js';
+import {
+  scaffoldFile,
+  updateGitignore,
+  scaffoldHooks,
+  scaffoldPluginJson,
+  scaffoldMemoryDocs,
+} from '../core/scaffolder.js';
 import {
   computeFileHashes,
   createWorkflowMeta,
@@ -211,11 +217,30 @@ async function runAgents(selections) {
   return { ...selections, selectedAgents };
 }
 
+async function runOptionalExtras(selections) {
+  const { generatePluginJson, scaffoldGtdMemory } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'generatePluginJson',
+      message: 'Generate .claude-plugin/plugin.json for marketplace compatibility?',
+      default: selections.generatePluginJson || false,
+    },
+    {
+      type: 'confirm',
+      name: 'scaffoldGtdMemory',
+      message: 'Scaffold structured memory files (decisions.md, preferences.md)?',
+      default: selections.scaffoldGtdMemory || false,
+    },
+  ]);
+  return { ...selections, generatePluginJson, scaffoldGtdMemory };
+}
+
 const STEP_RUNNERS = {
   projectInfo: runProjectInfo,
   projectType: runProjectType,
   techStack: runTechStack,
   agents: runAgents,
+  optionalExtras: runOptionalExtras,
 };
 
 // --- Confirmation ---
@@ -251,6 +276,14 @@ async function showConfirmation(selections) {
   console.log(
     `  ${'Agents'.padEnd(10)}${display.white(`${universalCount} universal + ${optionalCount} optional`)} ${display.dimColor(`(${totalCount} total)`)}`
   );
+
+  const extrasLabels = [];
+  if (selections.generatePluginJson) extrasLabels.push('plugin.json');
+  if (selections.scaffoldGtdMemory) extrasLabels.push('memory docs');
+  if (extrasLabels.length > 0) {
+    console.log(`  ${'Extras'.padEnd(10)}${display.white(extrasLabels.join(', '))}`);
+  }
+
   display.newline();
 
   const { confirmation } = await inquirer.prompt([
@@ -271,25 +304,37 @@ async function showConfirmation(selections) {
 
 // --- Shared functions ---
 
-async function runInteractivePrompts(projectRoot) {
-  let selections = {
+function createInitialSelections(projectRoot) {
+  return {
     projectName: path.basename(projectRoot),
     description: '',
     projectTypes: [],
     languages: [],
     useDocker: false,
     selectedAgents: [],
+    generatePluginJson: false,
+    scaffoldGtdMemory: false,
   };
+}
+
+async function runAllSteps(selections) {
+  selections = await runProjectInfo(selections);
+  selections = await runProjectType(selections);
+  selections = await runTechStack(selections);
+  selections = await runAgents(selections);
+  selections = await runOptionalExtras(selections);
+  return selections;
+}
+
+async function runInteractivePrompts(projectRoot) {
+  let selections = createInitialSelections(projectRoot);
 
   let confirmed = false;
   let firstRun = true;
 
   while (!confirmed) {
     if (firstRun) {
-      selections = await runProjectInfo(selections);
-      selections = await runProjectType(selections);
-      selections = await runTechStack(selections);
-      selections = await runAgents(selections);
+      selections = await runAllSteps(selections);
       firstRun = false;
     }
 
@@ -298,21 +343,11 @@ async function runInteractivePrompts(projectRoot) {
     if (confirmation === 'yes') {
       confirmed = true;
     } else if (confirmation === 'restart') {
-      selections = {
-        projectName: path.basename(projectRoot),
-        description: '',
-        projectTypes: [],
-        languages: [],
-        useDocker: false,
-        selectedAgents: [],
-      };
+      selections = createInitialSelections(projectRoot);
       display.newline();
       display.info('Starting over...');
       display.newline();
-      selections = await runProjectInfo(selections);
-      selections = await runProjectType(selections);
-      selections = await runTechStack(selections);
-      selections = await runAgents(selections);
+      selections = await runAllSteps(selections);
     } else if (confirmation === 'adjust') {
       const { step } = await inquirer.prompt([
         {
@@ -363,6 +398,10 @@ function buildTemplateVariables(selections) {
   );
   const skillsText = skillsLines.join('\n');
 
+  const memoryArchitectureExtras = selections.scaffoldGtdMemory
+    ? '\n- Team decisions: `docs/memory/decisions.md` (version-controlled, shared).\n- Team preferences: `docs/memory/preferences.md` (version-controlled, shared).'
+    : '';
+
   return {
     project_name: projectName,
     description: description || 'A project scaffolded with Worclaude',
@@ -372,6 +411,7 @@ function buildTemplateVariables(selections) {
     docker_row: dockerRow,
     commands_filled_during_init: commandsText,
     project_specific_skills: skillsText,
+    memory_architecture_extras: memoryArchitectureExtras,
     timestamp: new Date().toISOString(),
   };
 }
@@ -511,6 +551,18 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
     spinner.text = 'Created .claude/learnings/';
 
+    // Opt-in: plugin.json for Claude Code marketplace compatibility
+    if (selections.generatePluginJson) {
+      await scaffoldPluginJson(projectRoot, selections);
+      spinner.text = 'Created .claude-plugin/plugin.json';
+    }
+
+    // Opt-in: GTD memory scaffold (docs/memory/decisions.md, preferences.md)
+    if (selections.scaffoldGtdMemory) {
+      await scaffoldMemoryDocs(projectRoot);
+      spinner.text = 'Created docs/memory/';
+    }
+
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -537,6 +589,12 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.claude/sessions/');
   display.success('.claude/hooks/');
+  if (selections.generatePluginJson) {
+    display.success('.claude-plugin/plugin.json');
+  }
+  if (selections.scaffoldGtdMemory) {
+    display.success('docs/memory/' + display.dimColor('           decisions.md, preferences.md'));
+  }
   display.success('.mcp.json');
   display.success('.gitignore');
   if (skipped.progressMd) {
@@ -659,6 +717,19 @@ function displayMergeReport(report, backupPath) {
     display.success('CLAUDE.md updated with selected sections');
   } else if (report.claudeMdHandling === 'created') {
     display.success('CLAUDE.md created');
+  }
+
+  // Memory Architecture Tier 3 notice
+  if (report.memoryArchitectureSectionExists) {
+    display.newline();
+    display.info(
+      'docs/memory/ scaffolded, but your CLAUDE.md already has a Memory Architecture section.'
+    );
+    display.dim('  Add these lines manually if you want pointer bullets:');
+    display.dim('    - Team decisions: `docs/memory/decisions.md` (version-controlled, shared).');
+    display.dim(
+      '    - Team preferences: `docs/memory/preferences.md` (version-controlled, shared).'
+    );
   }
 
   // Skipped

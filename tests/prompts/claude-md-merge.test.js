@@ -77,9 +77,29 @@ describe('claude-md-merge', () => {
         'See `.claude/skills/`',
         '## Gotchas',
         '[Grows]',
+        '## Memory Architecture',
+        '- Native memory.',
       ].join('\n');
       const missing = detectMissingSections(content);
       expect(missing).toEqual([]);
+    });
+
+    it('detects Memory Architecture via heading', () => {
+      const content = '## Memory Architecture\n- Native memory.';
+      const missing = detectMissingSections(content);
+      expect(missing).not.toContain('Memory Architecture');
+    });
+
+    it('detects Memory Architecture via .claude/learnings/ reference', () => {
+      const content = 'Corrections live in `.claude/learnings/` via [LEARN].';
+      const missing = detectMissingSections(content);
+      expect(missing).not.toContain('Memory Architecture');
+    });
+
+    it('flags Memory Architecture as missing when absent', () => {
+      const content = '## Key Files\n- PROGRESS.md';
+      const missing = detectMissingSections(content);
+      expect(missing).toContain('Memory Architecture');
     });
   });
 
@@ -139,6 +159,7 @@ describe('claude-md-merge', () => {
         '## Critical Rules',
         '.claude/skills/',
         '## Gotchas',
+        '## Memory Architecture',
       ].join('\n');
       const suggestions = generateWorkflowSuggestions(content, '');
       expect(suggestions).toContain('already has all recommended sections');

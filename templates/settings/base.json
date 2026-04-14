@@ -108,6 +108,13 @@
           "type": "command",
           "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/correction-detect.cjs && node .claude/hooks/correction-detect.cjs || true"
         }]
+      },
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/skill-hint.cjs && node .claude/hooks/skill-hint.cjs || true"
+        }]
       }
     ],
     "Notification": [

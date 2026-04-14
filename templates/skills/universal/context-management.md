@@ -6,6 +6,11 @@ version: "1.0.0"
 
 # Context Management
 
+> **Note:** The bash examples below are reference snippets. If you enable
+> `disableSkillShellExecution` in Claude Code settings (v2.1.101+), any inline
+> shell execution from skills is blocked. These fenced examples are safe to read;
+> copy-paste them into your terminal to run.
+
 ## The 70% Rule
 
 Context windows are finite. When you estimate you've used roughly 70% of available
