@@ -71,10 +71,10 @@ After the intro paragraph, add a stats table. Count the ACTUAL numbers from `src
 ```markdown
 <div align="center">
 
-| Commands | Agents | Skills | Hooks | Tech Stacks |
-|----------|--------|--------|-------|-------------|
+| Commands               | Agents                                                 | Skills                    | Hooks                            | Tech Stacks          |
+| ---------------------- | ------------------------------------------------------ | ------------------------- | -------------------------------- | -------------------- |
 | {COMMAND_FILES.length} | {UNIVERSAL_AGENTS.length} + {AGENT_CATALOG keys count} | {UNIVERSAL_SKILLS.length} | {count hook events in base.json} | {TECH_STACKS.length} |
-| Slash Commands | Universal + Optional | Workflow Skills | Lifecycle Events | Auto-detected |
+| Slash Commands         | Universal + Optional                                   | Workflow Skills           | Lifecycle Events                 | Auto-detected        |
 
 </div>
 ```
@@ -97,12 +97,13 @@ Update ALL counts and lists to match current state:
 
 Keep it short but add the one-liner npx option at the top:
 
-```markdown
+````markdown
 ## Quick Start
 
 ```bash
 npx worclaude init
 ```
+````
 
 Or install globally:
 
@@ -111,7 +112,8 @@ npm install -g worclaude
 cd your-project
 worclaude init
 ```
-```
+
+````
 
 ### 1.6 Update Commands table
 
@@ -128,7 +130,7 @@ If Worclaude saves you time, consider supporting the project:
 
 <a href="https://buymeacoffee.com/sefaertunc"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?logo=buymeacoffee" alt="Buy Me a Coffee" /></a>
 <a href="https://github.com/sponsors/sefaertunc"><img src="https://img.shields.io/badge/GitHub%20Sponsors-support-ea4aaa?logo=githubsponsors" alt="GitHub Sponsors" /></a>
-```
+````
 
 ### 1.8 Update Links section
 
@@ -206,6 +208,7 @@ This should cover the new hook events, the learnings system, and AGENTS.md.
 ### 3.3 Update `docs/guide/workflow-tips.md`
 
 Add tips about:
+
 - Using `/learn` to capture corrections
 - The coding-principles skill for behavioral guidance
 - CLAUDE.md line budget (keep under 200 lines)
@@ -230,6 +233,7 @@ Note for user: set these topics on the GitHub repo: `claude-code`, `claude-code-
 ### 4.4 Verify `.github/` community files
 
 Check these exist (Phase v2.2.6 added community standards):
+
 ```bash
 ls .github/
 cat .github/ISSUE_TEMPLATE/ 2>/dev/null
@@ -247,6 +251,7 @@ If any are missing, note it but don't create them in this phase — they were su
 ### 5.1 Check package.json keywords
 
 Read `package.json` keywords array. Add these if missing:
+
 - `claude-code-workflow`
 - `claude-code-scaffolding`
 - `workflow`
@@ -267,7 +272,6 @@ Do NOT publish yet, but prepare:
 
 1. Decide the next version number. Given the scope of Phases 2-5 (new features, not breaking changes):
    - If correction system + hooks + AGENTS.md + doctor improvements + coding-principles = **minor bump → v2.3.0**
-   
 2. Do NOT run `npm version` or change package.json version — that happens during the release process via `/commit-push-pr` or `/sync`
 
 3. Draft a CHANGELOG entry or release notes covering:
