@@ -6,6 +6,8 @@ Use this ONLY when stopping work mid-task without committing.
 
 When invoked with arguments, use them as the description of current work. Example: `/end implementing user registration`
 
+Arguments: $ARGUMENTS
+
 Do NOT update PROGRESS.md — /sync handles that on develop after merging.
 
 ## Pre-flight: Worktree Safety

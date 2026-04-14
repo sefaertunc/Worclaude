@@ -7,6 +7,8 @@ and the most recent session summary into context.
 
 When invoked with arguments, use them as the task focus. Example: `/start implement auth module`
 
+Arguments: $ARGUMENTS
+
 Your job is to supplement that with drift detection and additional context.
 
 ## 1. Drift Detection

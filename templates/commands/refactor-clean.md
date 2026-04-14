@@ -9,6 +9,8 @@ improves them in place, and leaves everything uncommitted for
 
 When invoked with arguments, use them to scope the cleanup. Example: `/refactor-clean src/core/merger.js`
 
+Arguments: $ARGUMENTS
+
 Do NOT spawn a subagent or worktree for this. Work directly on
 the files in the current working directory.
 
