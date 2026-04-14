@@ -11,6 +11,7 @@ import {
   updateGitignore,
   slugifyPluginName,
   scaffoldPluginJson,
+  scaffoldMemoryDocs,
 } from '../../src/core/scaffolder.js';
 import { UNIVERSAL_AGENTS } from '../../src/data/agents.js';
 
@@ -377,5 +378,66 @@ describe('scaffoldPluginJson', () => {
     });
     const content = await fs.readFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), 'utf-8');
     expect(() => JSON.parse(content)).not.toThrow();
+  });
+});
+
+describe('scaffoldMemoryDocs', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) await fs.remove(tmpDir);
+  });
+
+  it('creates docs/memory/decisions.md and preferences.md', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-memory-'));
+    await scaffoldMemoryDocs(tmpDir);
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'decisions.md'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'preferences.md'))).toBe(true);
+  });
+
+  it('decisions.md contains # Decisions Log heading', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-memory-'));
+    await scaffoldMemoryDocs(tmpDir);
+    const content = await fs.readFile(path.join(tmpDir, 'docs', 'memory', 'decisions.md'), 'utf-8');
+    expect(content).toContain('# Decisions Log');
+  });
+
+  it('preferences.md contains Code Style, Tooling, Workflow sections', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-memory-'));
+    await scaffoldMemoryDocs(tmpDir);
+    const content = await fs.readFile(
+      path.join(tmpDir, 'docs', 'memory', 'preferences.md'),
+      'utf-8'
+    );
+    expect(content).toContain('## Code Style');
+    expect(content).toContain('## Tooling');
+    expect(content).toContain('## Workflow');
+  });
+
+  it('does not overwrite existing decisions.md', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-memory-'));
+    await fs.ensureDir(path.join(tmpDir, 'docs', 'memory'));
+    const customContent = '# My custom decisions\n\n## 2026-04-14\nKept it.';
+    await fs.writeFile(path.join(tmpDir, 'docs', 'memory', 'decisions.md'), customContent);
+    await scaffoldMemoryDocs(tmpDir);
+    const content = await fs.readFile(path.join(tmpDir, 'docs', 'memory', 'decisions.md'), 'utf-8');
+    expect(content).toBe(customContent);
+  });
+
+  it('written content matches readTemplate source byte-for-byte', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-memory-'));
+    await scaffoldMemoryDocs(tmpDir);
+    const decisionsWritten = await fs.readFile(
+      path.join(tmpDir, 'docs', 'memory', 'decisions.md'),
+      'utf-8'
+    );
+    const decisionsTemplate = await readTemplate('memory/decisions.md');
+    expect(decisionsWritten).toBe(decisionsTemplate);
+    const prefsWritten = await fs.readFile(
+      path.join(tmpDir, 'docs', 'memory', 'preferences.md'),
+      'utf-8'
+    );
+    const prefsTemplate = await readTemplate('memory/preferences.md');
+    expect(prefsWritten).toBe(prefsTemplate);
   });
 });

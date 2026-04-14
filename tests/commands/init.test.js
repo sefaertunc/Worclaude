@@ -276,6 +276,58 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude-plugin'))).toBe(false);
   });
 
+  it('does NOT create docs/memory/ when scaffoldGtdMemory is false (default)', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory'))).toBe(false);
+  });
+
+  it('CLAUDE.md does NOT contain memory pointer bullets when opt-in is false', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).not.toContain('docs/memory/decisions.md');
+    expect(content).not.toContain('docs/memory/preferences.md');
+  });
+
+  it('creates docs/memory/decisions.md + preferences.md when scaffoldGtdMemory is true', async () => {
+    const responses = [
+      { projectName: 'mem-app', description: 'With memory' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { generatePluginJson: false, scaffoldGtdMemory: true },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'decisions.md'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'preferences.md'))).toBe(true);
+  });
+
+  it('CLAUDE.md contains memory pointer bullets when scaffoldGtdMemory is true', async () => {
+    const responses = [
+      { projectName: 'mem-app', description: 'With memory' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { generatePluginJson: false, scaffoldGtdMemory: true },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('docs/memory/decisions.md');
+    expect(content).toContain('docs/memory/preferences.md');
+    expect(content).toContain('version-controlled, shared');
+  });
+
   it('creates .claude-plugin/plugin.json when generatePluginJson opt-in is true', async () => {
     const responses = [
       { projectName: 'my-app', description: 'Cool app' },
@@ -527,6 +579,58 @@ describe('init command', () => {
       expect(await fs.pathExists(pluginPath)).toBe(true);
       const parsed = JSON.parse(await fs.readFile(pluginPath, 'utf-8'));
       expect(parsed.name).toBe('existing-app-workflow');
+    });
+
+    it('creates docs/memory/ in Scenario B when scaffoldGtdMemory opt-in is true', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: false, scaffoldGtdMemory: true },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'decisions.md'))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'preferences.md'))).toBe(true);
+    });
+
+    it('does NOT overwrite existing docs/memory/decisions.md during merge', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+      await fs.ensureDir(path.join(tmpDir, 'docs', 'memory'));
+      const customDecisions = '# Custom decisions\n\nKeep me.';
+      await fs.writeFile(path.join(tmpDir, 'docs', 'memory', 'decisions.md'), customDecisions);
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: false, scaffoldGtdMemory: true },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      const content = await fs.readFile(
+        path.join(tmpDir, 'docs', 'memory', 'decisions.md'),
+        'utf-8'
+      );
+      expect(content).toBe(customDecisions);
     });
 
     it('does NOT overwrite existing .claude-plugin/plugin.json during merge', async () => {

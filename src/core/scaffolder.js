@@ -132,6 +132,17 @@ export async function scaffoldPluginJson(projectRoot, selections) {
   await writeFile(destPath, JSON.stringify(plugin, null, 2) + '\n');
 }
 
+export async function scaffoldMemoryDocs(projectRoot) {
+  const destDir = path.join(projectRoot, 'docs', 'memory');
+  await fs.ensureDir(destDir);
+  for (const file of ['decisions.md', 'preferences.md']) {
+    const destPath = path.join(destDir, file);
+    if (await fileExists(destPath)) continue;
+    const content = await readTemplate(`memory/${file}`);
+    await writeFile(destPath, content);
+  }
+}
+
 export function mergeSettings(base, ...stacks) {
   const merged = JSON.parse(JSON.stringify(base));
   const baseAllow = merged.permissions?.allow || [];

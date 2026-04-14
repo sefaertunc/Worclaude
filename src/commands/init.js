@@ -6,6 +6,7 @@ import {
   updateGitignore,
   scaffoldHooks,
   scaffoldPluginJson,
+  scaffoldMemoryDocs,
 } from '../core/scaffolder.js';
 import {
   computeFileHashes,
@@ -401,6 +402,10 @@ function buildTemplateVariables(selections) {
   );
   const skillsText = skillsLines.join('\n');
 
+  const memoryArchitectureExtras = selections.scaffoldGtdMemory
+    ? '\n- Team decisions: `docs/memory/decisions.md` (version-controlled, shared).\n- Team preferences: `docs/memory/preferences.md` (version-controlled, shared).'
+    : '';
+
   return {
     project_name: projectName,
     description: description || 'A project scaffolded with Worclaude',
@@ -410,6 +415,7 @@ function buildTemplateVariables(selections) {
     docker_row: dockerRow,
     commands_filled_during_init: commandsText,
     project_specific_skills: skillsText,
+    memory_architecture_extras: memoryArchitectureExtras,
     timestamp: new Date().toISOString(),
   };
 }
@@ -555,6 +561,12 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
       spinner.text = 'Created .claude-plugin/plugin.json';
     }
 
+    // Opt-in: GTD memory scaffold (docs/memory/decisions.md, preferences.md)
+    if (selections.scaffoldGtdMemory) {
+      await scaffoldMemoryDocs(projectRoot);
+      spinner.text = 'Created docs/memory/';
+    }
+
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
     spinner.text = 'Created .claude/workflow-meta.json';
 
@@ -583,6 +595,9 @@ function displayFreshSuccess(selections, skipped) {
   display.success('.claude/hooks/');
   if (selections.generatePluginJson) {
     display.success('.claude-plugin/plugin.json');
+  }
+  if (selections.scaffoldGtdMemory) {
+    display.success('docs/memory/' + display.dimColor('           decisions.md, preferences.md'));
   }
   display.success('.mcp.json');
   display.success('.gitignore');
@@ -706,6 +721,19 @@ function displayMergeReport(report, backupPath) {
     display.success('CLAUDE.md updated with selected sections');
   } else if (report.claudeMdHandling === 'created') {
     display.success('CLAUDE.md created');
+  }
+
+  // Memory Architecture Tier 3 notice
+  if (report.memoryArchitectureSectionExists) {
+    display.newline();
+    display.info(
+      'docs/memory/ scaffolded, but your CLAUDE.md already has a Memory Architecture section.'
+    );
+    display.dim('  Add these lines manually if you want pointer bullets:');
+    display.dim('    - Team decisions: `docs/memory/decisions.md` (version-controlled, shared).');
+    display.dim(
+      '    - Team preferences: `docs/memory/preferences.md` (version-controlled, shared).'
+    );
   }
 
   // Skipped

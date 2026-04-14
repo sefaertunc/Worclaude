@@ -8,6 +8,7 @@ import {
   mergeSettings,
   scaffoldHooks,
   scaffoldPluginJson,
+  scaffoldMemoryDocs,
 } from './scaffolder.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
@@ -469,6 +470,26 @@ export async function performMerge(
   // Opt-in: plugin.json (idempotent — scaffolder skips if file exists)
   if (selections.generatePluginJson) {
     await scaffoldPluginJson(projectRoot, selections);
+  }
+
+  // Opt-in: GTD memory scaffold (idempotent per-file)
+  if (selections.scaffoldGtdMemory) {
+    await scaffoldMemoryDocs(projectRoot);
+    // Tier 3 notice: if the user's existing CLAUDE.md already has a Memory
+    // Architecture section, our template-rendered pointer bullets won't be
+    // merged in automatically — surface this as a report entry so the user
+    // knows to add them manually.
+    if (existingScan.hasClaudeMd) {
+      const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
+      try {
+        const content = await readFile(claudeMdPath);
+        if (/##\s+Memory Architecture/i.test(content)) {
+          report.memoryArchitectureSectionExists = true;
+        }
+      } catch {
+        // if we cannot read it, skip the notice silently
+      }
+    }
   }
 
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
