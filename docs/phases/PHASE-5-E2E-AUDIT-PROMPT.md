@@ -48,6 +48,7 @@ ls tests/
 6. Read `AGENT_CATALOG` → verify each optional agent key has a file in `templates/agents/optional/{name}.md`
 
 For each direction, check:
+
 - **Forward:** manifest entry exists but template file is missing → FAIL
 - **Reverse:** template file exists but isn't in any manifest → WARN (orphan file)
 
@@ -103,6 +104,7 @@ Document all mismatches. Fix any that are genuine errors (missing files, unregis
 ### Task B2: Hook scripts validation
 
 For each hook script in `templates/hooks/`:
+
 1. Read the script
 2. Verify it expects JSON on stdin (Claude Code hook contract)
 3. Create a minimal test JSON input matching the hook's event type
@@ -137,6 +139,7 @@ For each hook script in `templates/hooks/`:
 ### Task C2: Section completeness
 
 Verify CLAUDE.md contains these sections (added across multiple phases):
+
 - Key Files
 - Tech Stack
 - Commands
@@ -150,6 +153,7 @@ Verify CLAUDE.md contains these sections (added across multiple phases):
 ### Task C3: Critical Rules completeness
 
 Read the Critical Rules section. Verify it covers:
+
 1. SPEC.md is source of truth ✓
 2. Test before moving on ✓
 3. Ask if ambiguous ✓
@@ -160,10 +164,7 @@ Read the Critical Rules section. Verify it covers:
 8. Feature branches never modify shared-state files ✓
 9. No AI attribution in commits ✓
 
-**Add these if missing (Karpathy-derived, from research):**
-10. Surgical changes only — every changed line must trace to the request. Don't "improve" adjacent code, comments, or formatting.
-11. Push back when simpler approaches exist. Present alternatives, don't pick silently.
-12. Transform tasks to success criteria. "Fix the bug" → "Write a failing test, then make it pass."
+**Add these if missing (Karpathy-derived, from research):** 10. Surgical changes only — every changed line must trace to the request. Don't "improve" adjacent code, comments, or formatting. 11. Push back when simpler approaches exist. Present alternatives, don't pick silently. 12. Transform tasks to success criteria. "Fix the bug" → "Write a failing test, then make it pass."
 
 Verify the total CLAUDE.md still stays under 200 lines after additions.
 
@@ -179,23 +180,27 @@ This skill unifies the 4 Karpathy-style principles with Worclaude's existing con
 
 ```markdown
 ---
-description: "Core behavioral principles for AI-assisted coding — when to ask, when to push back, when to simplify, how to make surgical changes"
+description: 'Core behavioral principles for AI-assisted coding — when to ask, when to push back, when to simplify, how to make surgical changes'
 when_to_use: "Always relevant. Load when starting substantive coding tasks, reviewing code, or when Claude's output feels overcomplicated or off-target."
-version: "1.0.0"
+version: '1.0.0'
 ---
 
 # Coding Principles
 
 ## 1. Think Before Coding
+
 [Pull from prompt-engineering.md assumptions section + add "present multiple interpretations"]
 
-## 2. Simplicity First  
+## 2. Simplicity First
+
 [Pull from prompt-engineering.md "if 200 lines could be 50" + code-simplifier's "when NOT to simplify"]
 
 ## 3. Surgical Changes
+
 [Pull from git-conventions.md style matching + refactor-clean.md "never combine cleanup with feature work" + NEW: "every changed line traces to the request"]
 
 ## 4. Goal-Driven Execution
+
 [Pull from verification.md closed loops + testing.md test-first + planning-with-files.md verifiable goals]
 ```
 
@@ -226,6 +231,7 @@ If agent-routing is generated dynamically, add the reference in the generation l
 ### Task E1: Agent frontmatter consistency
 
 For every agent in `templates/agents/universal/` and `templates/agents/optional/`:
+
 1. Verify YAML frontmatter parses cleanly
 2. Verify `name` matches the filename (without `.md`)
 3. Verify `model` uses current values (`opus`, `sonnet`, `haiku` — not deprecated `opus-4`, `opus-4.1`)
@@ -235,6 +241,7 @@ For every agent in `templates/agents/universal/` and `templates/agents/optional/
 ### Task E2: Skill format consistency
 
 For every skill in `templates/skills/universal/`:
+
 1. Verify it's in directory format (`skill-name/SKILL.md`), not flat `.md`
 2. Verify frontmatter has `description` (required for activation)
 3. Verify frontmatter has `version` field (added in Phase 2)
@@ -243,6 +250,7 @@ For every skill in `templates/skills/universal/`:
 ### Task E3: Command template consistency
 
 For every command in `templates/commands/`:
+
 1. Verify YAML frontmatter has `description`
 2. Verify the file has a `## Trigger Phrases` section (added in Phase 2)
 3. Verify commands that accept arguments mention `$ARGUMENTS` (added in Phase 2 for start, end, verify, refactor-clean)
@@ -251,6 +259,7 @@ For every command in `templates/commands/`:
 ### Task E4: Hook script consistency
 
 For every hook in `templates/hooks/`:
+
 1. Verify the file extension matches what `base.json` references (`.cjs` vs `.js` vs `.mjs`)
 2. Verify the script reads from stdin (not from arguments)
 3. Verify `stop_hook_active` check exists in Stop hooks
@@ -289,6 +298,7 @@ Apply formatting.
 ### Task F4: Test coverage assessment
 
 Look at the test suite and identify untested areas introduced in Phases 2-4:
+
 - Hook scripts (correction-detect, learn-capture, pre-compact-save, skill-hint)
 - `/learn` command behavior
 - AGENTS.md generation
@@ -304,6 +314,7 @@ For each untested area, either add a test or document it as a testing gap in the
 ### Task G1: Update backlog
 
 Read `docs/spec/BACKLOG-v2.1.md` and update:
+
 - Mark any newly completed items with ✅
 - Add any new items discovered during audit
 - Remove obsolete items
@@ -320,6 +331,7 @@ Update `docs/spec/PROGRESS.md` to reflect current state after all phases.
 ### Task G4: Final verification
 
 Run the full validation sequence:
+
 ```bash
 npm test
 npm run lint
