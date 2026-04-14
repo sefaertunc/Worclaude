@@ -324,6 +324,20 @@ async function checkKeyHookCoverage(projectRoot) {
   return results;
 }
 
+// Events where blocking is by design — their output or side-effects must
+// complete before Claude proceeds. Flagging these as async would break
+// their purpose (e.g., SessionStart output becomes session context).
+const BLOCKING_BY_DESIGN_EVENTS = new Set([
+  'SessionStart',
+  'PreToolUse',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'UserPromptSubmit',
+  'PreCompact',
+  'PermissionRequest',
+  'Setup',
+]);
+
 async function checkHookAsync(projectRoot) {
   const settings = await readSettingsJson(projectRoot);
   if (!settings) return [];
@@ -331,6 +345,7 @@ async function checkHookAsync(projectRoot) {
   const asyncCandidateRegex = /\b(notify|notification|backup|log)\b/i;
   const warnings = [];
   for (const h of entries) {
+    if (BLOCKING_BY_DESIGN_EVENTS.has(h.event)) continue;
     const isCandidate =
       h.event === 'Notification' ||
       h.event === 'SessionEnd' ||
