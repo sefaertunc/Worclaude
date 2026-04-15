@@ -1,8 +1,10 @@
-# v2.3.0 — 2026-04-15
+# Changelog
+
+All notable changes to worclaude are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/). Older releases (pre-2.3.0) are documented in [docs/spec/PROGRESS.md](./docs/spec/PROGRESS.md) and the [GitHub releases page](https://github.com/sefaertunc/Worclaude/releases).
+
+## [2.3.0] — 2026-04-15
 
 Worclaude 2.3.0 expands the workflow from a setup scaffold into a full **learning system**: Claude captures corrections automatically, replays them across sessions, and now generates cross-tool rule files so switching from Claude Code to Cursor or Codex does not mean re-writing your conventions. Eight lifecycle hooks (up from three) plus a dedicated `coding-principles` reference card tighten the feedback loop between you and Claude.
-
-## Highlights
 
 ### Learning loop: capture once, replay everywhere
 
@@ -76,7 +78,7 @@ Every agent template now includes:
 - `$ARGUMENTS` placeholder added to `/start`, `/end`, `/verify`, `/refactor-clean` templates so their argument descriptions match the actual runtime substitution.
 - 497 tests across 31 test files (up from 383 / 26).
 
-## Upgrade notes
+### Upgrade notes
 
 Upgrading from 2.2.x:
 
@@ -90,6 +92,6 @@ worclaude upgrade
 
 If you have customizations to files that changed in 2.3.0, `upgrade` saves the new templates as `.workflow-ref.md` sidecars for manual reconciliation — see the [Upgrading guide](https://sefaertunc.github.io/Worclaude/guide/upgrading) for the reconciliation flow.
 
-## Breaking changes
+### Breaking changes
 
 None. All 2.3.0 changes are additive.
