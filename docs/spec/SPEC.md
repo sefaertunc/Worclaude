@@ -293,8 +293,8 @@ Default: keep user's, generate suggestions file.
 
   Added:
   ✓ 5 universal agents + 4 selected optional agents
-  ✓ 16 slash commands
-  ✓ 8 universal skills (3 conflicts saved as .workflow-ref.md)
+  ✓ 17 slash commands
+  ✓ 9 universal skills (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
 
@@ -1030,7 +1030,7 @@ Each agent uses frontmatter fields recognized by Claude Code's runtime. Required
 
 ## Universal Slash Commands
 
-All 16 slash commands are installed in every project. Files live in `.claude/commands/`.
+All 17 slash commands are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 
@@ -1277,7 +1277,7 @@ Rules: Test behavior not implementation, no trivial tests, independent tests, re
 
 ## Universal Skills
 
-All 11 universal skills are installed in directory format (`skill-name/SKILL.md`) under `.claude/skills/`. Source templates live in `templates/skills/universal/`. They follow Thariq's skill authoring standards:
+All 12 universal skills are installed in directory format (`skill-name/SKILL.md`) under `.claude/skills/`. Source templates live in `templates/skills/universal/`. They follow Thariq's skill authoring standards:
 
 - Skip the obvious
 - Build a Gotchas section
@@ -1451,9 +1451,9 @@ worclaude/
 │   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer, e2e-runner)
 │   │       ├── docs/ (doc-writer, changelog-generator)
 │   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
-│   ├── commands/ (16 slash commands)
+│   ├── commands/ (17 slash commands)
 │   └── skills/
-│       ├── universal/ (11 files, installed as skill-name/SKILL.md)
+│       ├── universal/ (12 files, installed as skill-name/SKILL.md)
 │       └── templates/ (3 files, installed as skill-name/SKILL.md)
 └── tests/
     ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor)

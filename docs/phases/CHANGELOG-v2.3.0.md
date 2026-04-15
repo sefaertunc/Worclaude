@@ -1,6 +1,4 @@
-# v2.3.0 — Changelog Draft
-
-> Draft release notes covering Phases 2-5. Finalized and published at release time by `/sync` → merge to `main` → `npm publish`.
+# v2.3.0 — 2026-04-15
 
 Worclaude 2.3.0 expands the workflow from a setup scaffold into a full **learning system**: Claude captures corrections automatically, replays them across sessions, and now generates cross-tool rule files so switching from Claude Code to Cursor or Codex does not mean re-writing your conventions. Eight lifecycle hooks (up from three) plus a dedicated `coding-principles` reference card tighten the feedback loop between you and Claude.
 
@@ -95,7 +93,3 @@ If you have customizations to files that changed in 2.3.0, `upgrade` saves the n
 ## Breaking changes
 
 None. All 2.3.0 changes are additive.
-
----
-
-**Not yet published.** This draft will be finalized and the version bump applied when the Phase 6 PR merges to develop and `/sync` promotes it to `main`.
