@@ -28,26 +28,42 @@ Agents are specialized Claude instances, each with a specific model and purpose.
 
 On top of these, you choose from 20 **optional agents** across 6 categories (Backend, Frontend, DevOps, Quality, Documentation, Data/AI). Worclaude recommends agents based on your project type, so you do not have to guess.
 
-### Skills (15 total)
+### Skills (16 total)
 
-Skills are knowledge files that Claude loads on demand, stored in directory format (`skill-name/SKILL.md`). They teach Claude how your project works without bloating the main context. You get 11 **universal skills** covering context management, git conventions, planning, session handoffs, prompt engineering, verification, testing, CLAUDE.md maintenance, subagent usage, security, and coordinator mode. You also get 3 **template skills** (backend-conventions, frontend-design-system, project-patterns) that serve as placeholders for your project-specific details. Finally, you get 1 **generated skill** — `agent-routing` — a dynamic routing guide that tells Claude exactly when and how to use each installed agent, built from your specific agent selections.
+Skills are knowledge files that Claude loads on demand, stored in directory format (`skill-name/SKILL.md`). They teach Claude how your project works without bloating the main context. You get 12 **universal skills** covering context management, git conventions, planning, session handoffs, prompt engineering, verification, testing, CLAUDE.md maintenance, coding principles, subagent usage, security, and coordinator mode. You also get 3 **template skills** (backend-conventions, frontend-design-system, project-patterns) that serve as placeholders for your project-specific details. Finally, you get 1 **generated skill** — `agent-routing` — a dynamic routing guide that tells Claude exactly when and how to use each installed agent, built from your specific agent selections.
 
 Some skills are **conditional** — they load automatically only when working on files matching specific path patterns (e.g., testing skills load only when touching test files). See [Claude Code Integration](/guide/claude-code-integration) for details.
 
-### Slash Commands (16 total)
+### Slash Commands (17 total)
 
-Commands give you a session lifecycle. `/start` reads your progress file, detects drift since the last session, and orients Claude. `/end` writes a handoff document for mid-task stops. `/commit-push-pr` stages, commits, pushes, and opens a pull request. `/verify` runs your full test and build pipeline. `/setup` interviews you about your project and fills in all the template files automatically. The full set: `/start`, `/end`, `/commit-push-pr`, `/review-plan`, `/techdebt`, `/verify`, `/compact-safe`, `/status`, `/update-claude-md`, `/setup`, `/sync`, `/conflict-resolver`, `/review-changes`, `/build-fix`, `/refactor-clean`, `/test-coverage`.
+Commands give you a session lifecycle. `/start` reads your progress file, detects drift since the last session, and orients Claude. `/end` writes a handoff document for mid-task stops. `/commit-push-pr` stages, commits, pushes, and opens a pull request. `/verify` runs your full test and build pipeline. `/setup` interviews you about your project and fills in all the template files automatically. `/learn` persists a correction or convention into `.claude/learnings/` so it replays at the start of future sessions. The full set: `/start`, `/end`, `/commit-push-pr`, `/review-plan`, `/techdebt`, `/verify`, `/compact-safe`, `/status`, `/update-claude-md`, `/learn`, `/setup`, `/sync`, `/conflict-resolver`, `/review-changes`, `/build-fix`, `/refactor-clean`, `/test-coverage`.
 
-### Hooks
+### Hooks (8 events)
 
-Hooks are installed automatically:
+Worclaude scaffolds hooks across eight Claude Code lifecycle events:
 
-- **SessionStart** -- Auto-loads CLAUDE.md, PROGRESS.md, last session summary, and branch name when Claude starts.
+- **SessionStart** -- Auto-loads CLAUDE.md, PROGRESS.md, last session summary, branch name, and recent learnings from `.claude/learnings/index.json`.
 - **PostToolUse (Write/Edit)** -- Auto-formats code after every file change, using the right formatter for your tech stack.
 - **PostCompact** -- Re-reads `CLAUDE.md` and `PROGRESS.md` after context compaction, so Claude never loses orientation.
-- **Stop** -- Sends an OS notification when Claude finishes and needs your attention.
+- **PreCompact** -- Emergency git context snapshot before auto-compaction, so nothing is lost if compaction truncates state.
+- **UserPromptSubmit** -- Detects correction signals in your prompts (e.g., "that's wrong", "remember this") and surfaces a suggestion to capture the rule as a learning. Also hints at relevant skills based on token overlap with skill names.
+- **Stop** -- Scans the session transcript for `[LEARN]` blocks and persists them to `.claude/learnings/`. Also sends an OS notification.
+- **SessionEnd** -- Runs on session close. Quiet by default.
+- **Notification** -- Desktop alerts for tool-use decisions and long-running tasks.
 
 Hook profiles (`WORCLAUDE_HOOK_PROFILE`) let you control strictness: `minimal` (session context only), `standard` (all hooks, the default), or `strict` (all hooks plus TypeScript checking on every edit).
+
+### Learnings System
+
+A personal, gitignored store at `.claude/learnings/` captures corrections and rules Claude picks up during a session and replays them at the start of future sessions. The UserPromptSubmit hook detects correction signals, the Stop hook extracts `[LEARN]` blocks from the transcript, and the SessionStart hook reloads the most recent entries. Unlike CLAUDE.md (shared across contributors), learnings are yours — useful for personal conventions that need not leak into the repo. See [Learnings reference](/reference/learnings) for the full flow.
+
+### Cross-Tool Compatibility
+
+`AGENTS.md` is scaffolded at the project root as a single source of truth for Claude Code, Cursor, Codex, and other AI coding tools. It mirrors the instructions in CLAUDE.md in the conventions those tools expect, so switching between them does not require maintaining parallel rule files.
+
+### Doctor
+
+`worclaude doctor` runs a four-category health check: core files (workflow-meta.json, CLAUDE.md, settings.json), components (agents, commands, skills, agent-routing), documentation (PROGRESS.md, SPEC.md), and integrity (file hashes vs. workflow-meta, hook event validity, deprecated models, CLAUDE.md line budget, learnings index validity, gitignore coverage). Each check reports PASS/WARN/FAIL with actionable diagnostics.
 
 ### Permissions and Sandbox
 

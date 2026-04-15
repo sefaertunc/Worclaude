@@ -27,7 +27,7 @@ The command detects one of three scenarios automatically:
 1. **Project name** -- defaults to the current directory name.
 2. **One-line description** -- free text.
 3. **Project type** -- multi-select from 7 categories (Full-stack web application, Backend / API, Frontend / UI, CLI tool, Data / ML / AI, Library / Package, DevOps / Infrastructure).
-4. **Tech stack** -- multi-select from 15 languages plus Docker toggle.
+4. **Tech stack** -- multi-select from 16 languages plus Docker toggle.
 5. **Agent selection** -- optional agents recommended by project type, selectable by category.
 6. **Confirmation** -- review summary with three choices: accept, start over, or adjust a specific step.
 
@@ -38,8 +38,8 @@ Creates all of the following:
 - `CLAUDE.md` -- populated with project name, description, tech stack, and commands
 - `.claude/settings.json` -- permissions and hooks for the selected stack
 - `.claude/agents/` -- 5 universal + selected optional agents
-- `.claude/commands/` -- 16 slash commands
-- `.claude/skills/` -- 11 universal + 3 template + 1 generated skills (directory format)
+- `.claude/commands/` -- 17 slash commands
+- `.claude/skills/` -- 12 universal + 3 template + 1 generated skills (directory format)
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
 - `docs/spec/PROGRESS.md` -- if not already present

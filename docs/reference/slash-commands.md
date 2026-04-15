@@ -1,6 +1,6 @@
 # Slash Commands
 
-Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
+Worclaude installs 17 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
 
 ## Command Reference
 
@@ -121,6 +121,21 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
 
 ---
 
+### /learn
+
+**Capture a correction or convention as a persistent learning.**
+
+|                  |                                                                                                                                                                                                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/learn.md`                                                                                                                                                                                                                                                            |
+| **When to use**  | When you want to persist a rule, correction, or convention across future sessions. Also triggered by phrases like "remember this", "learn this", "save this rule".                                                                                                                     |
+| **What it does** | Writes a `[LEARN]` block to `.claude/learnings/{category-slug}.md` with YAML frontmatter (`created`, `category`, `project`, `times_applied`). Updates `.claude/learnings/index.json` so the SessionStart hook loads the learning at the start of future sessions.                      |
+| **Key behavior** | The `correction-detect.cjs` UserPromptSubmit hook surfaces the `/learn` suggestion automatically when it spots a correction signal in a prompt. Learnings are gitignored by default — they are personal to the developer, unlike CLAUDE.md rules which are shared via version control. |
+
+See [Learnings](/reference/learnings) for the full learnings system documentation.
+
+---
+
 ### /setup
 
 **Project setup interview -- fills in CLAUDE.md, skills, and configuration.**
@@ -237,6 +252,7 @@ Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. T
   compact-safe.md
   status.md
   update-claude-md.md
+  learn.md
   setup.md
   sync.md
   conflict-resolver.md

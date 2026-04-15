@@ -176,6 +176,10 @@ If Claude gives you a solution that feels mediocre, push back. Say "this approac
 
 Boris Cherny's tip: do not accept the first solution that works. If it feels clunky, tell Claude to scrap it and implement it elegantly. The seventh Critical Rule in your `CLAUDE.md` reinforces this: "Mediocre fix -> scrap it, implement elegantly."
 
+### Lean on the `coding-principles` Skill
+
+The universal `coding-principles` skill is a reference card for four Karpathy-derived behaviors: Think Before Coding (state assumptions, surface ambiguity), Simplicity First (minimum code, no speculative abstractions), Surgical Changes (touch only what traces to the request), and Goal-Driven Execution (define success criteria up front, close the feedback loop before committing). When Claude's output feels overcomplicated, off-target, or touches unrelated code, invoking this skill by name ("check the coding-principles skill") tends to pull it back in line. See [Skills reference: coding-principles](/reference/skills#coding-principles) for the full card.
+
 ### Write Detailed Specs
 
 The more detailed your `SPEC.md` is, the better Claude performs. Vague requirements lead to vague implementations. Specific requirements with clear acceptance criteria lead to working code on the first pass.
@@ -184,7 +188,7 @@ The more detailed your `SPEC.md` is, the better Claude performs. Vague requireme
 
 ### Keep It Lean
 
-Your `CLAUDE.md` should stay under 50 lines. This is a hard rule from Boris Cherny's workflow. Claude reads it at the start of every interaction and after every compaction. If it is bloated, Claude wastes context on information it does not need right now.
+Your `CLAUDE.md` should stay under 200 lines. Claude reads it at the start of every interaction and after every compaction. If it is bloated, Claude wastes context on information it does not need right now. `worclaude doctor` fails the integrity check when CLAUDE.md crosses the budget.
 
 ### Progressive Disclosure
 
@@ -207,6 +211,24 @@ When Claude makes the same mistake twice, update `CLAUDE.md`. Add the lesson to 
 ```
 
 This reviews the session's work, identifies patterns that should be documented, and shows you a diff before applying changes.
+
+### Split Architecture: CLAUDE.md vs `.claude/learnings/`
+
+CLAUDE.md is for rules that apply to **every contributor** and are stable enough to version-control. Personal, dynamic rules — the ones you correct Claude about mid-session — belong in `.claude/learnings/` (gitignored) and get captured automatically by the UserPromptSubmit and Stop hooks. The SessionStart hook replays them in future sessions without you having to re-state anything.
+
+When a personal learning matures into something every contributor should follow, **promote it**: move the rule from `.claude/learnings/{category}.md` into the Critical Rules or Gotchas section of CLAUDE.md. That is the self-healing loop described above, scaled from "same mistake twice" to "same mistake across multiple developers".
+
+See [Learnings reference](/reference/learnings) for the full capture-and-replay flow.
+
+### Capturing Rules with `/learn`
+
+When Claude does something wrong and you correct it, the `correction-detect.cjs` hook notices and suggests capturing the correction as a `[LEARN]` block. You can also be explicit:
+
+```
+> /learn Always use conventional commits for this project
+```
+
+This writes the rule to `.claude/learnings/`, updates `index.json`, and the next time you start a Claude Code session on this project the rule is already loaded. `/learn` takes free-form arguments; if invoked without arguments, Claude asks what you want to capture.
 
 ### Regular Verification
 
