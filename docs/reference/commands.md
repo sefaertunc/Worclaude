@@ -27,7 +27,7 @@ The command detects one of three scenarios automatically:
 1. **Project name** -- defaults to the current directory name.
 2. **One-line description** -- free text.
 3. **Project type** -- multi-select from 7 categories (Full-stack web application, Backend / API, Frontend / UI, CLI tool, Data / ML / AI, Library / Package, DevOps / Infrastructure).
-4. **Tech stack** -- multi-select from 15 languages plus Docker toggle.
+4. **Tech stack** -- multi-select from 16 languages plus Docker toggle.
 5. **Agent selection** -- optional agents recommended by project type, selectable by category.
 6. **Confirmation** -- review summary with three choices: accept, start over, or adjust a specific step.
 
@@ -38,8 +38,8 @@ Creates all of the following:
 - `CLAUDE.md` -- populated with project name, description, tech stack, and commands
 - `.claude/settings.json` -- permissions and hooks for the selected stack
 - `.claude/agents/` -- 5 universal + selected optional agents
-- `.claude/commands/` -- 16 slash commands
-- `.claude/skills/` -- 11 universal + 3 template + 1 generated skills (directory format)
+- `.claude/commands/` -- 17 slash commands
+- `.claude/skills/` -- 12 universal + 3 template + 1 generated skills (directory format)
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
 - `docs/spec/PROGRESS.md` -- if not already present
@@ -338,6 +338,7 @@ Validates the health of the current workflow installation.
 
 ```bash
 worclaude doctor
+worclaude doctor --json       # Emit results as JSON for scripting
 ```
 
 **Prerequisites**
@@ -346,15 +347,18 @@ Requires `workflow-meta.json`. Reports failure if not found.
 
 **Checks performed**
 
-| Section               | What it checks                                                                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Core Files**        | `workflow-meta.json` (valid JSON, required fields), `CLAUDE.md` (exists, not a stub), `settings.json` (permissions, hooks, PostCompact, SessionStart), `sessions/` directory |
-| **CLAUDE.md Size**    | Character count against thresholds: warns at 30K, fails at 38K (hard limit 40K). Large files degrade context quality.                                                        |
-| **Components**        | All 5 universal agents present, selected optional agents present, all slash commands present, all skills (universal + template + agent-routing) present                      |
-| **Skill Format**      | Detects flat `.md` files in `skills/` that should be in directory format (`skill-name/SKILL.md`). Reports count and filenames.                                               |
-| **Agent Description** | Verifies all agent files have `name` and `description` in YAML frontmatter. Without these, agents are invisible to Claude Code.                                              |
-| **Documentation**     | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                     |
-| **Integrity**         | File hash verification against `workflow-meta.json`, pending `.workflow-ref.md` or `.workflow-suggestions` files                                                             |
+| Section               | What it checks                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Files**        | `workflow-meta.json`, `CLAUDE.md` (exists + line count ≤200 + memory-architecture guidance), `AGENTS.md`, `settings.json` (permissions + hooks object), `sessions/` directory |
+| **CLAUDE.md Size**    | Character count against thresholds: warns at 30K, fails at 38K (hard limit 40K). Large files degrade context quality.                                                         |
+| **Hooks**             | Hook event names against the Claude Code v2.1.101 documented set, key hook coverage (PreCompact/UserPromptSubmit/Stop), referenced hook script files exist, async flags       |
+| **Components**        | All 5 universal agents present, selected optional agents present, all slash commands present, all skills present, agents use non-deprecated model names                       |
+| **Skill Format**      | Detects flat `.md` files in `skills/` that should be in directory format (`skill-name/SKILL.md`). Reports count and filenames.                                                |
+| **Agent Description** | Verifies all agent files have `name` and `description` in YAML frontmatter. Without these, agents are invisible to Claude Code.                                               |
+| **Documentation**     | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                      |
+| **Learnings**         | `.claude/learnings/` directory, `index.json` validity, orphaned entries                                                                                                       |
+| **Git Integration**   | `.claude/sessions/` and `.claude/learnings/` are gitignored (via `git check-ignore`)                                                                                          |
+| **Integrity**         | File hash verification against `workflow-meta.json`, pending `.workflow-ref.md` or `.workflow-suggestions` files                                                              |
 
 **Output**
 
@@ -364,11 +368,24 @@ Each check shows a status indicator:
 - ⚠ (yellow) — warning (non-blocking)
 - ✗ (red) — failure (action required)
 
+**Exit codes**
+
+- `0` — all checks pass
+- `1` — at least one warning (no failures)
+- `2` — at least one failure
+
+**`--json` mode**
+
+Suppresses the formatted output and emits a single JSON object with `version`, `path`, `timestamp`, `installed`, `summary` (pass/warn/fail counts), and `checks[]` (each with `category`, `status`, `label`, and optional `detail`). Useful for CI dashboards or scripting.
+
 **Examples**
 
 ```bash
 worclaude doctor
 # → Runs all checks and reports status per item
+
+worclaude doctor --json | jq '.summary'
+# → {"pass": 20, "warn": 3, "fail": 0}
 ```
 
 **Notes**

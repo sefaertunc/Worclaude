@@ -81,16 +81,49 @@ async function scaffoldProject(tmpDir, opts = {}) {
     await fs.writeFile(path.join(claudeDir, 'settings.json'), '{bad json');
   } else if (!opts.skipSettings) {
     await fs.ensureDir(claudeDir);
+    const hooks = {
+      PostCompact: [{ matcher: '', hooks: [{ type: 'command', command: 'echo compact' }] }],
+      SessionStart: [{ matcher: '', hooks: [{ type: 'command', command: 'echo start' }] }],
+    };
+    if (!opts.skipPhase2Hooks) {
+      hooks.PreCompact = [
+        { matcher: '', hooks: [{ type: 'command', command: 'echo precompact' }] },
+      ];
+      hooks.UserPromptSubmit = [
+        { matcher: '', hooks: [{ type: 'command', command: 'echo prompt' }] },
+      ];
+      hooks.Stop = [{ matcher: '', hooks: [{ type: 'command', command: 'echo stop' }] }];
+    }
+    if (opts.extraHooks) {
+      Object.assign(hooks, opts.extraHooks);
+    }
     await fs.writeFile(
       path.join(claudeDir, 'settings.json'),
       JSON.stringify({
         permissions: { allow: ['Bash(npm test)', 'Bash(git:*)'] },
-        hooks: {
-          PostCompact: [{ matcher: '', hooks: [{ type: 'command', command: 'echo compact' }] }],
-          SessionStart: [{ matcher: '', hooks: [{ type: 'command', command: 'echo start' }] }],
-        },
+        hooks,
       })
     );
+  }
+
+  // AGENTS.md at project root
+  if (!opts.skipAgentsMd) {
+    await fs.writeFile(path.join(tmpDir, 'AGENTS.md'), '# AGENTS.md\n\nCross-tool agent config.\n');
+  }
+
+  // Learnings directory
+  if (!opts.skipLearnings) {
+    const learningsDir = path.join(claudeDir, 'learnings');
+    await fs.ensureDir(learningsDir);
+    await fs.writeFile(path.join(learningsDir, '.gitkeep'), '');
+    if (opts.learningsIndex) {
+      await fs.writeFile(
+        path.join(learningsDir, 'index.json'),
+        typeof opts.learningsIndex === 'string'
+          ? opts.learningsIndex
+          : JSON.stringify(opts.learningsIndex)
+      );
+    }
   }
 
   // workflow-meta.json
@@ -111,9 +144,18 @@ async function scaffoldProject(tmpDir, opts = {}) {
 
   // CLAUDE.md
   if (!opts.skipClaudeMd) {
-    const claudeMdContent = opts.claudeMdSize
-      ? `# CLAUDE.md\n\n${'x'.repeat(opts.claudeMdSize)}`
-      : '# CLAUDE.md\n\nProject instructions.\n\n## Tech Stack\n\nNode.js\n\n## Commands\n\nnpm test\n\n## Rules\n\nFollow conventions.\n';
+    let claudeMdContent;
+    if (opts.claudeMdContent) {
+      claudeMdContent = opts.claudeMdContent;
+    } else if (opts.claudeMdLines) {
+      claudeMdContent =
+        '# CLAUDE.md\n\n' + Array.from({ length: opts.claudeMdLines }, () => 'line').join('\n');
+    } else if (opts.claudeMdSize) {
+      claudeMdContent = `# CLAUDE.md\n\n${'x'.repeat(opts.claudeMdSize)}`;
+    } else {
+      claudeMdContent =
+        '# CLAUDE.md\n\nProject instructions.\n\n## Tech Stack\n\nNode.js\n\n## Commands\n\nnpm test\n\n## Memory Architecture\n\nCorrections via /learn.\n\n## Rules\n\nFollow conventions.\n';
+    }
     await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), claudeMdContent);
   }
 
@@ -137,12 +179,14 @@ describe('doctor command', () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-doctor-cmd-'));
     originalCwd = process.cwd();
     process.chdir(tmpDir);
+    process.exitCode = 0;
   });
 
   afterEach(async () => {
     process.chdir(originalCwd);
     await fs.remove(tmpDir);
     vi.clearAllMocks();
+    process.exitCode = 0;
   });
 
   it('reports not installed when no workflow-meta.json', async () => {
@@ -248,5 +292,221 @@ describe('doctor command', () => {
     await doctorCommand();
     const output = getOutput();
     expect(output).toContain('No YAML frontmatter');
+  });
+
+  // CLAUDE.md line count (Task 1)
+  it('fails CLAUDE.md line count when over 200 lines', async () => {
+    await scaffoldProject(tmpDir, { claudeMdLines: 201 });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toMatch(/CLAUDE\.md is \d+ lines\. Recommended max: 200/);
+  });
+
+  it('passes CLAUDE.md line count for short files', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('CLAUDE.md line count:');
+    expect(output).not.toContain('Recommended max: 200');
+  });
+
+  // CLAUDE.md memory guidance (Task 2)
+  it('warns when CLAUDE.md lacks memory architecture guidance', async () => {
+    await scaffoldProject(tmpDir, { claudeMdContent: '# CLAUDE.md\n\nJust rules, no guidance.\n' });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('no memory architecture guidance');
+  });
+
+  // Hook event name validation (Task 3)
+  it('fails on unknown hook event names', async () => {
+    await scaffoldProject(tmpDir, {
+      extraHooks: {
+        BogusEvent: [{ matcher: '', hooks: [{ type: 'command', command: 'echo bogus' }] }],
+      },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain("Unknown hook event 'BogusEvent'");
+  });
+
+  it('passes hook event names for default scaffold', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Hook event names');
+    expect(output).not.toContain('Unknown hook event');
+  });
+
+  // Hook script files (Task 4)
+  it('fails when a hook references a missing script file', async () => {
+    await scaffoldProject(tmpDir, {
+      extraHooks: {
+        PreToolUse: [
+          {
+            matcher: '',
+            hooks: [{ type: 'command', command: 'node .claude/hooks/missing.cjs' }],
+          },
+        ],
+      },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain(".claude/hooks/missing.cjs' but file does not exist");
+  });
+
+  // Key hook coverage (Task 5)
+  it('warns when PreCompact/UserPromptSubmit/Stop hooks are missing', async () => {
+    await scaffoldProject(tmpDir, { skipPhase2Hooks: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('PreCompact hook missing');
+    expect(output).toContain('UserPromptSubmit hook missing');
+    expect(output).toContain('Stop hook missing');
+  });
+
+  // Key hook coverage — empty-array regression (Step-0 Fix 1)
+  it('warns when Stop hook key is present but the array is empty', async () => {
+    await scaffoldProject(tmpDir, {
+      skipPhase2Hooks: true,
+      extraHooks: { Stop: [] },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Stop hook missing');
+  });
+
+  // Hook async (Task 6)
+  it('warns when Notification hook lacks async: true', async () => {
+    await scaffoldProject(tmpDir, {
+      extraHooks: {
+        Notification: [
+          { matcher: '', hooks: [{ type: 'command', command: 'echo notify' }] }, // no async
+        ],
+      },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('should use async: true');
+  });
+
+  // SessionStart blocks by design — must not be flagged async even if the
+  // command contains tokens like `console.log` that trip the async regex.
+  it('does NOT flag SessionStart as needing async even when command contains "log"', async () => {
+    await scaffoldProject(tmpDir, {
+      extraHooks: {
+        SessionStart: [
+          {
+            matcher: '',
+            hooks: [
+              {
+                type: 'command',
+                command: 'node -e "console.log(\'session loaded\')"',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).not.toContain('Hook async: SessionStart');
+  });
+
+  // Agent deprecated models (Task 7)
+  it('warns on agents using deprecated model names', async () => {
+    await scaffoldProject(tmpDir);
+    // Overwrite one agent file with a deprecated model
+    const agentPath = path.join(tmpDir, '.claude', 'agents', `${UNIVERSAL_AGENTS[0]}.md`);
+    await fs.writeFile(
+      agentPath,
+      `---\nname: ${UNIVERSAL_AGENTS[0]}\ndescription: test\nmodel: opus-4.1\n---\n\n# body`
+    );
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain("deprecated model 'opus-4.1'");
+  });
+
+  // AGENTS.md (Task 8)
+  it('warns when AGENTS.md is missing', async () => {
+    await scaffoldProject(tmpDir, { skipAgentsMd: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('AGENTS.md not found');
+  });
+
+  // Learnings (Task 9)
+  it('fails when learnings index.json is invalid JSON', async () => {
+    await scaffoldProject(tmpDir, { learningsIndex: '{' });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('learnings/index.json` contains invalid JSON');
+  });
+
+  it('passes learnings check for a healthy directory', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Learnings: 0 entries captured');
+  });
+
+  // Gitignore (Task 10) — tmpdir is not a git repo, so spawn returns status 128
+  it('emits gitignore WARN when not in a git repo', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('git check-ignore unavailable');
+  });
+
+  // JSON output (Task 12)
+  it('emits valid JSON with --json flag', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand({ json: true });
+    // console.log is spied — in JSON mode exactly one call should fire (the payload).
+    // Anything else means section headers / printResult lines leaked.
+    const calls = console.log.mock.calls;
+    expect(calls.length).toBe(1);
+    const parsed = JSON.parse(calls[0][0]);
+    expect(parsed).toHaveProperty('version');
+    expect(parsed).toHaveProperty('path');
+    expect(parsed).toHaveProperty('timestamp');
+    expect(parsed).toHaveProperty('installed');
+    expect(parsed).toHaveProperty('summary');
+    expect(parsed).toHaveProperty('checks');
+    expect(parsed.summary.pass + parsed.summary.warn + parsed.summary.fail).toBe(
+      parsed.checks.length
+    );
+    expect(parsed.installed).toBe(true);
+  });
+
+  // JSON output — negative path (Step-0 Fix 4)
+  it('emits valid JSON for a missing-install project', async () => {
+    // no scaffoldProject call — tmpDir is empty
+    await doctorCommand({ json: true });
+    const calls = console.log.mock.calls;
+    expect(calls.length).toBe(1);
+    const parsed = JSON.parse(calls[0][0]);
+    expect(parsed.installed).toBe(false);
+    expect(parsed.summary.fail).toBeGreaterThanOrEqual(1);
+  });
+
+  // Exit codes (Task 13, Step-0 Fix 2)
+  it('FAIL cases produce exit code 2', async () => {
+    await scaffoldProject(tmpDir, { skipAgents: true });
+    await doctorCommand();
+    expect(process.exitCode).toBe(2);
+  });
+
+  // Pre-Phase-2 scaffold backward-compat (additive policy)
+  it('pre-Phase-2 scaffold produces WARN exit code (1), never FAIL (2)', async () => {
+    await scaffoldProject(tmpDir, {
+      skipPhase2Hooks: true,
+      skipAgentsMd: true,
+      skipLearnings: true,
+    });
+    await doctorCommand();
+    // Exit code 1 means WARN-only; 2 means at least one FAIL.
+    // Additive policy requires the three Phase 2 missing artifacts to produce WARN, not FAIL.
+    expect(process.exitCode).toBe(1);
   });
 });

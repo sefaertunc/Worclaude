@@ -135,6 +135,7 @@ These skills have no `paths` field and are available in every context:
 - `review-and-handoff` -- Session ending protocol and handoff documents
 - `prompt-engineering` -- Effective prompting patterns
 - `claude-md-maintenance` -- How and when to update CLAUDE.md
+- `coding-principles` -- Core behavioral principles: when to ask, when to push back, when to simplify
 - `subagent-usage` -- When and how to spawn subagents
 - `coordinator-mode` -- Multi-agent orchestration patterns
 - `agent-routing` -- Dynamic routing guide built from your agent selections
@@ -258,6 +259,32 @@ Claude Code loads instruction files from multiple locations in priority order (l
 4. **Local** -- `CLAUDE.local.md` (gitignored, personal overrides)
 
 Files closer to the current working directory have higher priority. The total budget for all loaded instruction files is approximately 40,000 characters.
+
+## AGENTS.md (Cross-Tool Compatibility)
+
+Worclaude scaffolds an `AGENTS.md` file at the project root alongside `CLAUDE.md`. It mirrors the same instructions in the conventions that other AI coding tools expect. This lets you switch between Claude Code, Cursor, Codex, GitHub Copilot, and others without maintaining parallel rule files.
+
+| Tool           | File it reads                 |
+| -------------- | ----------------------------- |
+| Claude Code    | `CLAUDE.md`                   |
+| Cursor         | `AGENTS.md` or `.cursorrules` |
+| OpenAI Codex   | `AGENTS.md`                   |
+| GitHub Copilot | `AGENTS.md`                   |
+
+`worclaude init` writes both files from the same source template, so they start in sync. `worclaude upgrade` and `/sync` regenerate `AGENTS.md` whenever `CLAUDE.md` changes. If you edit either file by hand, the other is not auto-updated — keep them in sync manually or re-run `worclaude upgrade`.
+
+`worclaude doctor` checks that `AGENTS.md` exists and flags drift between the two files.
+
+## Learnings System
+
+Worclaude's learnings system complements Claude Code's native memory system. The two have complementary strengths:
+
+| Store               | Location                               | Scope                        | Loaded when                                          |
+| ------------------- | -------------------------------------- | ---------------------------- | ---------------------------------------------------- |
+| Claude Code memory  | `~/.claude/projects/<project>/memory/` | Cross-session, cross-machine | On demand, via agent frontmatter `memory: project`   |
+| Worclaude learnings | `.claude/learnings/` (gitignored)      | Per-developer, per-project   | Every session (SessionStart hook reads `index.json`) |
+
+Learnings are captured by two hooks: `correction-detect.cjs` (UserPromptSubmit — detects correction signals in your prompts) and `learn-capture.cjs` (Stop — extracts `[LEARN]` blocks from the transcript). The `/learn` slash command is the explicit capture path. See [Learnings reference](/reference/learnings) for the full flow, file format, and why they are gitignored.
 
 ## Verifying Integration
 

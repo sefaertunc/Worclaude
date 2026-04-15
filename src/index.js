@@ -56,6 +56,7 @@ program
 program
   .command('doctor')
   .description('Validate workflow installation health')
-  .action(doctorCommand);
+  .option('--json', 'Output results as JSON')
+  .action((options) => doctorCommand(options));
 
 program.parse();

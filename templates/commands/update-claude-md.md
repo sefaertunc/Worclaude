@@ -11,3 +11,8 @@ Review what happened:
 
 Write the proposed additions to the Gotchas section or
 Critical Rules section. Show the diff before applying.
+
+## Trigger Phrases
+- "update CLAUDE.md"
+- "add to rules"
+- "update project rules"

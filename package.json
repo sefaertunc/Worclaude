@@ -1,7 +1,7 @@
 {
   "name": "worclaude",
-  "version": "2.2.6",
-  "description": "CLI tool that scaffolds a comprehensive Claude Code workflow into any project",
+  "version": "2.3.0",
+  "description": "The Workflow Layer for Claude Code — scaffold agents, commands, skills, hooks, and memory into any project",
   "type": "module",
   "bin": {
     "worclaude": "./src/index.js"
@@ -11,6 +11,7 @@
     "src/",
     "templates/",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "repository": {
@@ -39,8 +40,12 @@
   "keywords": [
     "claude",
     "claude-code",
+    "claude-code-workflow",
+    "claude-code-scaffolding",
     "workflow",
     "scaffolding",
+    "hooks",
+    "memory",
     "cli",
     "developer-tools",
     "productivity",

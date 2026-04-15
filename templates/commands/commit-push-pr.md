@@ -64,3 +64,9 @@ Only used for release merges after /sync has been run.
 Ask the user which base branch to target before creating a PR.
 
 Use gh pr create for PR creation.
+
+## Trigger Phrases
+- "commit and push"
+- "create a PR"
+- "ship it"
+- "push my changes"

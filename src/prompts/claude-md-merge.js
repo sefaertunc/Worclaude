@@ -28,6 +28,11 @@ const SECTION_DETECTORS = [
     heading: '## Gotchas',
     test: (c) => /Gotchas/i.test(c),
   },
+  {
+    name: 'Memory Architecture',
+    heading: '## Memory Architecture',
+    test: (c) => /Memory Architecture/i.test(c) || /\.claude\/learnings\//i.test(c),
+  },
 ];
 
 export function detectMissingSections(existingContent) {

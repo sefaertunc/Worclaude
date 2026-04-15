@@ -39,7 +39,8 @@ function setupDefaultMocks() {
     { selectedAgents: ['bug-fixer'] }, // 6: fine-tune Quality
     { selectedAgents: ['doc-writer'] }, // 7: fine-tune Documentation
     { additionalCategories: [] }, // 8: unselected categories offer
-    { confirmation: 'yes' }, // 9: confirmation
+    { generatePluginJson: false, scaffoldGtdMemory: false }, // 9: optional extras
+    { confirmation: 'yes' }, // 10: confirmation
   ];
   let callCount = 0;
   inquirer.prompt.mockImplementation(() => {
@@ -207,6 +208,155 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'sessions', '.gitkeep'))).toBe(true);
   });
 
+  it('creates .claude/hooks/ with all hook scripts', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'pre-compact-save.cjs'))).toBe(
+      true
+    );
+    expect(
+      await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'correction-detect.cjs'))
+    ).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs'))).toBe(
+      true
+    );
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'skill-hint.cjs'))).toBe(true);
+  });
+
+  it('settings.json has two UserPromptSubmit entries (correction-detect + skill-hint)', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+    const settings = JSON.parse(content);
+    const ups = settings.hooks.UserPromptSubmit;
+    expect(ups).toHaveLength(2);
+    expect(ups[0].hooks[0].command).toContain('correction-detect');
+    expect(ups[1].hooks[0].command).toContain('skill-hint');
+  });
+
+  it('creates .claude/learnings/ with .gitkeep', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'learnings'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'learnings', '.gitkeep'))).toBe(true);
+  });
+
+  it('creates AGENTS.md with cross-tool content', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(content).toContain('test-project');
+    // Cross-tool: should NOT contain Worclaude-specific references
+    expect(content).not.toContain('.claude/skills/');
+    expect(content).not.toContain('/start');
+    expect(content).not.toContain('/setup');
+  });
+
+  it('CLAUDE.md stays under 200 lines after interpolation', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    const lineCount = content.split('\n').length;
+    expect(lineCount).toBeLessThan(200);
+  });
+
+  it('settings.json has all 8 hook events', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
+    const settings = JSON.parse(content);
+    const hookEvents = Object.keys(settings.hooks);
+    expect(hookEvents).toContain('PostToolUse');
+    expect(hookEvents).toContain('PostCompact');
+    expect(hookEvents).toContain('SessionStart');
+    expect(hookEvents).toContain('PreCompact');
+    expect(hookEvents).toContain('Stop');
+    expect(hookEvents).toContain('UserPromptSubmit');
+    expect(hookEvents).toContain('Notification');
+    expect(hookEvents).toContain('SessionEnd');
+  });
+
+  it('does NOT create .claude-plugin/ when generatePluginJson is false (default)', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude-plugin'))).toBe(false);
+  });
+
+  it('does NOT create docs/memory/ when scaffoldGtdMemory is false (default)', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory'))).toBe(false);
+  });
+
+  it('CLAUDE.md does NOT contain memory pointer bullets when opt-in is false', async () => {
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).not.toContain('docs/memory/decisions.md');
+    expect(content).not.toContain('docs/memory/preferences.md');
+  });
+
+  it('creates docs/memory/decisions.md + preferences.md when scaffoldGtdMemory is true', async () => {
+    const responses = [
+      { projectName: 'mem-app', description: 'With memory' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { generatePluginJson: false, scaffoldGtdMemory: true },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'decisions.md'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'preferences.md'))).toBe(true);
+  });
+
+  it('CLAUDE.md contains memory pointer bullets when scaffoldGtdMemory is true', async () => {
+    const responses = [
+      { projectName: 'mem-app', description: 'With memory' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { generatePluginJson: false, scaffoldGtdMemory: true },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('docs/memory/decisions.md');
+    expect(content).toContain('docs/memory/preferences.md');
+    expect(content).toContain('version-controlled, shared');
+  });
+
+  it('creates .claude-plugin/plugin.json when generatePluginJson opt-in is true', async () => {
+    const responses = [
+      { projectName: 'my-app', description: 'Cool app' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { generatePluginJson: true, scaffoldGtdMemory: false },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const pluginPath = path.join(tmpDir, '.claude-plugin', 'plugin.json');
+    expect(await fs.pathExists(pluginPath)).toBe(true);
+    const parsed = JSON.parse(await fs.readFile(pluginPath, 'utf-8'));
+    expect(parsed.name).toBe('my-app-workflow');
+    expect(parsed.version).toBe('0.1.0');
+    expect(parsed.description).toBe('Cool app');
+    expect(parsed).not.toHaveProperty('hooks');
+    expect(parsed.skills).toEqual(['./.claude/skills/']);
+    expect(parsed.commands).toEqual(['./.claude/commands/']);
+    for (const p of parsed.agents) {
+      expect(p).toMatch(/^\.\/\.claude\/agents\/[\w-]+\.md$/);
+    }
+  });
+
   it('uses project-type-specific SPEC.md template', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'docs', 'spec', 'SPEC.md'), 'utf-8');
@@ -235,7 +385,7 @@ describe('init command', () => {
       { selectedCategories: ['Quality'] },
       { selectedAgents: ['bug-fixer'] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -259,7 +409,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -279,7 +429,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -314,7 +464,7 @@ describe('init command', () => {
       { useDocker: true },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -351,6 +501,7 @@ describe('init command', () => {
         { selectedCategories: ['Quality'] }, // categories
         { selectedAgents: ['bug-fixer'] }, // fine-tune
         { additionalCategories: [] }, // extra categories
+        { generatePluginJson: false, scaffoldGtdMemory: false }, // optional extras
         { confirmation: 'yes' }, // confirm
         { choice: 'keep' }, // CLAUDE.md handling
       ];
@@ -403,6 +554,112 @@ describe('init command', () => {
       // Original CLAUDE.md preserved
       const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
       expect(claudeMd).toBe('# My Project');
+    });
+
+    it('creates .claude-plugin/plugin.json in Scenario B when generatePluginJson opt-in is true', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: true, scaffoldGtdMemory: false },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      const pluginPath = path.join(tmpDir, '.claude-plugin', 'plugin.json');
+      expect(await fs.pathExists(pluginPath)).toBe(true);
+      const parsed = JSON.parse(await fs.readFile(pluginPath, 'utf-8'));
+      expect(parsed.name).toBe('existing-app-workflow');
+    });
+
+    it('creates docs/memory/ in Scenario B when scaffoldGtdMemory opt-in is true', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: false, scaffoldGtdMemory: true },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'decisions.md'))).toBe(true);
+      expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'preferences.md'))).toBe(true);
+    });
+
+    it('does NOT overwrite existing docs/memory/decisions.md during merge', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+      await fs.ensureDir(path.join(tmpDir, 'docs', 'memory'));
+      const customDecisions = '# Custom decisions\n\nKeep me.';
+      await fs.writeFile(path.join(tmpDir, 'docs', 'memory', 'decisions.md'), customDecisions);
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: false, scaffoldGtdMemory: true },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      const content = await fs.readFile(
+        path.join(tmpDir, 'docs', 'memory', 'decisions.md'),
+        'utf-8'
+      );
+      expect(content).toBe(customDecisions);
+    });
+
+    it('does NOT overwrite existing .claude-plugin/plugin.json during merge', async () => {
+      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
+      await fs.ensureDir(path.join(tmpDir, '.claude-plugin'));
+      const customContent = '{"custom": true, "version": "9.9.9"}';
+      await fs.writeFile(path.join(tmpDir, '.claude-plugin', 'plugin.json'), customContent);
+
+      const responses = [
+        { proceed: true },
+        { projectName: 'existing-app', description: 'Existing' },
+        { projectTypes: ['CLI tool'] },
+        { languages: ['node'] },
+        { useDocker: false },
+        { selectedCategories: [] },
+        { additionalCategories: [] },
+        { generatePluginJson: true, scaffoldGtdMemory: false },
+        { confirmation: 'yes' },
+        { choice: 'keep' },
+      ];
+      let i = 0;
+      inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+      await initCommand();
+      const content = await fs.readFile(
+        path.join(tmpDir, '.claude-plugin', 'plugin.json'),
+        'utf-8'
+      );
+      expect(content).toBe(customContent);
     });
 
     it('cancels when user declines to proceed', async () => {

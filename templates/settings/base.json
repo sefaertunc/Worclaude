@@ -47,13 +47,6 @@
         }]
       },
       {
-        "matcher": "Stop",
-        "hooks": [{
-          "type": "command",
-          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {notification_command}"
-        }]
-      },
-      {
         "matcher": "Write|Edit",
         "hooks": [{
           "type": "command",
@@ -70,12 +63,67 @@
         }]
       }
     ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "test -f .claude/hooks/pre-compact-save.cjs && node .claude/hooks/pre-compact-save.cjs || true",
+          "async": true
+        }]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",
         "hooks": [{
           "type": "command",
-          "command": "echo '=== CLAUDE.md ==='; cat CLAUDE.md 2>/dev/null; echo; echo '=== PROGRESS ==='; cat docs/spec/PROGRESS.md 2>/dev/null; echo; echo '=== LAST SESSION ==='; f=$(ls -t .claude/sessions/*.md 2>/dev/null | head -1); if [ -n \"$f\" ]; then cat \"$f\"; else echo 'No previous session found'; fi; echo; echo '=== BRANCH ==='; git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'not a git repo'"
+          "command": "echo '=== CLAUDE.md ==='; cat CLAUDE.md 2>/dev/null; echo; echo '=== PROGRESS ==='; cat docs/spec/PROGRESS.md 2>/dev/null; echo; echo '=== LAST SESSION ==='; f=$(ls -t .claude/sessions/*.md 2>/dev/null | head -1); if [ -n \"$f\" ]; then cat \"$f\"; else echo 'No previous session found'; fi; echo; echo '=== BRANCH ==='; git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'not a git repo'; echo; echo '=== RECENT LEARNINGS ==='; if [ -f .claude/learnings/index.json ]; then node -e \"const idx=JSON.parse(require('fs').readFileSync('.claude/learnings/index.json','utf8'));idx.learnings.sort((a,b)=>b.created.localeCompare(a.created)).slice(0,5).forEach(l=>console.log('- ['+l.category+'] '+l.file));\" 2>/dev/null; else echo 'No learnings captured yet. Use [LEARN] blocks to capture corrections.'; fi"
+        }]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {notification_command}",
+          "async": true
+        }]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/learn-capture.cjs && node .claude/hooks/learn-capture.cjs || true"
+        }]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/correction-detect.cjs && node .claude/hooks/correction-detect.cjs || true"
+        }]
+      },
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/skill-hint.cjs && node .claude/hooks/skill-hint.cjs || true"
+        }]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {notification_command}",
+          "async": true
         }]
       }
     ]

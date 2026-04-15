@@ -181,11 +181,14 @@ Once you confirm, Worclaude creates all the files:
   Creating workflow structure...
 
   ✓ CLAUDE.md
+  ✓ AGENTS.md
   ✓ .claude/settings.json
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (5 universal + 6 optional)
-  ✓ .claude/commands/ (16)
-  ✓ .claude/skills/ (11 universal + 3 templates + 1 generated)
+  ✓ .claude/commands/ (17)
+  ✓ .claude/skills/ (12 universal + 3 templates + 1 generated)
+  ✓ .claude/hooks/ (4 lifecycle scripts)
+  ✓ .claude/learnings/ (gitignored store for personal rules)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
   ✓ docs/spec/SPEC.md
@@ -210,17 +213,20 @@ If `docs/spec/PROGRESS.md` or `docs/spec/SPEC.md` already exist in your project,
 
 Here is what was created:
 
-| File / Directory             | Purpose                                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| `CLAUDE.md`                  | Main instruction file for Claude Code. Under 50 lines, with progressive disclosure via skills. |
-| `.claude/settings.json`      | Permissions, hooks (auto-format, post-compact, notification), and sandbox configuration.       |
-| `.claude/workflow-meta.json` | Internal metadata: version, selected options, file hashes for upgrade detection.               |
-| `.claude/agents/`            | Agent definition files. Each agent specifies a model (Opus/Sonnet/Haiku) and isolation mode.   |
-| `.claude/commands/`          | Slash command files. Used as `/start`, `/end`, `/verify`, etc. inside Claude Code.             |
-| `.claude/skills/`            | Knowledge files Claude loads on demand. Universal skills plus templates for your project.      |
-| `.mcp.json`                  | MCP (Model Context Protocol) server configuration.                                             |
-| `docs/spec/PROGRESS.md`      | Session progress tracking. Claude reads this at the start of every session.                    |
-| `docs/spec/SPEC.md`          | Project specification template. Your source of truth for features and requirements.            |
+| File / Directory             | Purpose                                                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`                  | Main instruction file for Claude Code. Under 200 lines, with progressive disclosure via skills.                                             |
+| `AGENTS.md`                  | Cross-tool compatibility file — mirrors CLAUDE.md for Cursor, Codex, Copilot, and other AI coding tools.                                    |
+| `.claude/settings.json`      | Permissions, hooks (auto-format, context injection, learning capture, notification), and sandbox configuration.                             |
+| `.claude/workflow-meta.json` | Internal metadata: version, selected options, file hashes for upgrade detection.                                                            |
+| `.claude/agents/`            | Agent definition files. Each agent specifies a model (Opus/Sonnet/Haiku) and isolation mode.                                                |
+| `.claude/commands/`          | Slash command files. Used as `/start`, `/end`, `/verify`, `/learn`, etc. inside Claude Code.                                                |
+| `.claude/skills/`            | Knowledge files Claude loads on demand. Universal skills plus templates for your project.                                                   |
+| `.claude/hooks/`             | Node.js scripts fired on Claude Code lifecycle events (PreCompact, UserPromptSubmit, Stop).                                                 |
+| `.claude/learnings/`         | Personal, gitignored store for corrections and rules captured mid-session. Replayed at SessionStart. See [Learnings](/reference/learnings). |
+| `.mcp.json`                  | MCP (Model Context Protocol) server configuration.                                                                                          |
+| `docs/spec/PROGRESS.md`      | Session progress tracking. Claude reads this at the start of every session.                                                                 |
+| `docs/spec/SPEC.md`          | Project specification template. Your source of truth for features and requirements.                                                         |
 
 ## Launching Claude Code
 

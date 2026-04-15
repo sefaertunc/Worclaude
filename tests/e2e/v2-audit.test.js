@@ -64,6 +64,11 @@ function setupFreshMocks({ allAgents = false, multiStack = false } = {}) {
     responses.push({ additionalCategories: [] });
   }
 
+  // runOptionalExtras (Phase 4) — opt-outs for plugin.json + GTD memory.
+  // Omitting this response caused `showConfirmation` to loop on an
+  // undefined confirmation value, leaking memory until OOM.
+  responses.push({ generatePluginJson: false, scaffoldGtdMemory: false });
+
   responses.push({ confirmation: 'yes' });
 
   let i = 0;
@@ -169,6 +174,30 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     expect(await fs.pathExists(skillPath)).toBe(true);
     const content = await fs.readFile(skillPath, 'utf8');
     expect(content).toContain('description:');
+  });
+
+  it('coding-principles skill is present with all 4 Karpathy sections', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const skillPath = path.join(tmpDir, '.claude', 'skills', 'coding-principles', 'SKILL.md');
+    expect(await fs.pathExists(skillPath)).toBe(true);
+    const content = await fs.readFile(skillPath, 'utf8');
+    expect(content).toContain('description:');
+    expect(content).toContain('## 1. Think Before Coding');
+    expect(content).toContain('## 2. Simplicity First');
+    expect(content).toContain('## 3. Surgical Changes');
+    expect(content).toContain('## 4. Goal-Driven Execution');
+  });
+
+  it('scaffolded CLAUDE.md contains all 3 Karpathy-derived critical rules', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf8');
+    expect(claudeMd).toContain('10. Surgical changes only');
+    expect(claudeMd).toContain('11. Push back when simpler approaches exist');
+    expect(claudeMd).toContain('12. Transform tasks to success criteria');
   });
 
   it('every agent has name AND description frontmatter', async () => {
@@ -407,7 +436,7 @@ describe('E2E Audit — Scenario B (existing project)', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-
+      { generatePluginJson: false, scaffoldGtdMemory: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -530,6 +559,14 @@ describe('E2E Audit — template counts match constants', () => {
     const files = await fs.readdir(templateDir);
     const mdFiles = files.filter((f) => f.endsWith('.md'));
     expect(mdFiles.length).toBe(COMMAND_FILES.length);
+  });
+
+  it('HOOK_FILES count matches template files', async () => {
+    const { HOOK_FILES } = await import('../../src/data/agents.js');
+    const templateDir = path.resolve(import.meta.dirname, '..', '..', 'templates', 'hooks');
+    const files = await fs.readdir(templateDir);
+    const hookFiles = files.filter((f) => f.endsWith('.cjs') || f.endsWith('.js'));
+    expect(hookFiles.length).toBe(HOOK_FILES.length);
   });
 
   it('UNIVERSAL_AGENTS count matches template files', async () => {

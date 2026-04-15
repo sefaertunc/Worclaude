@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.2.6
-**Last Updated:** 2026-04-11
+**Version:** 2.3.0
+**Last Updated:** 2026-04-15
 
 ## Completed
 
@@ -327,15 +327,25 @@
   - [x] Phase spec tracked: `PHASE-DOCS-OVERHAUL-PROMPT.md` moved from untracked repo root into `docs/phases/` as the source-of-truth for the change (mirrors the v2.2.4 `PHASE-AGENT-OBSERVABILITY.md` pattern).
   - [x] PR #57 merged via merge commit (not squash) — all 4 atomic commits preserved in develop history. Validation: 383 tests passing, lint clean, `docs:build` clean at Checkpoint A (post-demo-removal), Checkpoint C (post-content-refresh), and Checkpoint D (final).
 
+- [x] v2.3.0: Learning loop + hook expansion + AGENTS.md + coding principles (2026-04-15)
+  - [x] **Phase 2 — hook expansion + correction system + AGENTS.md + template enrichment** (PR #59). Hook lifecycle expanded 3 → 8 events (added PreCompact, UserPromptSubmit, Stop, SessionEnd, Notification on top of existing SessionStart, PostToolUse, PostCompact). Four scaffolded hook scripts: `pre-compact-save.cjs` (emergency git snapshot before auto-compaction), `correction-detect.cjs` (UserPromptSubmit — regex-matches correction/learn signals in user prompts), `learn-capture.cjs` (Stop — scans transcript for `[LEARN]` blocks, persists to `.claude/learnings/` with `index.json`), `skill-hint.cjs` (UserPromptSubmit — token-overlap match between prompt and installed skill names). New `/learn` slash command for explicit rule capture. `HOOK_FILES` manifest + `scaffoldHooks()` pipeline. SessionStart hook now reloads recent learnings from `index.json`. CLAUDE.md Memory Architecture + Learnings sections added to template. `AGENTS.md` generation for cross-tool compatibility (Cursor/Codex/Copilot read the same rules). Agent enrichment across all 25 agents: confidence thresholds, worked examples, verification depth levels, severity classification, new frontmatter fields (`tools`, `effort`, `color`, `permissionMode`, `mcpServers`, per-agent `hooks`, `criticalSystemReminder`, `skills`, `initialPrompt`, `memory`). Skill enrichment: Must-Haves Contract (planning-with-files), Gate Taxonomy (verification), Context Budget Tiers (context-management). Command enrichment: trigger phrases on all 17 commands, `$ARGUMENTS` placeholders on 4 commands.
+  - [x] **Phase 3 — doctor hardening** (PR #60). `readClaudeMd` helper extracted. `checkKeyHookCoverage` hardened with better error paths. Extended `--json` / exit-code test coverage. Opt-in `plugin.json` generation added during `worclaude init` (Claude Code plugin manifest, review-adjustable prompt). Optional `skill-hint` UserPromptSubmit hook added. `disableSkillShellExecution` awareness notes added to shell-heavy skill templates.
+  - [x] **Phase 4 — GTD memory + backlog tracking** (PR #61). Opt-in GTD memory scaffold (`docs/memory/decisions.md` + `docs/memory/preferences.md`) with Scenario B merge support. `init.js` DRY-up and Memory Architecture detection consolidation. Prompt-hook example added (`examples/prompt-hook-commit-validator.json` in templates/hooks/) + `templates/hooks/README.md` documenting all scaffolded hooks, profiles, and handler types. `BACKLOG-v2.1.md` established as the canonical pre-release backlog; Phase 4 items marked complete. Follow-up items flagged for future phases (`--with-plugin` / `--with-memory` flags, skill-hint frontmatter enrichment, plugin-validator CI).
+  - [x] **Phase 5 — coding-principles skill + Karpathy critical rules + E2E audit** (PR #62). New `coding-principles` universal skill (60 lines, under 80-line cap) consolidating four Karpathy-derived principles: Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution. Registered in `UNIVERSAL_SKILLS`. Three new Critical Rules (10–12) appended to `templates/core/claude-md.md`. Manifest consistency audit (zero failures, zero orphans). E2E scaffold validation across 3 project types (Node CLI, Python API, fullstack). Doctor fix: `checkHookAsync` no longer flags SessionStart as needing `async: true` — `BLOCKING_BY_DESIGN_EVENTS` set added covering SessionStart/PreToolUse/PostToolUse/PostToolUseFailure/UserPromptSubmit/PreCompact/PermissionRequest/Setup. Template version fields added to 3 TEMPLATE_SKILLS that lacked them. `$ARGUMENTS` placeholder added to 4 commands (start, end, verify, refactor-clean) that described args in English but omitted the token. New `pre-compact-save.test.js` (7 tests). Test suite 475 → 497.
+  - [x] **Phase 6 — documentation update for v2.3.0** (PR #63). README rewritten 85 → 165 lines: banner (`assets/worclaude.png`), 6-badge row (npm version, downloads, CI tests, MIT, node≥18, Built for Claude Code), 2 sponsorship badges at `height=40` with `style=for-the-badge` (GitHub Sponsors + Buy Me a Coffee) directly under the primary badge row, 6-column stats table splitting CLI Commands (8) from Slash Commands (17), 8-subsection What You Get covering Learnings + AGENTS.md + Doctor, Quick Start with `npx worclaude init`, Why Worclaude rationale, Links to community files. New `docs/reference/learnings.md` reference page (~180 lines) covering the two-store memory architecture, three capture paths, SessionStart replay, file format, doctor integration, hook-profile matrix. All VitePress guide pages refreshed: introduction (Hooks 4 → 8 events with new Learnings/Cross-Tool/Doctor subsections), getting-started (scaffold output includes AGENTS.md + .claude/hooks/ + .claude/learnings/), claude-code-integration (new AGENTS.md + Learnings System sections, coding-principles added to always-loaded skills list), workflow-tips (3 new tips: Split Architecture, /learn, coding-principles), index.md feature cards. Sidebar updated to include Learnings. `docs/reference/commands.md`, `slash-commands.md`, `skills.md`, `claude-md.md` updated with correct counts. `package.json` description sharpened ("The Workflow Layer for Claude Code — scaffold agents, commands, skills, hooks, and memory into any project") and 4 keywords added (`claude-code-workflow`, `claude-code-scaffolding`, `hooks`, `memory`). `CHANGELOG-v2.3.0.md` drafted in `docs/phases/` with 12 user-impact-ordered highlights. Six completed `PHASE-*-PROMPT.md` files removed (2097 lines) — served their purpose, preserved in git history.
+  - [x] /sync (2026-04-15): PROGRESS.md + SPEC.md + package.json version bumped 2.2.6 → 2.3.0. CHANGELOG-v2.3.0-DRAFT.md finalized and promoted to root `CHANGELOG.md` (Keep-a-Changelog format, ready to accumulate future releases). `docs/phases/` directory removed. `CHANGELOG.md` added to package.json `files` so it ships in the npm tarball.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
 - 5 universal agents + 20 optional agents (6 categories)
-- 16 slash commands
-- 11 universal skills + 3 template skills + 1 generated skill (agent-routing)
+- 17 slash commands
+- 12 universal skills + 3 template skills + 1 generated skill (agent-routing)
+- 8 hook events scaffolded: SessionStart, PostToolUse, PostCompact, PreCompact, UserPromptSubmit, Stop, SessionEnd, Notification
+- 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 383 tests across 26 test files
+- 497 tests across 31 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

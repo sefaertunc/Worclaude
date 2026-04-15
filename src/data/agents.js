@@ -194,6 +194,7 @@ export const COMMAND_FILES = [
   'build-fix',
   'refactor-clean',
   'test-coverage',
+  'learn',
 ];
 
 export const UNIVERSAL_SKILLS = [
@@ -205,6 +206,7 @@ export const UNIVERSAL_SKILLS = [
   'verification',
   'testing',
   'claude-md-maintenance',
+  'coding-principles',
   'subagent-usage',
   'security-checklist',
   'coordinator-mode',
@@ -215,6 +217,8 @@ export const TEMPLATE_SKILLS = [
   'frontend-design-system',
   'project-patterns',
 ];
+
+export const HOOK_FILES = ['pre-compact-save', 'correction-detect', 'learn-capture', 'skill-hint'];
 
 export const PROJECT_TYPES = [
   'Full-stack web application',
@@ -315,6 +319,7 @@ export const CONFIRMATION_STEPS = [
   { name: 'Project type', value: 'projectType' },
   { name: 'Tech stack', value: 'techStack' },
   { name: 'Agent selection', value: 'agents' },
+  { name: 'Optional extras (plugin.json, memory)', value: 'optionalExtras' },
 ];
 
 export const NOTIFICATION_COMMANDS = {
