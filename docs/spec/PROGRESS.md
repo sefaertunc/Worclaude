@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.3.0
-**Last Updated:** 2026-04-15
+**Version:** 2.4.0
+**Last Updated:** 2026-04-16
 
 ## Completed
 
@@ -335,11 +335,17 @@
   - [x] **Phase 6 — documentation update for v2.3.0** (PR #63). README rewritten 85 → 165 lines: banner (`assets/worclaude.png`), 6-badge row (npm version, downloads, CI tests, MIT, node≥18, Built for Claude Code), 2 sponsorship badges at `height=40` with `style=for-the-badge` (GitHub Sponsors + Buy Me a Coffee) directly under the primary badge row, 6-column stats table splitting CLI Commands (8) from Slash Commands (17), 8-subsection What You Get covering Learnings + AGENTS.md + Doctor, Quick Start with `npx worclaude init`, Why Worclaude rationale, Links to community files. New `docs/reference/learnings.md` reference page (~180 lines) covering the two-store memory architecture, three capture paths, SessionStart replay, file format, doctor integration, hook-profile matrix. All VitePress guide pages refreshed: introduction (Hooks 4 → 8 events with new Learnings/Cross-Tool/Doctor subsections), getting-started (scaffold output includes AGENTS.md + .claude/hooks/ + .claude/learnings/), claude-code-integration (new AGENTS.md + Learnings System sections, coding-principles added to always-loaded skills list), workflow-tips (3 new tips: Split Architecture, /learn, coding-principles), index.md feature cards. Sidebar updated to include Learnings. `docs/reference/commands.md`, `slash-commands.md`, `skills.md`, `claude-md.md` updated with correct counts. `package.json` description sharpened ("The Workflow Layer for Claude Code — scaffold agents, commands, skills, hooks, and memory into any project") and 4 keywords added (`claude-code-workflow`, `claude-code-scaffolding`, `hooks`, `memory`). `CHANGELOG-v2.3.0.md` drafted in `docs/phases/` with 12 user-impact-ordered highlights. Six completed `PHASE-*-PROMPT.md` files removed (2097 lines) — served their purpose, preserved in git history.
   - [x] /sync (2026-04-15): PROGRESS.md + SPEC.md + package.json version bumped 2.2.6 → 2.3.0. CHANGELOG-v2.3.0-DRAFT.md finalized and promoted to root `CHANGELOG.md` (Keep-a-Changelog format, ready to accumulate future releases). `docs/phases/` directory removed. `CHANGELOG.md` added to package.json `files` so it ships in the npm tarball.
 
+- [x] v2.4.0: Upstream awareness + dogfood (2026-04-16)
+  - [x] **PR #65 — `/upstream-check` command + `upstream-watcher` universal agent.** New generic scaffolded command (`templates/commands/upstream-check.md`) that curls the anthropic-watch feeds at runtime (16 Anthropic sources) and reports source health + the 10 most recent items with `[CRITICAL]` flagging for `claude-code-releases`, `claude-code-changelog`, `npm-claude-code`, `agent-sdk-ts-changelog`, and `agent-sdk-py-changelog`. New read-only universal agent (`templates/agents/universal/upstream-watcher.md`, Sonnet, `isolation: none`, `disallowedTools: [Edit, Write, NotebookEdit]`) that cross-references new upstream items against the project's scaffolded `.claude/` surface area and produces a direct-impact / informational / recommended-actions report. Wiring: `UNIVERSAL_AGENTS` 5 → 6, `COMMAND_FILES` 17 → 18, `AGENT_REGISTRY` 25 → 26. Three test files data-driven to iterate over `UNIVERSAL_AGENTS` instead of hardcoded lists; stale literal counts dropped from `agent-registry.js` doc-comment and section header. No new npm dependencies — fetching happens via `curl` at Claude Code runtime.
+  - [x] **PR #66 — dogfood `.claude/commands/upstream-check.md`.** Worclaude-internal variant distinct from the scaffolded template: shares the fetch behavior and `[CRITICAL]` source list, adds a Worclaude-specific cross-reference section that checks each critical item against `src/data/agents.js`, `src/data/agent-registry.js`, `src/core/scaffolder.js`, `src/core/merger.js`, `templates/hooks/*.cjs`, `templates/agents/**/*.md`, `templates/commands/*.md`, `templates/skills/universal/*.md`, `docs/spec/BACKLOG-v2.1.md`, `CLAUDE.md` Critical Rules, and `package.json` (for `@anthropic-ai/*` deps). Each cross-reference classified Action needed / No impact detected / Needs investigation. Validated live: 16/16 sources healthy, 7 new items (Claude Code 2.1.110, Agent SDK TS 0.2.110, Opus/Sonnet 4.6 + Haiku 4.5 models docs update), no Worclaude impact detected for current upstream state.
+  - [x] Audit passes completed pre- and post-merge for both PRs: full template quality, manifest consistency (26 registry / 6 universal / 18 commands), agent routing, live feed execution, scaffold smoke test, divergence check between template and dogfood versions. 497/497 tests pass, eslint clean.
+  - [x] /sync (2026-04-16): version bumped 2.3.0 → 2.4.0 (minor — new feature). README / CLAUDE.md / SPEC.md / PROGRESS.md / docs/reference + docs/guide counts updated (25 → 26 agents, 17 → 18 commands, 5 → 6 universal). CHANGELOG `[Unreleased]` promoted to `[2.4.0]` with the dogfood entry added.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
-- 5 universal agents + 20 optional agents (6 categories)
-- 17 slash commands
+- 6 universal agents + 20 optional agents (6 categories)
+- 18 slash commands
 - 12 universal skills + 3 template skills + 1 generated skill (agent-routing)
 - 8 hook events scaffolded: SessionStart, PostToolUse, PostCompact, PreCompact, UserPromptSubmit, Stop, SessionEnd, Notification
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs

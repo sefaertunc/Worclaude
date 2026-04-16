@@ -169,7 +169,7 @@ After all prompts, before scaffolding, show a review summary.
   Project:    My Project — A web app for managing tasks
   Type:       Backend / API
   Stack:      Python, Docker
-  Agents:     5 universal + 6 optional (11 total)
+  Agents:     6 universal + 6 optional (12 total)
 
 ? Everything look right?
   ◉ Yes, install the workflow
@@ -189,8 +189,8 @@ Create all files. Show progress.
   ✓ CLAUDE.md
   ✓ .claude/settings.json (permissions, hooks, sandbox)
   ✓ .claude/workflow-meta.json
-  ✓ .claude/agents/ (5 universal + 6 selected)
-  ✓ .claude/commands/ (16 universal)
+  ✓ .claude/agents/ (6 universal + 6 selected)
+  ✓ .claude/commands/ (18 universal)
   ✓ .claude/skills/ (11 universal + 3 templates + 1 generated)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
@@ -292,8 +292,8 @@ Default: keep user's, generate suggestions file.
   Merge complete!
 
   Added:
-  ✓ 5 universal agents + 4 selected optional agents
-  ✓ 17 slash commands
+  ✓ 6 universal agents + 4 selected optional agents
+  ✓ 18 slash commands
   ✓ 9 universal skills (3 conflicts saved as .workflow-ref.md)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
@@ -370,7 +370,7 @@ $ worclaude status
   │ Version    v1.2.8 (up to date)
   │ Project    Backend / API
   │ Stack      Python
-  │ Agents     5 universal + 6 optional
+  │ Agents     6 universal + 6 optional
   │ Commands   10
   │ Skills     12
 
@@ -566,9 +566,9 @@ $ worclaude doctor
   │   ✓ .claude/sessions/
   │
   │ Components
-  │   ✓ 5/5 universal agents
+  │   ✓ 6/6 universal agents
   │   ✓ 6/6 optional agents
-  │   ✓ 16/16 commands
+  │   ✓ 18/18 commands
   │   ✓ 15/15 skills
   │
   │ Documentation

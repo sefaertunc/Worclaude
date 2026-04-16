@@ -2,13 +2,21 @@
 
 All notable changes to worclaude are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/). Older releases (pre-2.3.0) are documented in [docs/spec/PROGRESS.md](./docs/spec/PROGRESS.md) and the [GitHub releases page](https://github.com/sefaertunc/Worclaude/releases).
 
-## [Unreleased]
+## [2.4.0] — 2026-04-16
+
+Worclaude 2.4.0 adds **upstream awareness**: every scaffolded project now ships a `/upstream-check` command and an `upstream-watcher` universal agent that consume the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds at runtime (16 Anthropic sources — Claude Code releases, SDK changelogs, docs, engineering blog, status page, and more) and report what's new, what's critical, and what affects the current project. No new npm dependencies — fetching happens via `curl` inside Claude Code.
 
 ### Added
 
-- `/upstream-check` command — on-demand upstream change detection via the anthropic-watch feeds (16 Anthropic sources, fetched at runtime via `curl`, no npm dependencies).
-- `upstream-watcher` universal agent — deep upstream impact analysis that cross-references new Claude Code / SDK releases against the project's scaffolded agents, commands, hooks, and skills. Read-only: reports findings but never edits files.
-- Agent routing entry for `upstream-watcher` (manual trigger, Stage 1: Context).
+- `/upstream-check` command (scaffolded template) — on-demand, stateless status check. Fetches `run-report.json` and `all.json`, reports source health (`Y/16 healthy`) and the 10 most recent items grouped by category, and flags items from `claude-code-releases`, `claude-code-changelog`, `npm-claude-code`, `agent-sdk-ts-changelog`, or `agent-sdk-py-changelog` as `[CRITICAL]`. Graceful fetch-failure handling.
+- `upstream-watcher` universal agent — deep upstream impact analysis (Sonnet, `isolation: none`, read-only: `disallowedTools: [Edit, Write, NotebookEdit]`). Cross-references new upstream items against the project's scaffolded `.claude/` surface area (agents, commands, hooks, skills, settings) and produces a three-part report: direct impact, informational, recommended actions. Feeds fetched in parallel to bound worst-case latency by a single `--max-time`.
+- Agent routing entry for `upstream-watcher` (manual trigger, Stage 1: Context, `/upstream-check` as the paired command).
+- Worclaude-internal `.claude/commands/upstream-check.md` (dogfood) — same fetch/flag behavior as the scaffolded template, plus a Worclaude-specific cross-reference layer that checks each `[CRITICAL]` item against `src/data/agents.js`, `src/data/agent-registry.js`, `src/core/scaffolder.js`, `src/core/merger.js`, `templates/hooks/*.cjs`, `docs/spec/BACKLOG-v2.1.md`, `templates/skills/universal/*.md`, and `CLAUDE.md` Critical Rules. Each cross-reference classified as Action needed / No impact detected / Needs investigation.
+
+### Changed
+
+- `UNIVERSAL_AGENTS` 5 → 6, `COMMAND_FILES` 17 → 18, `AGENT_REGISTRY` 25 → 26. Manifest audit tests and `init` / `merger` / `agent-routing` generator tests updated to iterate over `UNIVERSAL_AGENTS` instead of hardcoded lists — adding future universals no longer requires updating those tests.
+- Stale literal counts dropped from `src/data/agent-registry.js` doc-comment and Universal section header so they stop drifting.
 
 ## [2.3.0] — 2026-04-15
 
