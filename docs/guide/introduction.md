@@ -16,15 +16,16 @@ Worclaude is a Node.js CLI tool that you install globally and run in any project
 
 When you run `worclaude init`, the following components are installed into your project:
 
-### Agents (25 total)
+### Agents (26 total)
 
-Agents are specialized Claude instances, each with a specific model and purpose. You always get the 5 **universal agents**:
+Agents are specialized Claude instances, each with a specific model and purpose. You always get the 6 **universal agents**:
 
 - **plan-reviewer** (Opus) -- Reviews implementation plans like a staff engineer. Challenges assumptions and finds gaps.
 - **code-simplifier** (Sonnet, worktree) -- Eliminates duplication, simplifies complex logic, enforces consistency.
 - **test-writer** (Sonnet, worktree) -- Writes comprehensive tests: unit, integration, edge cases, error paths.
 - **build-validator** (Haiku) -- Runs the build, tests, and linter. Reports failures without fixing them.
 - **verify-app** (Sonnet, worktree) -- Tests the running application end-to-end against the specification.
+- **upstream-watcher** (Sonnet) -- Cross-references new Anthropic upstream changes (Claude Code releases, SDK changelogs, docs, blog) against your scaffolded agents, commands, hooks, and skills. Read-only — reports impact, suggests actions, does not edit files.
 
 On top of these, you choose from 20 **optional agents** across 6 categories (Backend, Frontend, DevOps, Quality, Documentation, Data/AI). Worclaude recommends agents based on your project type, so you do not have to guess.
 
@@ -34,9 +35,9 @@ Skills are knowledge files that Claude loads on demand, stored in directory form
 
 Some skills are **conditional** — they load automatically only when working on files matching specific path patterns (e.g., testing skills load only when touching test files). See [Claude Code Integration](/guide/claude-code-integration) for details.
 
-### Slash Commands (17 total)
+### Slash Commands (18 total)
 
-Commands give you a session lifecycle. `/start` reads your progress file, detects drift since the last session, and orients Claude. `/end` writes a handoff document for mid-task stops. `/commit-push-pr` stages, commits, pushes, and opens a pull request. `/verify` runs your full test and build pipeline. `/setup` interviews you about your project and fills in all the template files automatically. `/learn` persists a correction or convention into `.claude/learnings/` so it replays at the start of future sessions. The full set: `/start`, `/end`, `/commit-push-pr`, `/review-plan`, `/techdebt`, `/verify`, `/compact-safe`, `/status`, `/update-claude-md`, `/learn`, `/setup`, `/sync`, `/conflict-resolver`, `/review-changes`, `/build-fix`, `/refactor-clean`, `/test-coverage`.
+Commands give you a session lifecycle. `/start` reads your progress file, detects drift since the last session, and orients Claude. `/end` writes a handoff document for mid-task stops. `/commit-push-pr` stages, commits, pushes, and opens a pull request. `/verify` runs your full test and build pipeline. `/setup` interviews you about your project and fills in all the template files automatically. `/learn` persists a correction or convention into `.claude/learnings/` so it replays at the start of future sessions. `/upstream-check` fetches the anthropic-watch feeds and summarizes what's new in Claude Code, the SDKs, and the engineering blog — with critical items flagged. The full set: `/start`, `/end`, `/commit-push-pr`, `/review-plan`, `/techdebt`, `/verify`, `/compact-safe`, `/status`, `/update-claude-md`, `/learn`, `/setup`, `/sync`, `/conflict-resolver`, `/review-changes`, `/build-fix`, `/refactor-clean`, `/test-coverage`, `/upstream-check`.
 
 ### Hooks (8 events)
 
