@@ -4,6 +4,7 @@ export const UNIVERSAL_AGENTS = [
   'test-writer',
   'build-validator',
   'verify-app',
+  'upstream-watcher',
 ];
 
 export const AGENT_CATALOG = {
@@ -195,6 +196,7 @@ export const COMMAND_FILES = [
   'refactor-clean',
   'test-coverage',
   'learn',
+  'upstream-check',
 ];
 
 export const UNIVERSAL_SKILLS = [

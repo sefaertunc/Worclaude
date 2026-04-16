@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs-extra';
 import path from 'node:path';
 import os from 'node:os';
-import { COMMAND_FILES } from '../../src/data/agents.js';
+import { COMMAND_FILES, UNIVERSAL_AGENTS } from '../../src/data/agents.js';
 
 // Mock inquirer before importing init
 vi.mock('inquirer', () => ({
@@ -97,14 +97,7 @@ describe('init command', () => {
 
   it('creates universal agents', async () => {
     await initCommand();
-    const agents = [
-      'plan-reviewer',
-      'code-simplifier',
-      'test-writer',
-      'build-validator',
-      'verify-app',
-    ];
-    for (const agent of agents) {
+    for (const agent of UNIVERSAL_AGENTS) {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'agents', `${agent}.md`));
       expect(exists, `${agent}.md should exist`).toBe(true);
     }
@@ -191,7 +184,7 @@ describe('init command', () => {
     expect(meta.version).toBe(pkg.version);
     expect(meta.techStack).toEqual(['node']);
     expect(meta.projectTypes).toContain('CLI tool');
-    expect(meta.universalAgents).toHaveLength(5);
+    expect(meta.universalAgents).toHaveLength(UNIVERSAL_AGENTS.length);
     expect(meta.optionalAgents).toContain('bug-fixer');
     expect(meta.fileHashes).toBeDefined();
   });

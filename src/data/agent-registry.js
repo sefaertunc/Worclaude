@@ -1,11 +1,11 @@
 /**
- * Agent routing metadata for all 25 agents.
+ * Agent routing metadata for every agent in the registry.
  * Used by the agent-routing generator to produce the routing skill file.
  * Separate from agents.js because this data is only consumed by the generator,
  * not by CLI prompts or display logic.
  */
 export const AGENT_REGISTRY = {
-  // --- Universal agents (5) ---
+  // --- Universal agents ---
 
   'plan-reviewer': {
     category: 'universal',
@@ -72,6 +72,21 @@ export const AGENT_REGISTRY = {
       'Full end-to-end verification. Runs the app, tests all major flows, checks for regressions. More thorough than build-validator.',
     expectBack: 'Detailed verification report. Blocking issues listed.',
     situationLabel: 'Finished a task, ready for PR',
+  },
+  'upstream-watcher': {
+    category: 'universal',
+    model: 'Sonnet',
+    isolation: 'none',
+    pipelineStage: 'Stage 1: Context',
+    triggerType: 'manual',
+    triggerCommand: '/upstream-check',
+    whenToUse:
+      'At the start of a session to check for upstream Claude Code changes. After Claude Code updates. When behavior seems different from last session.',
+    whatItDoes:
+      "Fetches anthropic-watch feeds, cross-references upstream changes against the project's scaffolded agents/commands/hooks/skills, and produces an impact report.",
+    expectBack:
+      'Impact report: which upstream changes affect this project, which are informational, and recommended actions.',
+    situationLabel: 'Want to check for upstream Claude Code changes',
   },
 
   // --- Frontend agents (2) ---
