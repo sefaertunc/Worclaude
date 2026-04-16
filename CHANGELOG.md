@@ -2,6 +2,14 @@
 
 All notable changes to worclaude are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/). Older releases (pre-2.3.0) are documented in [docs/spec/PROGRESS.md](./docs/spec/PROGRESS.md) and the [GitHub releases page](https://github.com/sefaertunc/Worclaude/releases).
 
+## [Unreleased]
+
+### Added
+
+- `/upstream-check` command — on-demand upstream change detection via the anthropic-watch feeds (16 Anthropic sources, fetched at runtime via `curl`, no npm dependencies).
+- `upstream-watcher` universal agent — deep upstream impact analysis that cross-references new Claude Code / SDK releases against the project's scaffolded agents, commands, hooks, and skills. Read-only: reports findings but never edits files.
+- Agent routing entry for `upstream-watcher` (manual trigger, Stage 1: Context).
+
 ## [2.3.0] — 2026-04-15
 
 Worclaude 2.3.0 expands the workflow from a setup scaffold into a full **learning system**: Claude captures corrections automatically, replays them across sessions, and now generates cross-tool rule files so switching from Claude Code to Cursor or Codex does not mean re-writing your conventions. Eight lifecycle hooks (up from three) plus a dedicated `coding-principles` reference card tighten the feedback loop between you and Claude.
