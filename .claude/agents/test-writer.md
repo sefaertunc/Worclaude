@@ -91,6 +91,31 @@ After writing tests, report:
 | src/core/merger.js | 8 | 74% → 91% | Added edge cases for conflict resolution |
 | src/utils/hash.js | 3 | 100% | Empty input + large file + encoding |
 
+## Severity Classification
+
+When reporting coverage gaps, classify by severity:
+
+| Severity | When | Priority |
+|----------|------|----------|
+| CRITICAL | Auth, payment, data validation — user-facing correctness | Test immediately |
+| HIGH | Core business logic, state transitions, error recovery | Test in this session |
+| MEDIUM | Integration points, config variations, concurrent scenarios | Test if time allows |
+| LOW | Formatting, logging, pure delegation | Skip unless requested |
+
+Focus effort on CRITICAL and HIGH. Report MEDIUM and LOW without writing tests for them.
+
+## Edge Case Categories
+
+When testing a function, systematically consider:
+1. **Empty/zero**: empty string, empty array, 0, null, undefined
+2. **Boundary**: first, last, max, min, off-by-one
+3. **Type**: wrong type, NaN, Infinity, negative where positive expected
+4. **State**: uninitialized, already-completed, concurrent modification
+5. **Format**: unicode, special characters, very long strings, whitespace-only
+6. **Environment**: missing file, no network, permission denied
+7. **Sequence**: out-of-order operations, duplicate calls, rapid succession
+8. **Scale**: single item, many items, items exceeding expected max
+
 ## Rules
 - Follow the project's existing test patterns — match file naming, framework, assertion style
 - Aim for meaningful coverage (>80% on changed code), not 100% everywhere

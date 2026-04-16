@@ -25,13 +25,13 @@
 
 # Worclaude — The Workflow Layer for Claude Code
 
-Worclaude scaffolds a complete Claude Code workflow into any project in seconds. One `init` command installs 25 agents, 17 slash commands, 16 skills, 8 lifecycle hooks, a two-store memory system, and a CLAUDE.md template tuned for your tech stack. It implements the patterns in [howborisusesclaudecode.com](https://www.howborisusesclaudecode.com/) as a reusable, upgradable scaffold, so you stop rebuilding the same configuration for every new project.
+Worclaude scaffolds a complete Claude Code workflow into any project in seconds. One `init` command installs 26 agents, 18 slash commands, 16 skills, 8 lifecycle hooks, a two-store memory system, and a CLAUDE.md template tuned for your tech stack. It implements the patterns in [howborisusesclaudecode.com](https://www.howborisusesclaudecode.com/) as a reusable, upgradable scaffold, so you stop rebuilding the same configuration for every new project.
 
 <div align="center">
 
 | CLI Commands |          Agents           | Slash Commands |        Skills         |      Hooks       |  Tech Stacks  |
 | :----------: | :-----------------------: | :------------: | :-------------------: | :--------------: | :-----------: |
-|      8       | 5 universal + 20 optional |       17       |          16           |     8 events     |      16       |
+|      8       | 6 universal + 20 optional |       18       |          16           |     8 events     |      16       |
 | subcommands  |    across 6 categories    | session tools  | universal + templates | lifecycle events | auto-detected |
 
 </div>
@@ -42,16 +42,16 @@ Worclaude scaffolds a complete Claude Code workflow into any project in seconds.
 
 `worclaude init` installs a production-ready Claude Code workflow:
 
-### Agents (25 total)
+### Agents (26 total)
 
-- **5 universal:** plan-reviewer (Opus), code-simplifier (Sonnet, worktree), test-writer (Sonnet, worktree), build-validator (Haiku), verify-app (Sonnet, worktree)
+- **6 universal:** plan-reviewer (Opus), code-simplifier (Sonnet, worktree), test-writer (Sonnet, worktree), build-validator (Haiku), verify-app (Sonnet, worktree), upstream-watcher (Sonnet)
 - **20 optional** across 6 categories — Backend, Frontend, DevOps, Quality, Documentation, Data/AI. Worclaude recommends agents based on your project type.
 
-### Slash Commands (17)
+### Slash Commands (18)
 
-Session lifecycle, review, verification, memory, and git automation:
+Session lifecycle, review, verification, memory, upstream awareness, and git automation:
 
-`/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/learn` `/setup` `/sync` `/conflict-resolver` `/review-changes` `/build-fix` `/refactor-clean` `/test-coverage`
+`/start` `/end` `/commit-push-pr` `/review-plan` `/techdebt` `/verify` `/compact-safe` `/status` `/update-claude-md` `/learn` `/setup` `/sync` `/conflict-resolver` `/review-changes` `/build-fix` `/refactor-clean` `/test-coverage` `/upstream-check`
 
 ### Skills (16)
 

@@ -55,3 +55,8 @@ Delegates to the test-writer agent for test creation.
 - After implementing a large feature
 - When coverage drops below project threshold (check CLAUDE.md)
 - During periodic maintenance
+
+## Trigger Phrases
+- "check test coverage"
+- "what needs tests"
+- "coverage gaps"

@@ -142,7 +142,7 @@ This is a two-step process. First, you select agent **categories**. The categori
   ◻ Data / AI       — data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer
 ```
 
-The 5 universal agents are always installed. Then, for each category you selected, you can fine-tune which specific agents to include:
+The 6 universal agents are always installed. Then, for each category you selected, you can fine-tune which specific agents to include:
 
 ```
 ? Fine-tune Backend agents? (space to toggle, enter to accept defaults)
@@ -163,7 +163,7 @@ Before anything is written to disk, Worclaude shows a review summary:
   Project:    my-project — A web app for managing tasks
   Type:       Backend / API
   Stack:      Python, Docker
-  Agents:     5 universal + 6 optional (11 total)
+  Agents:     6 universal + 6 optional (12 total)
 
 ? Everything look right?
   ◉ Yes, install the workflow
@@ -184,8 +184,8 @@ Once you confirm, Worclaude creates all the files:
   ✓ AGENTS.md
   ✓ .claude/settings.json
   ✓ .claude/workflow-meta.json
-  ✓ .claude/agents/ (5 universal + 6 optional)
-  ✓ .claude/commands/ (17)
+  ✓ .claude/agents/ (6 universal + 6 optional)
+  ✓ .claude/commands/ (18)
   ✓ .claude/skills/ (12 universal + 3 templates + 1 generated)
   ✓ .claude/hooks/ (4 lifecycle scripts)
   ✓ .claude/learnings/ (gitignored store for personal rules)

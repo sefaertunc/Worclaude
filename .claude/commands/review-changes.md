@@ -22,3 +22,8 @@ Only analyze and report.
 
 The user will decide which findings to act on and apply fixes themselves.
 Do NOT apply any fixes. Do NOT touch any files. REPORT ONLY.
+
+## Trigger Phrases
+- "review my changes"
+- "what did I change"
+- "code review"

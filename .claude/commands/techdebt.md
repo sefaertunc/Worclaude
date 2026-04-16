@@ -11,3 +11,8 @@ Scan the codebase for technical debt:
 - Inconsistent patterns
 
 Report findings organized by severity. Fix quick wins directly.
+
+## Trigger Phrases
+- "find tech debt"
+- "scan for issues"
+- "code quality scan"

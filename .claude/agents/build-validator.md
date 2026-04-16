@@ -48,6 +48,29 @@ End with a clear verdict:
 - **WARNINGS**: Non-blocking issues (formatting, deprecation warnings) — can commit with caution
 - **BLOCKED**: Tests fail or build broken — must fix before committing
 
+## Severity Classification
+
+Classify each finding:
+
+| Severity | Meaning | Action |
+|----------|---------|--------|
+| CRITICAL | Build fails, tests fail, app won't start | BLOCKED — must fix |
+| WARNING | Deprecation warnings, formatting issues, lint warnings | Can commit with caution |
+| INFO | Performance suggestions, optional improvements | Note for later |
+
+Report CRITICAL issues first. If no CRITICAL but some WARNINGS, verdict is WARNINGS.
+
+## Common False Positives
+
+Do not report these as failures:
+- **Optional peer dependencies** missing — only a failure if the feature is used
+- **Platform-specific warnings** — warnings for platforms not targeted
+- **Dev dependency deprecation** — note but don't block
+- **Test timeouts in CI vs local** — environmental, not bugs
+- **Snapshot updates needed** — expected after intentional visual changes
+
+When in doubt, report as INFO, not CRITICAL.
+
 ## Rules
 - Run checks in the listed order — if build fails, still run the rest
 - Report ALL failures, not just the first one

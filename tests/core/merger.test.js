@@ -27,7 +27,7 @@ import {
   promptClaudeMdMerge,
   interactiveSectionMerge,
 } from '../../src/prompts/claude-md-merge.js';
-import { COMMAND_FILES } from '../../src/data/agents.js';
+import { COMMAND_FILES, UNIVERSAL_AGENTS } from '../../src/data/agents.js';
 
 describe('merger', () => {
   let tmpDir;
@@ -200,8 +200,8 @@ describe('merger', () => {
       };
 
       const report = await performMerge(tmpDir, scan, baseSelections, baseVariables);
-      // 5 universal + 1 optional (bug-fixer)
-      expect(report.added.agents).toHaveLength(6);
+      // All universal + 1 optional (bug-fixer)
+      expect(report.added.agents).toHaveLength(UNIVERSAL_AGENTS.length + 1);
 
       const agentPath = path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md');
       expect(await fs.pathExists(agentPath)).toBe(true);

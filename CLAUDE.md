@@ -82,7 +82,7 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 ## Key Directories
 
 - `src/data/agents.js` — All catalogs, tech stacks, formatters, categories
-- `src/data/agent-registry.js` — Routing metadata for all 25 agents (used by generator)
+- `src/data/agent-registry.js` — Routing metadata for all 26 agents (used by generator)
 - `src/generators/agent-routing.js` — Builds agent-routing.md dynamically from selected agents
 - `src/utils/display.js` — Bold + Badges visual system for CLI output
 - `src/utils/npm.js` — Shared npm registry check (used by upgrade + status)

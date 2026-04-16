@@ -37,8 +37,8 @@ Creates all of the following:
 
 - `CLAUDE.md` -- populated with project name, description, tech stack, and commands
 - `.claude/settings.json` -- permissions and hooks for the selected stack
-- `.claude/agents/` -- 5 universal + selected optional agents
-- `.claude/commands/` -- 17 slash commands
+- `.claude/agents/` -- 6 universal + selected optional agents
+- `.claude/commands/` -- 18 slash commands
 - `.claude/skills/` -- 12 universal + 3 template + 1 generated skills (directory format)
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
@@ -352,7 +352,7 @@ Requires `workflow-meta.json`. Reports failure if not found.
 | **Core Files**        | `workflow-meta.json`, `CLAUDE.md` (exists + line count ≤200 + memory-architecture guidance), `AGENTS.md`, `settings.json` (permissions + hooks object), `sessions/` directory |
 | **CLAUDE.md Size**    | Character count against thresholds: warns at 30K, fails at 38K (hard limit 40K). Large files degrade context quality.                                                         |
 | **Hooks**             | Hook event names against the Claude Code v2.1.101 documented set, key hook coverage (PreCompact/UserPromptSubmit/Stop), referenced hook script files exist, async flags       |
-| **Components**        | All 5 universal agents present, selected optional agents present, all slash commands present, all skills present, agents use non-deprecated model names                       |
+| **Components**        | All 6 universal agents present, selected optional agents present, all slash commands present, all skills present, agents use non-deprecated model names                       |
 | **Skill Format**      | Detects flat `.md` files in `skills/` that should be in directory format (`skill-name/SKILL.md`). Reports count and filenames.                                                |
 | **Agent Description** | Verifies all agent files have `name` and `description` in YAML frontmatter. Without these, agents are invisible to Claude Code.                                               |
 | **Documentation**     | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                      |
