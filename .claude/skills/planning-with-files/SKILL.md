@@ -103,6 +103,17 @@ Just do it:
 - Documentation updates
 - Config changes
 
+## Must-Haves Contract
+
+Every plan should define must-haves that carry through from planning to verification:
+
+- **Truths**: Observable behaviors that must be true when done (e.g., "POST /api/users returns 201 with a user object")
+- **Artifacts**: Files that must exist with real implementation (e.g., "src/routes/users.js with createUser function")
+- **Key Links**: Connections between artifacts (e.g., "users route imported in src/app.js and registered at /api/users")
+
+These must-haves become the verification checklist. If the plan-reviewer doesn't see them,
+it should request them. If the verify-app agent can't confirm them, the feature isn't done.
+
 ## Gotchas
 
 - Plans rot fast. If a plan is more than 2 sessions old and hasn't been started,

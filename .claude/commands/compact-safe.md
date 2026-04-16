@@ -10,3 +10,8 @@ After compaction, briefly confirm:
 - Current task
 - Current branch
 - What was just being worked on
+
+## Trigger Phrases
+- "compact context"
+- "free up context"
+- "running low on context"

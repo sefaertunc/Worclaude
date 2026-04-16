@@ -11,6 +11,11 @@ paths:
 
 # Verification
 
+> **Note:** The bash examples below are reference snippets. If you enable
+> `disableSkillShellExecution` in Claude Code settings (v2.1.101+), any inline
+> shell execution from skills is blocked. These fenced examples are safe to read;
+> copy-paste them into your terminal to run.
+
 ## Beyond Unit Tests
 
 Unit tests verify code logic. Verification confirms the feature actually works in
@@ -113,6 +118,19 @@ If verification fails:
 2. Check if it's a pre-existing issue or something you introduced.
 3. If you introduced it, fix it before committing.
 4. If it's pre-existing, document it and decide whether to fix now or file it.
+
+## Verification Gate Types
+
+Different situations call for different gate behaviors:
+
+- **Pre-flight**: Validate preconditions before starting. Deterministic checks only (file exists, env var set, branch clean). Fail fast if not met.
+- **Revision**: Evaluate output quality, loop back with feedback. Maximum 3 iterations before escalating to user.
+- **Escalation**: Surface unresolvable issues to the user. Pause work, present options clearly, wait for input.
+- **Abort**: Terminate to prevent damage. Preserve current state, report what happened and why, suggest recovery steps.
+
+Use pre-flight for anything that can be checked cheaply up front. Use revision for quality
+gates that may need iteration. Escalate when you've exhausted your ability to resolve.
+Abort only when continuing would make things worse.
 
 ## Gotchas
 

@@ -43,3 +43,4 @@ docs/.vitepress/cache
 .claude/workflow-meta.json
 .claude/worktrees/
 .claude-backup-*/
+.claude/learnings/

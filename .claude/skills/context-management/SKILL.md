@@ -6,6 +6,11 @@ version: "1.0.0"
 
 # Context Management
 
+> **Note:** The bash examples below are reference snippets. If you enable
+> `disableSkillShellExecution` in Claude Code settings (v2.1.101+), any inline
+> shell execution from skills is blocked. These fenced examples are safe to read;
+> copy-paste them into your terminal to run.
+
 ## The 70% Rule
 
 Context windows are finite. When you estimate you've used roughly 70% of available
@@ -140,6 +145,22 @@ Practical takeaways:
   so the most important files are recently read.
 - Skills over 5k tokens get truncated after compaction. Keep skills focused.
 - The 70% rule still applies — these numbers help you estimate when you'll hit it.
+
+## Context Budget Tiers
+
+Monitor your context usage and adjust behavior accordingly:
+
+| Tier | Context Free | Behavior |
+|------|-------------|----------|
+| PEAK | >75% | Normal operation — read files freely, keep full context |
+| GOOD | 50-75% | Be selective about file reads — summarize large files |
+| DEGRADING | 25-50% | Summarize before reading new files, consider /compact |
+| CRITICAL | <25% | Save state immediately, /compact, reload only essentials |
+
+Heuristics (you cannot measure exact tokens):
+- Many large file reads in this session = likely DEGRADING
+- Long conversation with multiple tasks = likely DEGRADING
+- Just started or just compacted = likely PEAK
 
 ## Gotchas
 
