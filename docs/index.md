@@ -14,10 +14,10 @@ hero:
       link: https://github.com/sefaertunc/Worclaude
 
 features:
-  - title: 25 Specialized Agents
+  - title: 26 Specialized Agents
     details: From plan-reviewer (Opus) to build-validator (Haiku). Each agent has a dedicated model and purpose.
-  - title: 17 Slash Commands
-    details: /start, /end, /commit-push-pr, /verify, /build-fix, /learn — session lifecycle, quality tools, and learning capture built in.
+  - title: 18 Slash Commands
+    details: /start, /end, /commit-push-pr, /verify, /build-fix, /learn, /upstream-check — session lifecycle, quality tools, learning capture, and upstream awareness built in.
   - title: 16 Skills
     details: Knowledge files with conditional loading — testing, security, git conventions, context management, coding principles, coordinator mode, and agent routing.
   - title: Claude Code Runtime Integration

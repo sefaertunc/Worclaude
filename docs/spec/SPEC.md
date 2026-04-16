@@ -1030,7 +1030,7 @@ Each agent uses frontmatter fields recognized by Claude Code's runtime. Required
 
 ## Universal Slash Commands
 
-All 17 slash commands are installed in every project. Files live in `.claude/commands/`.
+All 18 slash commands are installed in every project. Files live in `.claude/commands/`.
 
 ### /start (start.md)
 
@@ -1451,7 +1451,7 @@ worclaude/
 │   │       ├── quality/ (bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer, e2e-runner)
 │   │       ├── docs/ (doc-writer, changelog-generator)
 │   │       └── data/ (data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer)
-│   ├── commands/ (17 slash commands)
+│   ├── commands/ (18 slash commands)
 │   └── skills/
 │       ├── universal/ (12 files, installed as skill-name/SKILL.md)
 │       └── templates/ (3 files, installed as skill-name/SKILL.md)

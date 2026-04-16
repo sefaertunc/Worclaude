@@ -109,6 +109,18 @@ Validates that the project builds and passes all checks: build command, full tes
 
 Tests the actual running application behavior, not just unit tests. Starts the application, tests changed functionality end-to-end, verifies behavior matches the specification, checks for regressions in related features, and tests error handling and edge cases in the running app. Reports specific pass/fail for each verification step. Runs in the background.
 
+### upstream-watcher
+
+|                |                                              |
+| -------------- | -------------------------------------------- |
+| **Model**      | sonnet                                       |
+| **Isolation**  | none                                         |
+| **Invoked by** | `/upstream-check` (paired command)           |
+| **Read-only**  | `disallowedTools: Edit, Write, NotebookEdit` |
+| **Memory**     | project                                      |
+
+Cross-references new Anthropic upstream changes (Claude Code releases, Agent SDK changelogs, Anthropic docs, the engineering blog, the status page — 16 sources total) against the project's scaffolded `.claude/` infrastructure. Fetches `run-report.json` and `all.json` from the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds at runtime via `curl` (no npm dependencies). Produces a three-part report: direct-impact items (which scaffolded agent, command, hook, or skill is affected and why), informational items, and concrete recommended actions. Read-only by enforcement — reports findings, never edits files.
+
 ---
 
 ## Optional Agents
@@ -197,35 +209,36 @@ The following table shows the specific agents recommended for each project type:
 
 ---
 
-## Summary Table (All 25 Agents)
+## Summary Table (All 26 Agents)
 
-| Agent                  | Category      | Model  | Isolation | Description                                      |
-| ---------------------- | ------------- | ------ | --------- | ------------------------------------------------ |
-| plan-reviewer          | Universal     | opus   | none      | Reviews implementation plans as a staff engineer |
-| code-simplifier        | Universal     | sonnet | worktree  | Eliminates duplication, simplifies logic         |
-| test-writer            | Universal     | sonnet | worktree  | Writes comprehensive tests for changed code      |
-| build-validator        | Universal     | haiku  | none      | Validates build, tests, lint without fixing      |
-| verify-app             | Universal     | sonnet | worktree  | End-to-end application testing                   |
-| api-designer           | Backend       | opus   | none      | Reviews API design for RESTful conventions       |
-| database-analyst       | Backend       | sonnet | none      | Reviews database schemas and queries             |
-| auth-auditor           | Backend       | opus   | none      | Audits authentication and authorization          |
-| ui-reviewer            | Frontend      | sonnet | none      | Reviews UI for consistency and accessibility     |
-| style-enforcer         | Frontend      | haiku  | none      | Ensures design system compliance                 |
-| ci-fixer               | DevOps        | sonnet | worktree  | Diagnoses and fixes CI/CD failures               |
-| docker-helper          | DevOps        | sonnet | none      | Reviews Docker configs for best practices        |
-| deploy-validator       | DevOps        | sonnet | none      | Validates deployment readiness                   |
-| dependency-manager     | DevOps        | haiku  | none      | Reviews dependency health and updates            |
-| bug-fixer              | Quality       | sonnet | worktree  | Diagnoses and fixes bugs                         |
-| security-reviewer      | Quality       | opus   | none      | Reviews code for security vulnerabilities        |
-| performance-auditor    | Quality       | sonnet | none      | Analyzes code for performance issues             |
-| refactorer             | Quality       | sonnet | worktree  | Refactors code to improve maintainability        |
-| build-fixer            | Quality       | sonnet | worktree  | Diagnoses and fixes build failures               |
-| e2e-runner             | Quality       | sonnet | worktree  | Writes and runs end-to-end tests                 |
-| doc-writer             | Documentation | sonnet | worktree  | Writes and updates documentation                 |
-| changelog-generator    | Documentation | haiku  | none      | Generates changelog from commits                 |
-| data-pipeline-reviewer | Data / AI     | sonnet | none      | Reviews data pipeline correctness                |
-| ml-experiment-tracker  | Data / AI     | sonnet | none      | Reviews ML experiment reproducibility            |
-| prompt-engineer        | Data / AI     | opus   | none      | Reviews and improves LLM prompts                 |
+| Agent                  | Category      | Model  | Isolation | Description                                                         |
+| ---------------------- | ------------- | ------ | --------- | ------------------------------------------------------------------- |
+| plan-reviewer          | Universal     | opus   | none      | Reviews implementation plans as a staff engineer                    |
+| code-simplifier        | Universal     | sonnet | worktree  | Eliminates duplication, simplifies logic                            |
+| test-writer            | Universal     | sonnet | worktree  | Writes comprehensive tests for changed code                         |
+| build-validator        | Universal     | haiku  | none      | Validates build, tests, lint without fixing                         |
+| verify-app             | Universal     | sonnet | worktree  | End-to-end application testing                                      |
+| upstream-watcher       | Universal     | sonnet | none      | Cross-references upstream changes against scaffolded infrastructure |
+| api-designer           | Backend       | opus   | none      | Reviews API design for RESTful conventions                          |
+| database-analyst       | Backend       | sonnet | none      | Reviews database schemas and queries                                |
+| auth-auditor           | Backend       | opus   | none      | Audits authentication and authorization                             |
+| ui-reviewer            | Frontend      | sonnet | none      | Reviews UI for consistency and accessibility                        |
+| style-enforcer         | Frontend      | haiku  | none      | Ensures design system compliance                                    |
+| ci-fixer               | DevOps        | sonnet | worktree  | Diagnoses and fixes CI/CD failures                                  |
+| docker-helper          | DevOps        | sonnet | none      | Reviews Docker configs for best practices                           |
+| deploy-validator       | DevOps        | sonnet | none      | Validates deployment readiness                                      |
+| dependency-manager     | DevOps        | haiku  | none      | Reviews dependency health and updates                               |
+| bug-fixer              | Quality       | sonnet | worktree  | Diagnoses and fixes bugs                                            |
+| security-reviewer      | Quality       | opus   | none      | Reviews code for security vulnerabilities                           |
+| performance-auditor    | Quality       | sonnet | none      | Analyzes code for performance issues                                |
+| refactorer             | Quality       | sonnet | worktree  | Refactors code to improve maintainability                           |
+| build-fixer            | Quality       | sonnet | worktree  | Diagnoses and fixes build failures                                  |
+| e2e-runner             | Quality       | sonnet | worktree  | Writes and runs end-to-end tests                                    |
+| doc-writer             | Documentation | sonnet | worktree  | Writes and updates documentation                                    |
+| changelog-generator    | Documentation | haiku  | none      | Generates changelog from commits                                    |
+| data-pipeline-reviewer | Data / AI     | sonnet | none      | Reviews data pipeline correctness                                   |
+| ml-experiment-tracker  | Data / AI     | sonnet | none      | Reviews ML experiment reproducibility                               |
+| prompt-engineer        | Data / AI     | opus   | none      | Reviews and improves LLM prompts                                    |
 
 ### Runtime Properties
 
@@ -237,6 +250,7 @@ The following table shows which agents have special runtime properties beyond th
 | test-writer            |           |            | project |              |
 | build-validator        |           | Yes        |         |              |
 | verify-app             |           | Yes        |         |              |
+| upstream-watcher       | Yes       |            | project |              |
 | api-designer           | Yes       |            |         |              |
 | database-analyst       | Yes       |            |         |              |
 | ui-reviewer            | Yes       |            |         |              |
@@ -267,6 +281,7 @@ All agent files are installed to `.claude/agents/` as flat Markdown files:
   test-writer.md            # universal
   build-validator.md        # universal
   verify-app.md             # universal
+  upstream-watcher.md       # universal
   api-designer.md           # optional (if selected)
   bug-fixer.md              # optional (if selected)
   ...
