@@ -4,7 +4,28 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
-- Daily upstream-check workflow that opens GitHub issues for Worclaude-relevant Anthropic upstream changes ([#TBD](https://github.com/sefaertunc/Worclaude/pulls)).
+## [2.4.1] — 2026-04-18
+
+Internal CI tooling — no change to the scaffolded output or npm package surface.
+
+### Added
+
+- Daily `upstream-check` GitHub Actions workflow (09:30 UTC cron) that fetches the anthropic-watch feeds, diffs against committed state, and opens a GitHub issue when a Worclaude-relevant change appears. Completes the emit half of the anthropic-watch integration ([#69](https://github.com/sefaertunc/Worclaude/pull/69)).
+- `scripts/upstream-precheck.mjs` — zero-dep Node 20 parallel feed fetch with 10s timeout, Set-based delta detection, 90-day firstSeen prune, and a 3-strike feed-unreachable watchdog with auto-recovery.
+- `scripts/upstream-parse.mjs` — reads `claude-code-action` execution JSONL, applies a strict `SKIP_ISSUE` / `# Title:` / `# Body` contract with a plaintext fallback.
+- `scripts/_gha-outputs.mjs` — shared zero-dep GitHub Actions helpers.
+- `.github/upstream-state.json` — schema v2 state file (seeded from live `all.json`); every mutation gated on `github.ref == 'refs/heads/main'` so feature-branch dispatches stay read-only.
+- `tests/fixtures/upstream/` — four parser fixtures (skip, issue, malformed, plaintext-fallback).
+- `docs/reference/upstream-automation.md` — operations runbook and required branch-protection settings for the workflow.
+
+### Changed
+
+- `docs/reference/slash-commands.md` — cross-link to the new upstream-automation reference page.
+- `docs/.vitepress/config.mjs` — sidebar entry for upstream-automation; `phases/**` added to `srcExclude`.
+
+### Removed
+
+- `docs/research/PHASE-1-DIAGNOSIS-REPORT.md` — retired investigation scratchpad (preserved in git history).
 
 ## [2.4.0] — 2026-04-16
 
