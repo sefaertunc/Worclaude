@@ -11,9 +11,6 @@ name: Upstream Check
 #     for state updates (currently out of scope — see PHASE prompt).
 #   - If `main` has "Require status checks to pass before merging", the
 #     scheduled push will be rejected.
-#
-# TODO(security): pin `anthropics/claude-code-action` to a specific SHA rather
-# than the `@v1` tag before next release.
 
 on:
   schedule:
@@ -156,7 +153,7 @@ jobs:
         # default (documented in its README). Feed-derived content is untrusted,
         # so --disallowedTools narrows the default toolset to Read-only.
         if: steps.precheck.outputs.has_new == 'true' && steps.precheck.outputs.fetch_failure != 'true'
-        uses: anthropics/claude-code-action@v1 # TODO(security): pin SHA
+        uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1.0.101
         env:
           NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
           FEED_REPORT_PATH: ${{ steps.precheck.outputs.feed_report_path }}
