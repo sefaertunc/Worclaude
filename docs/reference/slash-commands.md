@@ -250,6 +250,8 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 | **What it does** | Fetches `run-report.json` and `all.json` from the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds via `curl` (no npm deps), reports source health (`Y/16`) and the 10 most recent items grouped by category.                                                        |
 | **Key behavior** | Stateless — no caching. Flags items from `claude-code-releases`, `claude-code-changelog`, `npm-claude-code`, `agent-sdk-ts-changelog`, and `agent-sdk-py-changelog` as `[CRITICAL]`. Graceful fetch-failure handling. Paired with the `upstream-watcher` agent for deeper cross-reference. |
 
+> For the scheduled GitHub Actions workflow that runs the same check daily without user interaction, see [Upstream Automation](./upstream-automation.md).
+
 ---
 
 ## Command File Location

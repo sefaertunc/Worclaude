@@ -1,0 +1,4 @@
+{"type":"system","subtype":"init","model":"claude-sonnet-4-6"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Audit new upstream items."}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"SKIP_ISSUE"}]}}
+{"type":"result","duration_ms":1234,"num_turns":1}

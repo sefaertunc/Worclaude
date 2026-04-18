@@ -5,7 +5,7 @@ export default defineConfig({
   description: 'Professional Claude Code workflow system',
   base: '/Worclaude/',
 
-  srcExclude: ['spec/**'],
+  srcExclude: ['spec/**', 'phases/**'],
 
   themeConfig: {
     nav: [
@@ -40,6 +40,7 @@ export default defineConfig({
             { text: 'Learnings', link: '/reference/learnings' },
             { text: 'Permissions', link: '/reference/permissions' },
             { text: 'Configuration', link: '/reference/configuration' },
+            { text: 'Upstream Automation', link: '/reference/upstream-automation' },
           ],
         },
       ],

@@ -1,0 +1,387 @@
+name: Upstream Check
+
+# Runs daily at 09:30 UTC to fetch anthropic-watch feeds and file an issue for
+# Worclaude-relevant upstream changes. See docs/reference/upstream-automation.md.
+#
+# REQUIRED BRANCH PROTECTION SETTINGS for `main`:
+#   - The `github-actions[bot]` user (or the provided GITHUB_TOKEN) must be
+#     allowed to push directly to `main`.
+#   - If `main` has "Require a pull request before merging" enabled, either
+#     (a) exempt github-actions[bot], or (b) convert this workflow to open a PR
+#     for state updates (currently out of scope — see PHASE prompt).
+#   - If `main` has "Require status checks to pass before merging", the
+#     scheduled push will be rejected.
+#
+# TODO(security): pin `anthropics/claude-code-action` to a specific SHA rather
+# than the `@v1` tag before next release.
+
+on:
+  schedule:
+    - cron: '30 9 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: upstream-check
+  cancel-in-progress: false
+
+env:
+  LABEL_UPSTREAM: upstream
+  LABEL_AUTOMATED: automated
+  LABEL_FETCH_ERROR: fetch-error
+  LABEL_PARSE_ERROR: parse-error
+
+jobs:
+  upstream-check:
+    runs-on: ubuntu-latest
+    # INVARIANT: every step that writes to the repo or to issues is gated on
+    # github.ref == 'refs/heads/main'. Feature-branch runs are read-only
+    # (useful for exercising pre-check / Claude / parser without side effects).
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ensure labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "$LABEL_UPSTREAM" --color 0e8a16 \
+            --description "Anthropic upstream change summary" 2>/dev/null || true
+          gh label create "$LABEL_AUTOMATED" --color ededed \
+            --description "Opened by an automated workflow" 2>/dev/null || true
+          gh label create "$LABEL_FETCH_ERROR" --color d93f0b \
+            --description "anthropic-watch feed unreachable" 2>/dev/null || true
+          gh label create "$LABEL_PARSE_ERROR" --color d93f0b \
+            --description "upstream-check Claude output failed contract parse" 2>/dev/null || true
+
+      - name: Pre-check
+        id: precheck
+        run: node scripts/upstream-precheck.mjs
+
+      - name: Watchdog — commit fetch-failure state
+        id: watchdog-commit
+        if: steps.precheck.outputs.fetch_failure == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          if ! git diff --quiet -- .github/upstream-state.json; then
+            git -c user.name='github-actions[bot]' \
+                -c user.email='github-actions[bot]@users.noreply.github.com' \
+                add .github/upstream-state.json
+            git -c user.name='github-actions[bot]' \
+                -c user.email='github-actions[bot]@users.noreply.github.com' \
+                commit -m "chore(upstream): bump fetch-failure counter (${{ steps.precheck.outputs.consecutive_failures }} consecutive)"
+            for i in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main && git push origin HEAD:main && break
+              sleep $((i * 5))
+            done
+          fi
+
+      - name: Watchdog — open feed-unreachable issue on 3rd strike
+        id: watchdog-open
+        if: steps.precheck.outputs.fetch_failure == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONSECUTIVE: ${{ steps.precheck.outputs.consecutive_failures }}
+          FETCH_ERROR: ${{ steps.precheck.outputs.fetch_error }}
+        run: |
+          if [ "$CONSECUTIVE" -lt 3 ]; then
+            echo "Only $CONSECUTIVE consecutive failures — not opening watchdog yet."
+            exit 0
+          fi
+          EXISTING=$(gh issue list --label "$LABEL_FETCH_ERROR" --state open --json number --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "Watchdog already open; skipping."
+            exit 0
+          fi
+          TODAY=$(date -u +%Y-%m-%d)
+          BODY_FILE="$RUNNER_TEMP/watchdog-body.md"
+          cat > "$BODY_FILE" <<BODY
+          The anthropic-watch feeds have been unreachable for ${CONSECUTIVE} consecutive runs of \`.github/workflows/upstream-check.yml\`.
+
+          Last error:
+
+          \`\`\`
+          ${FETCH_ERROR}
+          \`\`\`
+
+          The workflow will continue to retry daily at 09:30 UTC. Trigger a manual re-check:
+
+          \`\`\`
+          gh workflow run upstream-check.yml
+          \`\`\`
+
+          This issue will be closed automatically on the first successful run.
+          BODY
+          URL=$(gh issue create \
+            --title "upstream: anthropic-watch feeds unreachable (${TODAY})" \
+            --body-file "$BODY_FILE" \
+            --label "$LABEL_UPSTREAM" --label "$LABEL_AUTOMATED" --label "$LABEL_FETCH_ERROR")
+          NUM="${URL##*/}"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "num=$NUM" >> "$GITHUB_OUTPUT"
+
+          # Amend state with the watchdog issue number and push.
+          node -e "
+            const fs = require('node:fs');
+            const p = '.github/upstream-state.json';
+            const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+            s.openWatchdogIssueNumber = ${NUM};
+            fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+          "
+          git -c user.name='github-actions[bot]' \
+              -c user.email='github-actions[bot]@users.noreply.github.com' \
+              add .github/upstream-state.json
+          git -c user.name='github-actions[bot]' \
+              -c user.email='github-actions[bot]@users.noreply.github.com' \
+              commit -m "chore(upstream): link watchdog issue #${NUM}"
+          for i in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main && git push origin HEAD:main && break
+            sleep $((i * 5))
+          done
+
+      - name: Claude cross-reference
+        id: claude
+        # claude-code-action@v1 operates on the workflow's current checkout by
+        # default (documented in its README). Feed-derived content is untrusted,
+        # so --disallowedTools narrows the default toolset to Read-only.
+        if: steps.precheck.outputs.has_new == 'true' && steps.precheck.outputs.fetch_failure != 'true'
+        uses: anthropics/claude-code-action@v1 # TODO(security): pin SHA
+        env:
+          NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
+          FEED_REPORT_PATH: ${{ steps.precheck.outputs.feed_report_path }}
+          RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--model claude-sonnet-4-6 --max-turns 15 --disallowedTools Edit Write Bash NotebookEdit'
+          prompt: |
+            You are auditing new Anthropic upstream items to decide whether the Worclaude maintainer should open a GitHub issue about them.
+
+            Inputs are provided as files (paths in environment variables):
+            - NEW_ITEMS_PATH: JSON array of new feed items since the last run
+            - FEED_REPORT_PATH: full run-report.json for source health context
+            - RUN_TIMESTAMP: ISO timestamp of when anthropic-watch's scraper last ran
+
+            Read the input files with the Read tool. Do NOT use Bash, Edit, Write, or NotebookEdit — those tools are disallowed by the workflow for security reasons.
+
+            Pre-baked facts (verified 2026-04-18, do not re-check):
+            - Worclaude does NOT depend on `@anthropic-ai/sdk` or `anthropic`. Treat API/SDK docs items as informational unless this phase re-verifies that fact.
+            - Agent model fields in Worclaude use short aliases (`sonnet`, `opus`, `haiku`) — never fully-qualified IDs. Model-ID bumps in changelogs do NOT affect the agent catalog.
+
+            Do all of the following:
+
+            1. Read NEW_ITEMS_PATH and group items by source.
+
+            2. For each item, decide if it is "worth a Worclaude issue." Use the same cross-reference rules as `.claude/commands/upstream-check.md` — read that file with the Read tool and follow its classification logic (the critical-source list, the Worclaude-specific cross-reference rules against templates/agents, templates/commands, templates/hooks, src/data/agents.js, src/data/agent-registry.js, docs/spec/BACKLOG-v2.1.md, and CLAUDE.md Critical Rules).
+
+            3. An item is worth an issue if it falls into any of these buckets:
+               - Claude Code release / changelog / npm — always worth mentioning
+               - Agent SDK TS/Py changelog — always worth mentioning
+               - Engineering blog with a new pattern, skill idea, or convention — worth mentioning
+               - Any item that you can tie to a specific Worclaude file or backlog entry — worth mentioning
+               Items that are NOT worth an issue: status page incidents, marketing blog posts unrelated to developer workflow, API/SDK docs (per pre-baked fact above).
+
+            4. Your final assistant response is the output. Print it directly with no preamble and no commentary after. Do not use Write, Bash, or any other tool to emit output — just type your response. The action captures the full transcript; the parser reads the final assistant message from that transcript.
+
+            5. Output format — first non-whitespace line of your final response determines the path:
+
+               If NO items are worth an issue, print exactly one line (and nothing else):
+                 SKIP_ISSUE
+
+               If AT LEAST ONE item is worth an issue, print exactly this structure (no preamble, no trailing commentary):
+
+                 # Title: upstream: {N} new items to review ({YYYY-MM-DD})
+                 # Body
+                 ## Summary
+                 {one-paragraph overview: how many items, which sources, whether any CRITICAL ones exist}
+
+                 ## Worth Action
+                 {bulleted list of items that map to specific Worclaude files; each bullet: **[Source] Title** ([url]({url})) — one-line why-it-matters — affected file(s)}
+
+                 ## Informational
+                 {bulleted list of items worth knowing but not requiring action; each bullet: title, source, one-line reason}
+
+                 ## Recommended Actions
+                 {numbered list of concrete follow-ups, each naming a specific file and the upstream change that prompts it; at most 5 items, ordered by urgency}
+
+                 ---
+                 _Generated by `.github/workflows/upstream-check.yml` on {RUN_TIMESTAMP}. Close this issue after reviewing._
+
+            Rules:
+            - Be concrete. "Check the agents" is wrong; "Check src/data/agents.js — Sonnet ID field for the ui-reviewer agent" is right.
+            - Keep Summary ≤ 3 sentences, "Worth Action" ≤ 8 bullets, "Informational" ≤ 10 bullets, "Recommended Actions" ≤ 5 items.
+            - If confidence that an item affects Worclaude is low, list it as Informational rather than Worth Action.
+            - Use the Read tool only for files mentioned in the cross-reference rules. Do not wander the repo.
+            - The parser is strict. Do NOT emit any text before the first contract line (`SKIP_ISSUE` or `# Title: `) in your final response. No preamble like "I've analyzed...", no reasoning summary, no closing "hope this helps." Just the contract content.
+
+      - name: Parse Claude output
+        id: parse
+        if: steps.claude.outcome == 'success'
+        run: node scripts/upstream-parse.mjs "${{ steps.claude.outputs.execution_file }}"
+
+      - name: State push (before issue create)
+        id: state-push
+        if: >-
+          github.ref == 'refs/heads/main'
+          && steps.precheck.outputs.has_new == 'true'
+          && steps.claude.outcome == 'success'
+          && steps.parse.outcome == 'success'
+          && steps.parse.outputs.parse_error == ''
+          && steps.parse.outputs.skip == 'false'
+        env:
+          NEXT_STATE_PATH: ${{ steps.precheck.outputs.next_state_path }}
+          NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
+        run: |
+          cp "$NEXT_STATE_PATH" .github/upstream-state.json
+          git -c user.name='github-actions[bot]' \
+              -c user.email='github-actions[bot]@users.noreply.github.com' \
+              add .github/upstream-state.json
+          git -c user.name='github-actions[bot]' \
+              -c user.email='github-actions[bot]@users.noreply.github.com' \
+              commit -m "chore(upstream): update state after ${NEW_COUNT} items"
+          for i in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main && git push origin HEAD:main && break
+            sleep $((i * 5))
+          done
+
+      - name: Create issue
+        id: create-issue
+        if: >-
+          github.ref == 'refs/heads/main'
+          && steps.parse.outcome == 'success'
+          && steps.parse.outputs.skip == 'false'
+          && steps.parse.outputs.parse_error == ''
+          && steps.state-push.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          URL=$(gh issue create \
+            --title "${{ steps.parse.outputs.title }}" \
+            --body-file "${{ steps.parse.outputs.body_path }}" \
+            --label "$LABEL_UPSTREAM" --label "$LABEL_AUTOMATED")
+          NUM="${URL##*/}"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "num=$NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Rollback — close superseded upstream issues
+        if: github.ref == 'refs/heads/main' && steps.create-issue.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_ISSUE_NUM: ${{ steps.create-issue.outputs.num }}
+        run: |
+          gh issue list --label "$LABEL_UPSTREAM" --state open \
+            --json number,createdAt,comments,reactionGroups \
+          | node -e "
+              const issues = JSON.parse(require('fs').readFileSync(0));
+              const today = process.env.NEW_ISSUE_NUM;
+              const cutoff = Date.now() - 24*60*60*1000;
+              for (const i of issues) {
+                if (String(i.number) === today) continue;
+                if (new Date(i.createdAt).getTime() > cutoff) continue;
+                if (i.comments > 0) continue;
+                if (i.reactionGroups.some(r => r.reactors.totalCount > 0)) continue;
+                console.log(i.number);
+              }
+            " \
+          | while read num; do
+              gh issue close "$num" --comment "Superseded by #$NEW_ISSUE_NUM — no interaction recorded on this issue."
+            done
+
+      - name: Watchdog — recover (close feed-unreachable issue)
+        if: >-
+          github.ref == 'refs/heads/main'
+          && steps.precheck.outputs.fetch_failure == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
+        run: |
+          OPEN_WATCHDOG=$(gh issue list --label "$LABEL_FETCH_ERROR" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$OPEN_WATCHDOG" ]; then
+            exit 0
+          fi
+          gh issue close "$OPEN_WATCHDOG" \
+            --comment "Feeds recovered at ${RUN_TIMESTAMP}."
+          node -e "
+            const fs = require('node:fs');
+            const p = '.github/upstream-state.json';
+            const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (s.openWatchdogIssueNumber != null) {
+              s.openWatchdogIssueNumber = null;
+              fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+            }
+          "
+          if ! git diff --quiet -- .github/upstream-state.json; then
+            git -c user.name='github-actions[bot]' \
+                -c user.email='github-actions[bot]@users.noreply.github.com' \
+                add .github/upstream-state.json
+            git -c user.name='github-actions[bot]' \
+                -c user.email='github-actions[bot]@users.noreply.github.com' \
+                commit -m "chore(upstream): clear watchdog after recovery"
+            for i in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main && git push origin HEAD:main && break
+              sleep $((i * 5))
+            done
+          fi
+
+      - name: Parse-error fallback issue
+        if: >-
+          github.ref == 'refs/heads/main'
+          && steps.parse.outcome == 'success'
+          && steps.parse.outputs.parse_error != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RAW_PATH: ${{ steps.parse.outputs.raw_path }}
+          PARSE_ERROR: ${{ steps.parse.outputs.parse_error }}
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          gh issue create \
+            --title "upstream: parse error on ${TODAY}" \
+            --body-file "$RAW_PATH" \
+            --label "$LABEL_UPSTREAM" --label "$LABEL_AUTOMATED" --label "$LABEL_PARSE_ERROR"
+
+      - name: Step summary
+        if: always()
+        env:
+          FETCH_FAILURE: ${{ steps.precheck.outputs.fetch_failure }}
+          CONSECUTIVE: ${{ steps.precheck.outputs.consecutive_failures }}
+          NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
+          RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          PARSE_OUTCOME: ${{ steps.parse.outcome }}
+          PARSE_SKIP: ${{ steps.parse.outputs.skip }}
+          PARSE_ERROR: ${{ steps.parse.outputs.parse_error }}
+          ISSUE_NUM: ${{ steps.create-issue.outputs.num }}
+          WATCHDOG_NUM: ${{ steps.watchdog-open.outputs.num }}
+        run: |
+          FETCH_STATUS="ok"
+          if [ "$FETCH_FAILURE" = "true" ]; then
+            FETCH_STATUS="failed (${CONSECUTIVE} consecutive)"
+          fi
+          PARSE_STATUS="$PARSE_OUTCOME"
+          if [ "$PARSE_SKIP" = "true" ]; then
+            PARSE_STATUS="skip"
+          elif [ -n "$PARSE_ERROR" ]; then
+            PARSE_STATUS="error: $PARSE_ERROR"
+          fi
+          {
+            echo "## Upstream Check"
+            echo "- Run timestamp: ${RUN_TIMESTAMP:-n/a}"
+            echo "- Fetch: ${FETCH_STATUS}"
+            echo "- New items: ${NEW_COUNT:-0}"
+            echo "- Claude: ${CLAUDE_OUTCOME:-skipped}"
+            echo "- Parse: ${PARSE_STATUS:-skipped}"
+            echo "- Issue: ${ISSUE_NUM:-none}"
+            echo "- Watchdog: ${WATCHDOG_NUM:-none}"
+          } >> "$GITHUB_STEP_SUMMARY"
