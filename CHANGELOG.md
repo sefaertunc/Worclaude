@@ -4,6 +4,22 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.2] — 2026-04-18
+
+Hygiene patch closing three drifts surfaced by the 2026-04-18 anthropic-watch feed audit. No user-facing CLI surface change; `worclaude init` / `upgrade` produce identical output to 2.4.1.
+
+### Added
+
+- `worclaude doctor` now recognizes the 7 hook events introduced since Claude Code 2.1.101: `TaskCreated`, `TaskCompleted`, `StopFailure`, `InstructionsLoaded`, `ConfigChange`, `Elicitation`, `ElicitationResult`. `VALID_HOOK_EVENTS` grew from 20 to 27 — matching `docs/reference/hooks.md` and `docs/spec/SPEC.md`, which already documented 27.
+- `worclaude doctor` warns on agents declaring `claude-sonnet-4` / `sonnet-4` (Anthropic retires these model IDs on 2026-06-15).
+- New `docs/spec/BACKLOG-v2.1.md` entry — "Sandbox defaults in scaffolded settings" — captures open design questions for scaffolding the Claude Code 2.1.113 `sandbox.network.deniedDomains` feature in a future minor.
+- `docs/reference/upstream-automation.md` — new "Action pinning" policy paragraph and "Version history" section (2.4.0 → 2.4.2).
+
+### Changed
+
+- `.github/workflows/upstream-check.yml` — `anthropics/claude-code-action` pinned from floating `@v1` to commit SHA `38ec876110f9fbf8b950c79f534430740c3ac009` (v1.0.101). Closes the pre-existing `TODO(security):` comment in the workflow. Feed content is untrusted user input; floating `@v1` let any future action release run unreviewed against the repo's `CLAUDE_CODE_OAUTH_TOKEN`.
+- `src/commands/doctor.js` version-stamp comment refreshed from v2.1.101 to v2.1.114. `Setup` retained in the hook event set with an inline rationale comment (older worclaude scaffolds may still declare it).
+
 ## [2.4.1] — 2026-04-18
 
 Internal CI tooling — no change to the scaffolded output or npm package surface.
