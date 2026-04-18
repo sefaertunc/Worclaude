@@ -22,6 +22,8 @@ This page documents the server-side automation. For the on-demand counterpart, s
 | Auth              | Repo secret `CLAUDE_CODE_OAUTH_TOKEN` (uses the maintainer's Max plan quota)                      |
 | Tool restrictions | `--disallowedTools Edit Write Bash NotebookEdit` — feed content is untrusted; Claude is read-only |
 
+**Action pinning:** `anthropics/claude-code-action` is pinned to a specific commit SHA rather than the floating `@v1` tag. Feed content is untrusted user input, so every action upgrade would otherwise run unreviewed against the maintainer's `CLAUDE_CODE_OAUTH_TOKEN`. Bumping the pin is a deliberate maintainer step — review the [upstream release notes](https://github.com/anthropics/claude-code-action/releases), then update the SHA (and the trailing `# vX.Y.Z` annotation) in `.github/workflows/upstream-check.yml`.
+
 The cron runs at a fixed UTC time; DST drift (±1h local) is accepted.
 
 ## State File
@@ -95,3 +97,9 @@ The workflow fails loudly on a rejected push; it does not attempt to retry aroun
 ## Relationship to `/upstream-check`
 
 The slash command (`.claude/commands/upstream-check.md`) is stateless and user-driven — good for ad-hoc checks inside a Claude Code session. The automated workflow is stateful and passive — good for catching upstream drift when you haven't opened the repo in a while. Both are expected to coexist indefinitely.
+
+## Version history
+
+- **2.4.0** — `/upstream-check` slash command and `upstream-watcher` agent shipped. Manual, on-demand, stateless.
+- **2.4.1** — `.github/workflows/upstream-check.yml` + `.github/upstream-state.json` (schema v2) + this reference page shipped. Daily cron at 09:30 UTC; classifies via `anthropics/claude-code-action@v1`; opens a labeled GitHub issue; pushes state updates to `main`.
+- **2.4.2** — `anthropics/claude-code-action` pinned to a specific commit SHA (see **Action pinning** above). The floating `@v1` tag was replaced because feed content is untrusted and action upgrades would otherwise run unreviewed against the maintainer's `CLAUDE_CODE_OAUTH_TOKEN`.

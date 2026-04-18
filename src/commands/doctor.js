@@ -17,12 +17,13 @@ const PASS = 'pass';
 const WARN = 'warn';
 const FAIL = 'fail';
 
-// Claude Code v2.1.101 documented hook events (closed set)
+// Claude Code v2.1.114 documented hook events (closed set)
 const VALID_HOOK_EVENTS = new Set([
   'PreToolUse',
   'PostToolUse',
   'PostToolUseFailure',
   'Stop',
+  'StopFailure',
   'PreCompact',
   'PostCompact',
   'SessionStart',
@@ -33,6 +34,15 @@ const VALID_HOOK_EVENTS = new Set([
   'PermissionDenied',
   'SubagentStart',
   'SubagentStop',
+  'TaskCreated',
+  'TaskCompleted',
+  'InstructionsLoaded',
+  'ConfigChange',
+  'Elicitation',
+  'ElicitationResult',
+  // Setup: retained conservatively — not in 2.1.114 docs, but older
+  // worclaude scaffolds may still declare it; removing would flip
+  // doctor from PASS → FAIL on legitimate prior installs.
   'Setup',
   'CwdChanged',
   'FileChanged',
@@ -41,14 +51,17 @@ const VALID_HOOK_EVENTS = new Set([
   'TeammateIdle',
 ]);
 
-// Models deprecated in favor of alias-only references (opus, sonnet, haiku)
+// Models deprecated in favor of alias-only references (opus, sonnet, haiku).
+// claude-sonnet-4 / sonnet-4: Anthropic retires 2026-06-15.
 const DEPRECATED_MODELS = new Set([
   'opus-4',
   'opus-4.1',
+  'sonnet-4',
   'claude-3-opus',
   'claude-3-haiku',
   'claude-opus-4',
   'claude-opus-4-1',
+  'claude-sonnet-4',
 ]);
 
 // Events where blocking is by design — their output or side-effects must
