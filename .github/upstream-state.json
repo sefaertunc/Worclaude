@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "lastRun": "2026-04-18T09:08:21.145Z",
+  "consecutiveFetchFailures": 0,
+  "openWatchdogIssueNumber": null,
+  "lastSeenItems": [
+    {
+      "id": "0.1.63",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "0.2.114",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "2.1.114",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "v1.0.101",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "v2.1.114",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "2.1.114",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "v1.0.100",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "v2.1.113",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "4t4qg3vkrz6z",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    },
+    {
+      "id": "https://support.claude.com/en/articles/12138966-release-notes#h_63ecf85ba7",
+      "firstSeen": "2026-04-18T09:08:21.145Z"
+    }
+  ]
+}
