@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.0
-**Last Updated:** 2026-04-16
+**Version:** 2.4.1
+**Last Updated:** 2026-04-18
 
 ## Completed
 
@@ -340,6 +340,23 @@
   - [x] **PR #66 — dogfood `.claude/commands/upstream-check.md`.** Worclaude-internal variant distinct from the scaffolded template: shares the fetch behavior and `[CRITICAL]` source list, adds a Worclaude-specific cross-reference section that checks each critical item against `src/data/agents.js`, `src/data/agent-registry.js`, `src/core/scaffolder.js`, `src/core/merger.js`, `templates/hooks/*.cjs`, `templates/agents/**/*.md`, `templates/commands/*.md`, `templates/skills/universal/*.md`, `docs/spec/BACKLOG-v2.1.md`, `CLAUDE.md` Critical Rules, and `package.json` (for `@anthropic-ai/*` deps). Each cross-reference classified Action needed / No impact detected / Needs investigation. Validated live: 16/16 sources healthy, 7 new items (Claude Code 2.1.110, Agent SDK TS 0.2.110, Opus/Sonnet 4.6 + Haiku 4.5 models docs update), no Worclaude impact detected for current upstream state.
   - [x] Audit passes completed pre- and post-merge for both PRs: full template quality, manifest consistency (26 registry / 6 universal / 18 commands), agent routing, live feed execution, scaffold smoke test, divergence check between template and dogfood versions. 497/497 tests pass, eslint clean.
   - [x] /sync (2026-04-16): version bumped 2.3.0 → 2.4.0 (minor — new feature). README / CLAUDE.md / SPEC.md / PROGRESS.md / docs/reference + docs/guide counts updated (25 → 26 agents, 17 → 18 commands, 5 → 6 universal). CHANGELOG `[Unreleased]` promoted to `[2.4.0]` with the dogfood entry added.
+
+- [x] v2.4.1: Upstream automation — daily issue-opening workflow (2026-04-18)
+  - [x] **PR #68 — docs backfill for v2.4.0.** Catch-up pass on the VitePress site after the v2.4.0 /sync missed it: `docs/index.md` (26 agents / 18 slash commands), `docs/guide/introduction.md` (counts + `upstream-watcher` in universal-agent list + `/upstream-check` in slash-command enumeration), `docs/reference/agents.md` (dedicated upstream-watcher section matching verify-app style + summary-table row + runtime-properties matrix row + file-listing example), `docs/reference/slash-commands.md` (new /upstream-check section with File / When / What / Key behavior columns), `docs/spec/SPEC.md` (two current-state count references bumped to 18; v2.0.0 historical phase description preserved). No code change, no version bump — landed on top of 2.4.0 as docs-only.
+  - [x] **PR #69 — daily upstream-check automation.** Completes the emit half of the anthropic-watch integration. v2.4.0 shipped the manual `/upstream-check` slash command; this adds the scheduled companion that turns upstream deltas into actionable GitHub issues.
+    - `.github/workflows/upstream-check.yml` (387 lines): 09:30 UTC cron. Fetches anthropic-watch feeds, diffs against committed state, invokes `anthropics/claude-code-action` with `--disallowedTools Edit Write Bash NotebookEdit` (feed content is untrusted), pushes state to `main` BEFORE opening the issue so retries cannot duplicate. Every mutation gated on `github.ref == 'refs/heads/main'` — feature-branch dispatches stay read-only diagnostics. 3-strike feed-unreachable watchdog with auto-recovery. Parse-error fallback. Rollback closes superseded untouched upstream issues.
+    - `scripts/upstream-precheck.mjs`: zero-dep Node 20 parallel feed fetch (10s timeout), Set-based delta detection, 90-day `firstSeen` prune, `STATE_PATH` override for local testing. On fetch failure, bumps `consecutiveFetchFailures` in the state file directly so the counter survives skipped downstream steps.
+    - `scripts/upstream-parse.mjs`: reads `claude-code-action` execution JSONL, extracts last assistant message (supports both `stream-json` and legacy shapes), applies strict `SKIP_ISSUE` / `# Title:` / `# Body` contract with plaintext fallback.
+    - `scripts/_gha-outputs.mjs`: shared zero-dep GitHub Actions helpers.
+    - `.github/upstream-state.json`: schema v2 state file, seeded from live `all.json`.
+    - `tests/fixtures/upstream/`: four parser fixtures (skip, issue, malformed, plaintext-fallback).
+    - `docs/reference/upstream-automation.md`: new reference page with operations runbook and required branch-protection settings.
+    - `docs/reference/slash-commands.md`: one-line cross-link to the new page.
+    - `docs/.vitepress/config.mjs`: sidebar entry; `phases/**` added to `srcExclude`.
+    - `docs/research/PHASE-1-DIAGNOSIS-REPORT.md` removed (retired investigation scratchpad, preserved in git history).
+  - [x] All new surface area lives in `.github/`, `scripts/`, `docs/`, and `tests/` — all excluded from the npm package. No change to scaffolded output; worclaude CLI users see nothing new.
+  - [x] Validated pre-merge: 497/497 tests pass, lint clean, docs build clean, all 4 parser fixtures produce expected outputs, precheck happy + delta paths correct.
+  - [x] /sync (2026-04-18): version bumped 2.4.0 → 2.4.1 (patch — CI-only tooling, no user-facing change). CHANGELOG `[Unreleased]` promoted to `[2.4.1]`.
 
 ## Stats
 

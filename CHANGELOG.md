@@ -2,6 +2,31 @@
 
 All notable changes to worclaude are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/). Older releases (pre-2.3.0) are documented in [docs/spec/PROGRESS.md](./docs/spec/PROGRESS.md) and the [GitHub releases page](https://github.com/sefaertunc/Worclaude/releases).
 
+## [Unreleased]
+
+## [2.4.1] — 2026-04-18
+
+Internal CI tooling — no change to the scaffolded output or npm package surface.
+
+### Added
+
+- Daily `upstream-check` GitHub Actions workflow (09:30 UTC cron) that fetches the anthropic-watch feeds, diffs against committed state, and opens a GitHub issue when a Worclaude-relevant change appears. Completes the emit half of the anthropic-watch integration ([#69](https://github.com/sefaertunc/Worclaude/pull/69)).
+- `scripts/upstream-precheck.mjs` — zero-dep Node 20 parallel feed fetch with 10s timeout, Set-based delta detection, 90-day firstSeen prune, and a 3-strike feed-unreachable watchdog with auto-recovery.
+- `scripts/upstream-parse.mjs` — reads `claude-code-action` execution JSONL, applies a strict `SKIP_ISSUE` / `# Title:` / `# Body` contract with a plaintext fallback.
+- `scripts/_gha-outputs.mjs` — shared zero-dep GitHub Actions helpers.
+- `.github/upstream-state.json` — schema v2 state file (seeded from live `all.json`); every mutation gated on `github.ref == 'refs/heads/main'` so feature-branch dispatches stay read-only.
+- `tests/fixtures/upstream/` — four parser fixtures (skip, issue, malformed, plaintext-fallback).
+- `docs/reference/upstream-automation.md` — operations runbook and required branch-protection settings for the workflow.
+
+### Changed
+
+- `docs/reference/slash-commands.md` — cross-link to the new upstream-automation reference page.
+- `docs/.vitepress/config.mjs` — sidebar entry for upstream-automation; `phases/**` added to `srcExclude`.
+
+### Removed
+
+- `docs/research/PHASE-1-DIAGNOSIS-REPORT.md` — retired investigation scratchpad (preserved in git history).
+
 ## [2.4.0] — 2026-04-16
 
 Worclaude 2.4.0 adds **upstream awareness**: every scaffolded project now ships a `/upstream-check` command and an `upstream-watcher` universal agent that consume the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds at runtime (16 Anthropic sources — Claude Code releases, SDK changelogs, docs, engineering blog, status page, and more) and report what's new, what's critical, and what affects the current project. No new npm dependencies — fetching happens via `curl` inside Claude Code.
