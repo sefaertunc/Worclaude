@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.2
+**Version:** 2.4.3
 **Last Updated:** 2026-04-18
 
 ## Completed
@@ -358,17 +358,19 @@
   - [x] Validated pre-merge: 497/497 tests pass, lint clean, docs build clean, all 4 parser fixtures produce expected outputs, precheck happy + delta paths correct.
   - [x] /sync (2026-04-18): version bumped 2.4.0 → 2.4.1 (patch — CI-only tooling, no user-facing change). CHANGELOG `[Unreleased]` promoted to `[2.4.1]`.
 
-- [x] v2.4.2: Upstream-catchup hygiene — SHA pin + doctor refresh (2026-04-18)
+- [x] v2.4.3: Upstream-catchup hygiene + packaging fix (2026-04-18)
   - [x] **PR #71 — close three drifts surfaced by the 2026-04-18 anthropic-watch audit.** No user-facing CLI surface change.
     - `.github/workflows/upstream-check.yml`: `anthropics/claude-code-action` pinned from floating `@v1` to commit SHA `38ec876110f9fbf8b950c79f534430740c3ac009` (v1.0.101). Closes the pre-existing `TODO(security):` comment. Feed content is untrusted user input; floating `@v1` let any future action release run unreviewed against `CLAUDE_CODE_OAUTH_TOKEN`.
     - `src/commands/doctor.js`: `VALID_HOOK_EVENTS` refreshed 20 → 27. Added `TaskCreated`, `TaskCompleted`, `StopFailure`, `InstructionsLoaded`, `ConfigChange`, `Elicitation`, `ElicitationResult`. Version-stamp comment v2.1.101 → v2.1.114. Closes drift against `docs/reference/hooks.md:222` and `docs/spec/SPEC.md` which already documented 27. `Setup` retained conservatively (older scaffolds may declare it) with inline rationale comment.
     - `src/commands/doctor.js`: `DEPRECATED_MODELS` extended with `sonnet-4` / `claude-sonnet-4` (Anthropic retires these model IDs on 2026-06-15). `claude-opus-4-6` / `claude-sonnet-4-5` left out — docs label them "legacy," not formally deprecated.
     - `docs/spec/BACKLOG-v2.1.md`: new "Sandbox defaults in scaffolded settings" section capturing open design questions for scaffolding the Claude Code 2.1.113 `sandbox.network.deniedDomains` feature (deny-list defaults, per-language overrides, merger semantics, ~8-test estimate).
-    - `docs/reference/upstream-automation.md`: new "Action pinning" policy paragraph + "Version history" section (2.4.0 → 2.4.2).
-    - `RELEASE-NOTES-v2.4.2.md`: tying the 2.4.0 → 2.4.1 → 2.4.2 upstream-awareness arc together.
+    - `docs/reference/upstream-automation.md`: new "Action pinning" policy paragraph + "Version history" section (2.4.0 → 2.4.3).
+  - [x] **PR #73 — packaging fix.** `package.json` `bin.worclaude` path normalized from `./src/index.js` to `src/index.js` to silence the cosmetic `npm publish` warning (npm already normalized the value at publish time; installed binary is unchanged).
+  - [x] **Post-release cleanup:** per-version `RELEASE-NOTES-*.md` files removed from the repo root — release notes are published via GitHub Releases going forward, not committed as tracked files.
   - [x] Two new regression tests: `passes hook event names for Claude Code 2.1.114 additions` (covers TaskCompleted) and `warns on agents using claude-sonnet-4 (retires 2026-06-15)`. Test suite 497 → 499.
-  - [x] Validated pre-merge: 499/499 tests pass, lint clean, docs build clean, `prettier --check` clean.
-  - [x] /sync (2026-04-18): version bumped 2.4.1 → 2.4.2 (patch — hygiene). CHANGELOG `[Unreleased]` promoted to `[2.4.2]`.
+  - [x] Note on intermediate `2.4.2`: the 2.4.2 tag and npm package were published from PR #72, before PR #73 landed. The 2.4.2 and 2.4.3 GitHub Release pages were consolidated into a single `v2.4.3` release representing the full hardening pass; `2.4.2` remains on the npm registry but is superseded by `2.4.3`.
+  - [x] Validated pre-merge: 499/499 tests pass, lint clean.
+  - [x] /sync (2026-04-18): version bumped 2.4.2 → 2.4.3 (patch — hygiene + packaging). CHANGELOG `[Unreleased]` promoted to `[2.4.3]` (consolidates the [2.4.2] entry, which was collapsed into [2.4.3] to match the published GitHub Release narrative).
 
 ## Stats
 
