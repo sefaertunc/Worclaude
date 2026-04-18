@@ -338,6 +338,17 @@ describe('doctor command', () => {
     expect(output).not.toContain('Unknown hook event');
   });
 
+  it('passes hook event names for Claude Code 2.1.114 additions', async () => {
+    await scaffoldProject(tmpDir, {
+      extraHooks: {
+        TaskCompleted: [{ matcher: '', hooks: [{ type: 'command', command: 'echo done' }] }],
+      },
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).not.toContain("Unknown hook event 'TaskCompleted'");
+  });
+
   // Hook script files (Task 4)
   it('fails when a hook references a missing script file', async () => {
     await scaffoldProject(tmpDir, {
@@ -425,6 +436,18 @@ describe('doctor command', () => {
     await doctorCommand();
     const output = getOutput();
     expect(output).toContain("deprecated model 'opus-4.1'");
+  });
+
+  it('warns on agents using claude-sonnet-4 (retires 2026-06-15)', async () => {
+    await scaffoldProject(tmpDir);
+    const agentPath = path.join(tmpDir, '.claude', 'agents', `${UNIVERSAL_AGENTS[0]}.md`);
+    await fs.writeFile(
+      agentPath,
+      `---\nname: ${UNIVERSAL_AGENTS[0]}\ndescription: test\nmodel: claude-sonnet-4\n---\n\n# body`
+    );
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain("deprecated model 'claude-sonnet-4'");
   });
 
   // AGENTS.md (Task 8)
