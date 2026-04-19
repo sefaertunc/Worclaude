@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.4
+**Version:** 2.4.5
 **Last Updated:** 2026-04-19
 
 ## Completed
@@ -378,6 +378,18 @@
   - [x] Intentional shared-state-on-feature-branch override: README edit + `package.json` 2.4.3 → 2.4.4 + CHANGELOG `[2.4.4]` entry all landed in the same PR (maintainer decision, documented in `.claude/plans/add-an-acknowledgments-section-ethereal-rain.md`). `/sync` did NOT re-bump — package.json already at 2.4.4 on merge.
   - [x] Validated pre-merge: 499/499 tests pass, lint clean, `npm run format` no-op.
   - [x] /sync (2026-04-19): version already at 2.4.4 (no bump). PROGRESS.md header + completed entry updated. CHANGELOG `[2.4.4]` entry was written in PR #75, not promoted from `[Unreleased]`.
+
+- [x] v2.4.5: GitHub Actions Node 20 → Node 24 runtime bump (2026-04-19)
+  - [x] **PR #77 — bump every Node-20-runtime action past the upcoming GitHub runner cutover.** GitHub is force-running Node 20 actions on Node 24 starting 2026-06-02 and removing the Node 20 runtime from runners on 2026-09-16; the deprecation banner first surfaced on the 2026-04-19 manual `upstream-check` run. Five action references across three workflows now target majors that ship a Node 24 runtime:
+    - `.github/workflows/ci.yml` — `actions/checkout@v4 → @v6` (×2), `actions/setup-node@v4 → @v6` (×2)
+    - `.github/workflows/deploy-docs.yml` — `actions/checkout@v4 → @v6`, `actions/setup-node@v4 → @v6`, `actions/configure-pages@v4 → @v6`, `actions/upload-pages-artifact@v3 → @v5`, `actions/deploy-pages@v4 → @v5`
+    - `.github/workflows/upstream-check.yml` — `actions/checkout@v4 → @v6`, `actions/setup-node@v4 → @v6`
+  - [x] `anthropics/claude-code-action` (SHA-pinned at `38ec876...` = v1.0.101 per the v2.4.3 pinning policy) is a Docker action, not affected by the Node runtime deprecation, and deliberately untouched.
+  - [x] `setup-node@v6` has one breaking change — automatic caching is now limited to npm — but every worclaude workflow already sets `cache: 'npm'` explicitly, so the change is a no-op.
+  - [x] `docs/reference/upstream-automation.md` — new **2.4.5** entry in the "Version history" section noting the supporting-action bump and reaffirming that the SHA-pinned Anthropic action was not touched. This page is not on the shared-state list (`git-conventions.md:108`) so the edit landed on the feature branch; rule #14 was not violated.
+  - [x] Intentional shared-state-on-feature-branch override: `package.json` 2.4.4 → 2.4.5 + CHANGELOG `[Unreleased]` entry landed in the same PR (plan: `.claude/plans/ok-now-plan-the-cosmic-crown.md`). `/sync` did NOT re-bump — package.json already at 2.4.5 on merge.
+  - [x] Pre-merge verification: 499/499 tests pass locally and on CI (Node 18 / 20 / 22 matrix plus format-check, all green on both the initial push and the docs commit). **Zero Node 20 deprecation annotations on the run summary** — primary success signal for this change. `npm run docs:build` clean.
+  - [x] /sync (2026-04-19): version already at 2.4.5 (no bump). PROGRESS.md header + completed entry updated. CHANGELOG `[Unreleased]` promoted to `[2.4.5]`.
 
 ## Stats
 
