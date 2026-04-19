@@ -122,7 +122,7 @@ claude --worktree --tmux
 | Command             | Description                                                 |
 | ------------------- | ----------------------------------------------------------- |
 | `worclaude init`    | Scaffold workflow into new or existing project              |
-| `worclaude upgrade` | Update universal components to the latest version           |
+| `worclaude upgrade` | Update universal components and repair on-disk drift        |
 | `worclaude status`  | Show current workflow state, version, and npm update status |
 | `worclaude backup`  | Create a timestamped backup of workflow files               |
 | `worclaude restore` | Restore from a previous backup                              |
@@ -130,7 +130,7 @@ claude --worktree --tmux
 | `worclaude delete`  | Remove worclaude workflow from project                      |
 | `worclaude doctor`  | Validate workflow installation health                       |
 
-The `init` command detects existing setups and merges intelligently — no data is overwritten without your confirmation. Use `upgrade` to pull in new features while preserving your customizations.
+The `init` command detects existing setups and merges intelligently — no data is overwritten without your confirmation. Use `upgrade` to pull in new features, restore missing files, and preserve your customizations. `upgrade` accepts `--dry-run`, `--yes`, and `--repair-only` for scripted flows.
 
 See the [full command reference](https://sefaertunc.github.io/Worclaude/reference/commands) for detailed usage and options.
 

@@ -1,6 +1,6 @@
 # CLI Commands
 
-All Worclaude commands are fully interactive. They accept no positional arguments or flags (beyond `--help` and `--version` on the main binary). User input is collected through Inquirer.js prompts at runtime.
+Worclaude commands are primarily interactive — input is collected through Inquirer.js prompts at runtime. A few commands accept flags for scripting and CI use: `worclaude upgrade` takes `--dry-run`, `--yes`, and `--repair-only`; `worclaude doctor` takes `--json`. Aside from these, no command accepts positional arguments.
 
 ## worclaude init
 
@@ -76,13 +76,21 @@ worclaude init
 
 ## worclaude upgrade
 
-Updates universal workflow components to the latest CLI version. Preserves user customizations.
+Updates universal workflow components to the latest CLI version **and** repairs on-disk drift. Preserves user customizations.
 
 **Syntax**
 
 ```bash
-worclaude upgrade
+worclaude upgrade [--dry-run] [--yes] [--repair-only]
 ```
+
+**Flags**
+
+| Flag            | Effect                                                                         |
+| --------------- | ------------------------------------------------------------------------------ |
+| `--dry-run`     | Preview planned changes and exit without writing anything                      |
+| `--yes`         | Skip the interactive confirmation prompt (for CI / scripted flows)             |
+| `--repair-only` | Run only the drift-repair pass; skip template updates even on version mismatch |
 
 **Prerequisites**
 
@@ -90,39 +98,75 @@ Requires an existing `workflow-meta.json` from a prior `worclaude init`. Exits w
 
 **Behavior**
 
-1. Compares installed version against CLI version. Exits early if already current.
-2. Categorizes every tracked file into one of five buckets:
+1. Compares installed version against CLI version and categorizes every tracked file.
+2. Builds a **repair plan** (missing files to restore, directories to re-create, sidecars to write).
+3. Dispatches based on version state and drift:
 
-| Category        | Meaning                                       | Action                                  |
-| --------------- | --------------------------------------------- | --------------------------------------- |
-| **Auto-update** | File unchanged since install                  | Replaced with new version               |
-| **Conflict**    | User has customized the file                  | New version saved as `.workflow-ref.md` |
-| **New**         | File added in this CLI version                | Installed directly                      |
-| **Unchanged**   | Template unchanged between versions           | No action                               |
-| **Modified**    | User customized, no template update available | No action                               |
+| Situation                            | Flow                                                  |
+| ------------------------------------ | ----------------------------------------------------- |
+| Versions match, no drift             | Prints `Already up to date (vX.Y.Z)` and exits        |
+| Versions match, drift detected       | Runs the **Repair-only** flow (version unchanged)     |
+| Versions differ (default)            | Runs repair pass, then the **Template update** flow   |
+| Versions differ, `--repair-only` set | Runs the Repair-only flow; version stays at installed |
 
-3. Displays a preview of all changes.
-4. Prompts for confirmation (Yes / No).
-5. Creates a backup before applying any changes.
-6. Merges new permissions and hooks into `settings.json`.
-7. Recomputes file hashes and updates `workflow-meta.json`.
+4. Displays a preview covering both repair and template work.
+5. Prompts for confirmation (unless `--yes`).
+6. Creates a backup before applying any changes.
+7. Applies the repair pass, then template updates (auto-update / conflict sidecars / new files / settings merge).
+8. Refreshes hashes and writes `workflow-meta.json`.
+
+### File Categories
+
+Every tracked file lands in one of these buckets:
+
+| Category                | Meaning                                                                                    | Action                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| **Auto-update**         | File unchanged since install, template has new version                                     | Replaced with new version                          |
+| **Conflict**            | User has customized the file, template has new version                                     | New version saved as `.workflow-ref.md`            |
+| **New**                 | File added in this CLI version                                                             | Installed directly                                 |
+| **Missing (expected)**  | File tracked in `fileHashes` but deleted on disk, and still shipped by the current version | **Restored** from template (hash refreshed)        |
+| **Missing (untracked)** | File tracked in `fileHashes` but no longer in templates                                    | Removed from `fileHashes`; on-disk state unchanged |
+| **Unchanged**           | Template unchanged between versions                                                        | No action                                          |
+| **Modified**            | User customized, no template update available                                              | No action                                          |
+
+### Drift Repair (Tier 1)
+
+Before applying version-driven changes, `upgrade` reconciles the installation against the current template set:
+
+- **Missing expected files** are restored from templates; their hashes are refreshed.
+- **Hook scripts** (`.claude/hooks/*.{cjs,js}`) and **`AGENTS.md`** (tracked as `root/AGENTS.md`) became part of `buildTemplateHashMap` in v2.4.6. Installs predating v2.4.6 pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved — a `.workflow-ref<ext>` sidecar is written instead of overwriting.
+- **`.claude/learnings/`** (+ `.gitkeep`) is (re-)created if missing.
+- When `CLAUDE.md` lacks memory-architecture guidance keywords, a **`CLAUDE.md.workflow-ref.md`** sidecar is written alongside with suggested additions. `CLAUDE.md` itself is never auto-modified.
 
 **Examples**
 
 ```bash
-# Standard upgrade
+# Standard upgrade (runs repair pass + template updates)
 worclaude upgrade
 
-# When already current
+# Preview without writing
+worclaude upgrade --dry-run
+
+# Non-interactive (CI-friendly)
+worclaude upgrade --yes
+
+# Repair drift only, don't touch template updates
+worclaude upgrade --repair-only
+
+# Repair + update without prompts
+worclaude upgrade --repair-only --yes
+
+# When already current and no drift
 worclaude upgrade
-# → "Already up to date (v2.2.6)."
+# → "Already up to date (v2.4.6)."
 ```
 
 **Notes**
 
-- A backup is always created before changes are applied.
-- Conflict files should be reviewed manually; delete `.workflow-ref.md` files when done.
-- Settings merge is additive -- existing permissions and hooks are preserved.
+- A backup is always created before any changes are applied (including repair-only runs).
+- Conflict files and `.workflow-ref` sidecars should be reviewed manually; delete them when done.
+- Settings merge is additive — existing permissions and hooks are preserved.
+- Repair only restores files missing from disk. It never overwrites files the user edited; those migrate via the sidecar path.
 
 ### v2.0.0 Migration
 
@@ -254,19 +298,21 @@ Requires `workflow-meta.json`. Exits with guidance if not found.
 
 **Output categories**
 
-| Symbol  | Category  | Meaning                                    |
-| ------- | --------- | ------------------------------------------ |
-| `~`     | Modified  | User changed the file since install        |
-| `-`     | Deleted   | File was removed since install             |
-| `+`     | Extra     | User added files not from the workflow     |
-| `^`     | Outdated  | CLI has a newer template version available |
-| (count) | Unchanged | Files matching their installed hash        |
+| Symbol  | Category                             | Meaning                                                        |
+| ------- | ------------------------------------ | -------------------------------------------------------------- |
+| `~`     | Modified                             | User changed the file since install                            |
+| `-`     | Missing (will be restored)           | Tracked file missing on disk, still shipped by current CLI     |
+| `-`     | Deleted (removed in current version) | Tracked file missing on disk, no longer shipped by current CLI |
+| `+`     | Extra                                | User added files not from the workflow                         |
+| `^`     | Outdated                             | CLI has a newer template version available                     |
+| (count) | Unchanged                            | Files matching their installed hash                            |
 
 **Behavior**
 
 - Compares file hashes against those stored in `workflow-meta.json`.
 - Compares template hashes against the current CLI version to detect outdated files.
-- If outdated files are found, suggests running `worclaude upgrade`.
+- Splits missing files into "will be restored" (still in templates) vs "removed in current version" so the next `worclaude upgrade` run is predictable.
+- If outdated or restorable files are found, suggests running `worclaude upgrade`.
 
 **Examples**
 
