@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.5
+**Version:** 2.4.6
 **Last Updated:** 2026-04-19
 
 ## Completed
@@ -391,6 +391,20 @@
   - [x] Pre-merge verification: 499/499 tests pass locally and on CI (Node 18 / 20 / 22 matrix plus format-check, all green on both the initial push and the docs commit). **Zero Node 20 deprecation annotations on the run summary** — primary success signal for this change. `npm run docs:build` clean.
   - [x] /sync (2026-04-19): version already at 2.4.5 (no bump). PROGRESS.md header + completed entry updated. CHANGELOG `[Unreleased]` promoted to `[2.4.5]`.
 
+- [x] v2.4.6: Upgrade drift repair (2026-04-19)
+  - [x] **PR #79 — fix `worclaude upgrade` silently no-oping when versions match despite on-disk drift.** Discovered during dogfood: `worclaude doctor` on this repo flagged 4 missing hook scripts, `AGENTS.md`, `.claude/learnings/`, and CLAUDE.md memory guidance; `worclaude upgrade` said "Already up to date" and reconciled nothing. Root causes: (1) version-equality short-circuit at `src/commands/upgrade.js:82-85` exited before categorization; (2) `categories.deleted` was destructive — `upgrade.js:253-255` pruned `fileHashes` instead of restoring; (3) `buildTemplateHashMap` didn't know about hook scripts or root-level files, so missing entries fell through `!templateEntry`; (4) `AGENTS.md` lives outside `.claude/`, so `computeFileHashes` never hashed it.
+  - [x] Dispatch rewritten: `versionMatch && !drift && !templateWork` → "Already up to date" (unchanged); `versionMatch && drift` → new "Repair-only" flow (preview → confirm → apply, version unchanged); `versionMismatch` → repair pass inserted before `autoUpdate`. `--repair-only` flag forces repair-only even on version mismatch; `--dry-run` previews without writing; `--yes` skips confirmations.
+  - [x] `categories.deleted` split into `missingExpected` (restore) and `missingUntracked` (prune from tracking). `diff.js` renders them as two distinct sections: "Missing (will be restored by upgrade)" vs "Deleted (removed in current version)".
+  - [x] `buildTemplateHashMap` now walks `templates/hooks/` and emits `hooks/<name>` entries (type `hook`) plus `root/AGENTS.md` (type `root-file`). Conflict-safe `newFiles` writer for these types writes `.workflow-ref<ext>` sidecars instead of overwriting pre-v2.4.6 user edits. `computeFileHashes` also hashes `AGENTS.md` at project root as `root/AGENTS.md`.
+  - [x] When `CLAUDE.md` lacks memory-architecture guidance keywords, upgrade writes a `CLAUDE.md.workflow-ref.md` sidecar with suggested additions. `CLAUDE.md` itself is never auto-modified.
+  - [x] New `src/core/drift-checks.js` module (shared `MEMORY_GUIDANCE_KEYWORDS` + `hasClaudeMdMemoryGuidance` + `ensureLearningsDir` + `writeMemoryGuidanceSidecar` + `readClaudeMd`). Doctor's memory-guidance WARN reworded to point at the sidecar flow; doctor imports the shared predicate so the keyword list stays aligned.
+  - [x] New `src/core/variables.js` module — `LANGUAGE_COMMANDS` and `buildCommandsBlock` extracted out of `init.js`, plus `buildAgentsMdVariables(meta, projectRoot)` for repair flows. Built lazily (after the "up to date" early return) so clean installs skip `package.json` I/O on the fast path.
+  - [x] Test suite 499 → 538 across 31 → 32 files: 12 new `upgrade` cases (version-match + drift → repair-only; `--dry-run` / `--yes` / `--repair-only`; learnings dir creation; CLAUDE.md sidecar write / no-write when keywords present; AGENTS.md restoration; migration-edit preserves user content and emits `.workflow-ref.md`; hash-prune preserves `missingExpected`); 14 new `drift-checks` cases; 10 new `file-categorizer` cases; updated `diff` + `doctor` assertions.
+  - [x] Intentional shared-state-on-feature-branch override: `package.json` 2.4.5 → 2.4.6 + CHANGELOG `[2.4.6]` entry + SPEC.md Step 2b (Drift Repair) all landed in PR #79. Rationale: the version bump IS the release; the spec update describes the very behavior the PR adds.
+  - [x] Pre-merge verification: 538/538 tests pass, ESLint clean, Prettier no-op, CLI smoke test (`--version` → 2.4.6, `upgrade --help` shows all three new flags).
+  - [x] /sync (2026-04-19): version already at 2.4.6 (no bump). PROGRESS.md header + Stats (499/31 → 538/32) + this completed entry updated. CHANGELOG `[2.4.6]` entry was written in PR #79, not promoted from `[Unreleased]`.
+  - [x] Known trade-off: the raw template hash for `root/AGENTS.md` never matches the installed (substituted) hash, so `AGENTS.md` is routed through the template-skill-style "skip outdated detection" path. Consequence: template updates to `templates/core/agents-md.md` will NOT flow to installed `AGENTS.md` via `autoUpdate`. Not in scope for 2.4.6; revisit if the template changes substantively (substituted-hash storage or re-scaffold-on-bump are the fix candidates).
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -401,7 +415,7 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 499 tests across 31 test files
+- 538 tests across 32 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

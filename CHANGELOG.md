@@ -4,6 +4,31 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.6] — 2026-04-19
+
+Bug fix release — `worclaude upgrade` was silently no-oping when the installed and CLI versions matched, even when on-disk files were missing. `worclaude doctor` flagged drift, but the upgrade command refused to reconcile it. This release adds a drift-repair pass to `upgrade` and exposes new flags.
+
+### Fixed
+
+- `upgrade` now repairs on-disk drift (files listed in `workflow-meta.json` `fileHashes` but missing from disk) instead of pruning their hash entries. When versions match and drift exists, `upgrade` enters a "Repair-only" flow (preview → confirm → apply), version unchanged. When the installation is clean, behavior is unchanged — `Already up to date (vX.Y.Z)` and exit.
+- Hook scripts (`.claude/hooks/*.{cjs,js}`) and `AGENTS.md` (tracked as `root/AGENTS.md`) are now part of `buildTemplateHashMap`, so missing copies are detected and restored. Pre-v2.4.6 installs pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved — a `.workflow-ref` sidecar is written instead of overwriting.
+- `.claude/learnings/` directory is re-created (with `.gitkeep`) when missing.
+- When `CLAUDE.md` lacks memory-architecture guidance keywords, `CLAUDE.md.workflow-ref.md` is written alongside with suggested additions. `CLAUDE.md` itself is never auto-modified.
+
+### Added
+
+- `worclaude upgrade --dry-run` — preview repair + template changes without writing.
+- `worclaude upgrade --yes` — skip confirmation prompts (useful in CI / scripted flows).
+- `worclaude upgrade --repair-only` — restore missing files without applying template updates, even when versions differ.
+- New `src/core/drift-checks.js` module (`hasClaudeMdMemoryGuidance`, `ensureLearningsDir`, `writeMemoryGuidanceSidecar`) shared by `doctor` and `upgrade` so keyword checks stay aligned.
+- New `src/core/variables.js` module — extracted `LANGUAGE_COMMANDS` / `buildCommandsBlock` from `init.js` and added `buildAgentsMdVariables(meta, projectRoot)` for repair flows. `init.js` now imports from it.
+
+### Changed
+
+- `categorizeFiles` now returns `missingExpected` and `missingUntracked` instead of a single `deleted` array. `diff.js` renders them as "Missing (will be restored by upgrade)" and "Deleted (removed in current version)" respectively. `upgrade.js` only prunes hashes for `missingUntracked`.
+- `doctor.js` `checkClaudeMdMemoryGuidance` now points users to the sidecar flow: `"Run worclaude upgrade to write a CLAUDE.md.workflow-ref.md sidecar with suggested additions."`
+- `computeFileHashes` now also hashes `AGENTS.md` at the project root (as `root/AGENTS.md`) so freshly-initialized projects track it from the start.
+
 ## [2.4.5] — 2026-04-19
 
 Internal CI tooling patch. No change to the scaffolded output or the npm package surface — `worclaude init` / `upgrade` produce identical output to 2.4.4.

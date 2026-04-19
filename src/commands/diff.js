@@ -32,10 +32,19 @@ export async function diffCommand() {
     display.newline();
   }
 
-  if (categories.deleted.length > 0) {
+  if (categories.missingExpected.length > 0) {
     hasChanges = true;
-    display.barLine(`${display.red('-')} Deleted (removed since install):`);
-    for (const { key } of categories.deleted) {
+    display.barLine(`${display.red('-')} Missing (will be restored by upgrade):`);
+    for (const { key } of categories.missingExpected) {
+      display.barLine(`  ${display.red(key)}`);
+    }
+    display.newline();
+  }
+
+  if (categories.missingUntracked.length > 0) {
+    hasChanges = true;
+    display.barLine(`${display.red('-')} Deleted (removed in current version):`);
+    for (const { key } of categories.missingUntracked) {
       display.barLine(`  ${display.red(key)}`);
     }
     display.newline();
