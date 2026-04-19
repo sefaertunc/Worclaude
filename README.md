@@ -147,6 +147,26 @@ See the [full command reference](https://sefaertunc.github.io/Worclaude/referenc
 
 ---
 
+## Acknowledgments
+
+Worclaude draws from patterns and insights across the Claude Code ecosystem:
+
+- [Boris Cherny's Claude Code tips](https://howborisusesclaudecode.com/) — The foundational workflow patterns: multi-terminal pipelines, plan-then-execute, CLAUDE.md as shared knowledge, verification-first development
+- [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by Affaan Mir (Anthropic hackathon winner) — Session persistence, hook profiles, confidence filtering, security scanning patterns
+- [Andrej Karpathy's coding principles](https://github.com/multica-ai/andrej-karpathy-skills) — Think before coding, simplicity first, surgical changes ([original post](https://x.com/karpathy/status/2015883857489522876))
+- [pro-workflow](https://github.com/peterHoburg/pro-workflow) — Correction detection, learning capture hooks, loop prevention patterns
+- [Anthropic Engineering Blog](https://www.anthropic.com/engineering) — Agent design, context engineering, harness patterns
+- [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) by hesreallyhim — Community resource discovery and ecosystem awareness
+- [awesome-claude-code-toolkit](https://github.com/rohitg00/awesome-claude-code-toolkit) by rohitg00 — Toolkit patterns and companion app references
+- [claude-skills-cli](https://github.com/anthropics/skills) — Skill activation patterns and conditional loading insights
+- [SuperClaude](https://github.com/andyholst/SuperClaude) — Persona and mode system analysis (informed what NOT to build)
+- [ccusage](https://github.com/yashikota/ccusage) / [claude-devtools](https://github.com/nicobailey/claude-devtools) — Observability patterns (informed what NOT to build)
+- [claude-flow](https://github.com/Ruflo/claude-flow) by Ruflo — Runtime orchestration patterns (informed the scaffolding-only philosophy)
+- [Vercel SkillKit](https://github.com/vercel/skillkit) — Skill packaging and marketplace patterns
+- [claude-code-templates](https://github.com/danielsalas/claude-code-templates) by Daniel Avila — Template gallery and component catalog reference
+
+---
+
 ## Links
 
 - [Full Documentation](https://sefaertunc.github.io/Worclaude/) — VitePress site with guides and reference

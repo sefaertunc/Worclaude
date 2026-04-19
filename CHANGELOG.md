@@ -4,6 +4,14 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.4] — 2026-04-19
+
+Docs-only patch. Adds an Acknowledgments section to the README crediting 13 community sources that informed Worclaude's design.
+
+### Added
+
+- `README.md` — new `## Acknowledgments` section listing upstream inspirations (Boris Cherny's patterns, everything-claude-code, Karpathy's coding principles, pro-workflow, Anthropic Engineering Blog, awesome-claude-code, awesome-claude-code-toolkit, claude-skills-cli, SuperClaude, ccusage / claude-devtools, claude-flow, Vercel SkillKit, claude-code-templates). Footer line preserved.
+
 ## [2.4.3] — 2026-04-18
 
 Hygiene patch closing three drifts surfaced by the 2026-04-18 anthropic-watch feed audit, plus a packaging fix. No user-facing CLI surface change; `worclaude init` / `upgrade` produce identical output to 2.4.1.
