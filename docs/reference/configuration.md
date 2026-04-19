@@ -171,7 +171,11 @@ project-root/
 .claude/workflow-meta.json
 .claude/worktrees/
 .claude-backup-*/
+.claude/learnings/
+.claude/.stop-hook-active
 ```
+
+`.claude/.stop-hook-active` is a transient file the learn-capture Stop hook writes as a re-entry guard; ignoring it keeps `git status` clean between session stops.
 
 ---
 

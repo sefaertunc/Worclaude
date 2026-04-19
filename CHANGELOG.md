@@ -4,6 +4,19 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.7] — 2026-04-20
+
+Bug fix release — the learn-capture Stop hook writes `.claude/.stop-hook-active` as a runtime re-entry guard, but the scaffolded `.gitignore` never covered it. Every project scaffolded or upgraded to 2.4.6 saw a dirty `git status` right after the Stop hook fired. `worclaude delete` also left the now-stale line in `.gitignore`. Both are fixed symmetrically.
+
+### Fixed
+
+- `worclaude init` and `worclaude upgrade` now append `.claude/.stop-hook-active` to `.gitignore`. Pre-v2.4.7 installs pick up the missing entry on the next `upgrade`.
+- `worclaude delete` now removes the `.claude/.stop-hook-active` line from `.gitignore` alongside the other worclaude entries. `.claude-backup-*/` and `.claude/learnings/` remain intentionally preserved so personal/backup content stays ignored after uninstall.
+
+### Changed
+
+- `docs/reference/configuration.md` — gitignore entries reference now lists all 7 entries (previously out of date — missing `.claude/learnings/` too) with a one-line note on the stop-hook flag.
+
 ## [2.4.6] — 2026-04-19
 
 Bug fix release — `worclaude upgrade` was silently no-oping when the installed and CLI versions matched, even when on-disk files were missing. `worclaude doctor` flagged drift, but the upgrade command refused to reconcile it. This release adds a drift-repair pass to `upgrade` and exposes new flags.

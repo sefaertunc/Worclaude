@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.6
-**Last Updated:** 2026-04-19
+**Version:** 2.4.7
+**Last Updated:** 2026-04-20
 
 ## Completed
 
@@ -404,6 +404,15 @@
   - [x] Pre-merge verification: 538/538 tests pass, ESLint clean, Prettier no-op, CLI smoke test (`--version` → 2.4.6, `upgrade --help` shows all three new flags).
   - [x] /sync (2026-04-19): version already at 2.4.6 (no bump). PROGRESS.md header + Stats (499/31 → 538/32) + this completed entry updated. CHANGELOG `[2.4.6]` entry was written in PR #79, not promoted from `[Unreleased]`.
   - [x] Known trade-off: the raw template hash for `root/AGENTS.md` never matches the installed (substituted) hash, so `AGENTS.md` is routed through the template-skill-style "skip outdated detection" path. Consequence: template updates to `templates/core/agents-md.md` will NOT flow to installed `AGENTS.md` via `autoUpdate`. Not in scope for 2.4.6; revisit if the template changes substantively (substituted-hash storage or re-scaffold-on-bump are the fix candidates).
+
+- [x] v2.4.7: Ignore `.claude/.stop-hook-active` (2026-04-20)
+  - [x] **PR #82 — `learn-capture.cjs` writes `.claude/.stop-hook-active` as a runtime re-entry guard for the Stop hook but the scaffolded `.gitignore` never covered it.** Discovered during the 2.4.6 dogfood sync: after the Stop hook fired, `git status` showed `.claude/.stop-hook-active` as untracked in every project scaffolded or upgraded to 2.4.6. Root cause: `src/core/scaffolder.js updateGitignore()` entry list and `src/core/remover.js cleanGitignore()` `REMOVE_LINES` set both hardcoded — neither was updated when `learn-capture.cjs` shipped in 2.4.1 / 2.4.6.
+  - [x] `updateGitignore` entry list grew to 7 (`.claude/.stop-hook-active` added after `.claude/learnings/`). `cleanGitignore` `REMOVE_LINES` gained the same entry so `worclaude delete` cleans it up symmetrically.
+  - [x] `docs/reference/configuration.md` — gitignore entries reference updated. The table was also missing `.claude/learnings/` (pre-existing stale entry from 2.4.1); both are now listed with a one-line note on what the stop-hook flag is for.
+  - [x] This repo's own `.gitignore` synced to the new scaffolder list so the dogfood matches what new users see.
+  - [x] Test updates: `scaffolder.test.js` entry-count assertion 6 → 7 with new `.stop-hook-active` assertions in the create / append / missing-only / migrate cases; `delete.test.js` cleanup assertion extended. 538 tests pass (unchanged — assertions added, no new tests).
+  - [x] Dogfood-sync commit for v2.4.6 (`b0124a4`) also rode in on this merge window: 4 new hook scripts landed in `.claude/hooks/`, `AGENTS.md` added at repo root, `CLAUDE.md` gained a Memory Architecture section, sidecar `CLAUDE.md.workflow-ref.md` merged then deleted.
+  - [x] Pre-merge verification: 538/538 tests pass, ESLint clean, `npm run docs:build` clean. Manual scenario-A on fresh repo confirmed `git status` stays clean after simulating a Stop-hook write.
 
 ## Stats
 
