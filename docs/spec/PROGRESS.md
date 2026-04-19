@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.3
-**Last Updated:** 2026-04-18
+**Version:** 2.4.4
+**Last Updated:** 2026-04-19
 
 ## Completed
 
@@ -371,6 +371,13 @@
   - [x] Note on intermediate `2.4.2`: the 2.4.2 tag and npm package were published from PR #72, before PR #73 landed. The 2.4.2 and 2.4.3 GitHub Release pages were consolidated into a single `v2.4.3` release representing the full hardening pass; `2.4.2` remains on the npm registry but is superseded by `2.4.3`.
   - [x] Validated pre-merge: 499/499 tests pass, lint clean.
   - [x] /sync (2026-04-18): version bumped 2.4.2 → 2.4.3 (patch — hygiene + packaging). CHANGELOG `[Unreleased]` promoted to `[2.4.3]` (consolidates the [2.4.2] entry, which was collapsed into [2.4.3] to match the published GitHub Release narrative).
+
+- [x] v2.4.4: README Acknowledgments section (2026-04-19)
+  - [x] **PR #75 — add `## Acknowledgments` to README crediting 13 community sources** that informed Worclaude's design (Boris Cherny's patterns, everything-claude-code, Karpathy coding principles, pro-workflow, Anthropic Engineering Blog, awesome-claude-code, awesome-claude-code-toolkit, claude-skills-cli, SuperClaude, ccusage / claude-devtools, claude-flow, Vercel SkillKit, claude-code-templates). Section placed between `## Why Worclaude` and `## Links`; existing footer line preserved (Boris credited in both, intentional).
+  - [x] Docs-only patch — no `src/`, `templates/`, or `.claude/` change. No new tests needed; suite stays at 499/499.
+  - [x] Intentional shared-state-on-feature-branch override: README edit + `package.json` 2.4.3 → 2.4.4 + CHANGELOG `[2.4.4]` entry all landed in the same PR (maintainer decision, documented in `.claude/plans/add-an-acknowledgments-section-ethereal-rain.md`). `/sync` did NOT re-bump — package.json already at 2.4.4 on merge.
+  - [x] Validated pre-merge: 499/499 tests pass, lint clean, `npm run format` no-op.
+  - [x] /sync (2026-04-19): version already at 2.4.4 (no bump). PROGRESS.md header + completed entry updated. CHANGELOG `[2.4.4]` entry was written in PR #75, not promoted from `[Unreleased]`.
 
 ## Stats
 
