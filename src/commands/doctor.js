@@ -11,6 +11,7 @@ import {
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
 import { hasClaudeMdMemoryGuidance, readClaudeMd } from '../core/drift-checks.js';
+import { resolveKeyPath } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 
 // Check categories
@@ -534,7 +535,7 @@ async function checkHashIntegrity(projectRoot, meta) {
   let intact = 0;
 
   for (const [relPath, storedHash] of Object.entries(meta.fileHashes)) {
-    const fullPath = path.join(projectRoot, '.claude', ...relPath.split('/'));
+    const fullPath = resolveKeyPath(relPath, projectRoot);
     if (!(await fileExists(fullPath))) {
       missing++;
     } else {

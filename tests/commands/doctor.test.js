@@ -108,7 +108,9 @@ async function scaffoldProject(tmpDir, opts = {}) {
 
   // AGENTS.md at project root
   if (!opts.skipAgentsMd) {
-    await fs.writeFile(path.join(tmpDir, 'AGENTS.md'), '# AGENTS.md\n\nCross-tool agent config.\n');
+    const agentsMdContent = '# AGENTS.md\n\nCross-tool agent config.\n';
+    await fs.writeFile(path.join(tmpDir, 'AGENTS.md'), agentsMdContent);
+    fileHashes['root/AGENTS.md'] = hashContent(agentsMdContent);
   }
 
   // Learnings directory
@@ -201,6 +203,17 @@ describe('doctor command', () => {
     const output = getOutput();
     expect(output).toContain('Doctor complete');
     expect(output).not.toContain('Missing');
+  });
+
+  it('resolves root/ prefixed fileHashes entries to the project root, not .claude/', async () => {
+    // Regression: checkHashIntegrity used to resolve every fileHashes entry
+    // under .claude/, so root/AGENTS.md was looked up at .claude/root/AGENTS.md
+    // and flagged as missing on every install.
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).not.toMatch(/File integrity: \d+\/\d+ files missing/);
+    expect(output).toMatch(/File integrity: all \d+ files present/);
   });
 
   it('detects missing universal agents', async () => {
