@@ -1,6 +1,7 @@
 import path from 'node:path';
+import fs from 'fs-extra';
 import { hashContent, hashFile } from '../utils/hash.js';
-import { readTemplate } from './scaffolder.js';
+import { readTemplate, getTemplatesDir } from './scaffolder.js';
 import { fileExists, listFilesRecursive } from '../utils/file.js';
 import {
   UNIVERSAL_AGENTS,
@@ -9,6 +10,40 @@ import {
   UNIVERSAL_SKILLS,
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
+
+const ALWAYS_SCAFFOLDED_TYPES = new Set([
+  'universal-agent',
+  'command',
+  'universal-skill',
+  'hook',
+  'root-file',
+]);
+
+/**
+ * Predicate: is this template entry one that should be restored when missing on disk?
+ * - universal-agent, command, universal-skill, hook, root-file: always scaffolded
+ * - optional-agent: only if the agent name is in meta.optionalAgents
+ * - template-skill: excluded (needs variable substitution; stored hash won't match)
+ */
+export function isAlwaysScaffolded(entry, meta) {
+  if (!entry) return false;
+  if (ALWAYS_SCAFFOLDED_TYPES.has(entry.type)) return true;
+  if (entry.type === 'optional-agent') {
+    const agentName = entry.agentName;
+    return Boolean(agentName && meta?.optionalAgents?.includes(agentName));
+  }
+  return false;
+}
+
+export const ROOT_KEY_PREFIX = 'root/';
+
+export function resolveKeyPath(key, projectRoot) {
+  if (key.startsWith(ROOT_KEY_PREFIX)) {
+    const rel = key.slice(ROOT_KEY_PREFIX.length);
+    return path.join(projectRoot, ...rel.split('/'));
+  }
+  return path.join(projectRoot, '.claude', ...key.split('/'));
+}
 
 /**
  * Build a map of all workflow template files to their hash keys, template paths, and hashes.
@@ -30,7 +65,12 @@ export async function buildTemplateHashMap() {
     const key = `agents/${name}.md`;
     const templatePath = `agents/optional/${info.category}/${name}.md`;
     const content = await readTemplate(templatePath);
-    map[key] = { templatePath, hash: hashContent(content), type: 'optional-agent' };
+    map[key] = {
+      templatePath,
+      hash: hashContent(content),
+      type: 'optional-agent',
+      agentName: name,
+    };
   }
 
   // Commands: key = commands/{name}.md, templatePath = commands/{name}.md
@@ -58,6 +98,34 @@ export async function buildTemplateHashMap() {
     map[key] = { templatePath, hash: hashContent(content), type: 'template-skill' };
   }
 
+  // Hook scripts: walked from templates/hooks/ so new hooks flow through automatically.
+  // Key = hooks/{name}, templatePath = hooks/{name}
+  const hooksDir = path.join(getTemplatesDir(), 'hooks');
+  if (await fs.pathExists(hooksDir)) {
+    const entries = await fs.readdir(hooksDir);
+    for (const entry of entries) {
+      if (!entry.endsWith('.cjs') && !entry.endsWith('.js')) continue;
+      const key = `hooks/${entry}`;
+      const templatePath = `hooks/${entry}`;
+      const content = await readTemplate(templatePath);
+      map[key] = { templatePath, hash: hashContent(content), type: 'hook' };
+    }
+  }
+
+  // Root-level files: key = root/<path>, templatePath points into templates/
+  // AGENTS.md needs variable substitution at scaffold time; the raw-template hash
+  // is used only to detect drift against a previously-substituted install hash,
+  // and a mismatch routes us down the user-modified path (no false overwrite).
+  {
+    const templatePath = 'core/agents-md.md';
+    const content = await readTemplate(templatePath);
+    map['root/AGENTS.md'] = {
+      templatePath,
+      hash: hashContent(content),
+      type: 'root-file',
+    };
+  }
+
   return map;
 }
 
@@ -74,7 +142,8 @@ export async function categorizeFiles(projectRoot, meta) {
     conflict: [],
     newFiles: [],
     unchanged: [],
-    deleted: [],
+    missingExpected: [],
+    missingUntracked: [],
     userAdded: [],
     modified: [],
     outdated: [],
@@ -83,14 +152,31 @@ export async function categorizeFiles(projectRoot, meta) {
   // Track which keys we've processed
   const processedKeys = new Set();
 
+  // Shared routing for files whose outdated-detection step is skipped (no
+  // template entry, or template has variable placeholders we can't hash
+  // against). Classification reduces to "did the user touch it?"
+  const recordByUserModification = (key, userModified) => {
+    if (userModified) result.modified.push({ key });
+    else result.unchanged.push({ key });
+  };
+
   // 1. Process each file in stored hashes
   for (const [key, storedHash] of Object.entries(storedHashes)) {
     processedKeys.add(key);
-    const filePath = path.join(claudeDir, ...key.split('/'));
+    const filePath = resolveKeyPath(key, projectRoot);
 
     // Check if file still exists on disk
     if (!(await fileExists(filePath))) {
-      result.deleted.push({ key });
+      const templateEntry = templateMap[key];
+      if (isAlwaysScaffolded(templateEntry, meta)) {
+        result.missingExpected.push({
+          key,
+          templatePath: templateEntry.templatePath,
+          type: templateEntry.type,
+        });
+      } else {
+        result.missingUntracked.push({ key });
+      }
       continue;
     }
 
@@ -102,22 +188,17 @@ export async function categorizeFiles(projectRoot, meta) {
     const templateEntry = templateMap[key];
 
     if (!templateEntry) {
-      // File is in stored hashes but not in template map — treat as tracked file
-      if (userModified) {
-        result.modified.push({ key });
-      } else {
-        result.unchanged.push({ key });
-      }
+      // File is in stored hashes but not in template map — treat as tracked file.
+      recordByUserModification(key, userModified);
       continue;
     }
 
-    // Skip template skills from outdated detection (raw vs substituted hash mismatch)
-    if (templateEntry.type === 'template-skill') {
-      if (userModified) {
-        result.modified.push({ key });
-      } else {
-        result.unchanged.push({ key });
-      }
+    // Skip template skills and root-files from outdated detection —
+    // both contain {variable} placeholders, so raw-template hash won't
+    // match the installed (substituted) hash. Restoration paths still
+    // catch them when missing; we just can't auto-update them here.
+    if (templateEntry.type === 'template-skill' || templateEntry.type === 'root-file') {
+      recordByUserModification(key, userModified);
       continue;
     }
 
@@ -125,11 +206,7 @@ export async function categorizeFiles(projectRoot, meta) {
 
     if (!templateChanged) {
       // Template unchanged — only report user modifications
-      if (userModified) {
-        result.modified.push({ key });
-      } else {
-        result.unchanged.push({ key });
-      }
+      recordByUserModification(key, userModified);
     } else {
       // Template was updated in new version
       result.outdated.push({ key, templatePath: templateEntry.templatePath });
@@ -141,22 +218,13 @@ export async function categorizeFiles(projectRoot, meta) {
     }
   }
 
-  // 2. Find new files (in template map but not in stored hashes)
+  // 2. Find new files (in template map but not in stored hashes).
+  // Gate is the same predicate used for missingExpected: always-scaffolded types,
+  // selected optional agents only, template skills excluded (need substitution).
   for (const [key, entry] of Object.entries(templateMap)) {
     if (processedKeys.has(key)) continue;
-
-    // Skip optional agents the user didn't select
-    if (entry.type === 'optional-agent') {
-      const agentName = key.replace('agents/', '').replace('.md', '');
-      if (!meta.optionalAgents?.includes(agentName)) {
-        continue;
-      }
-    }
-
-    // Skip template skills (would need variable substitution)
-    if (entry.type === 'template-skill') continue;
-
-    result.newFiles.push({ key, templatePath: entry.templatePath });
+    if (!isAlwaysScaffolded(entry, meta)) continue;
+    result.newFiles.push({ key, templatePath: entry.templatePath, type: entry.type });
   }
 
   // 3. Find user-added files (on disk but not in stored hashes or template map)

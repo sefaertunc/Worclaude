@@ -315,7 +315,8 @@ describe('doctor command', () => {
     await scaffoldProject(tmpDir, { claudeMdContent: '# CLAUDE.md\n\nJust rules, no guidance.\n' });
     await doctorCommand();
     const output = getOutput();
-    expect(output).toContain('no memory architecture guidance');
+    expect(output).toContain('lacks memory-architecture guidance');
+    expect(output).toContain('CLAUDE.md.workflow-ref.md');
   });
 
   // Hook event name validation (Task 3)

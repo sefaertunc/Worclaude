@@ -29,7 +29,10 @@ program
 program
   .command('upgrade')
   .description('Update workflow components to the latest version')
-  .action(upgradeCommand);
+  .option('--dry-run', 'Preview changes without writing')
+  .option('--yes', 'Skip confirmation prompts')
+  .option('--repair-only', 'Restore missing files without applying template updates')
+  .action((options) => upgradeCommand(options));
 
 program
   .command('status')

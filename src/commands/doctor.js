@@ -10,6 +10,7 @@ import {
   UNIVERSAL_SKILLS,
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
+import { hasClaudeMdMemoryGuidance, readClaudeMd } from '../core/drift-checks.js';
 import * as display from '../utils/display.js';
 
 // Check categories
@@ -138,14 +139,6 @@ async function checkClaudeMd(projectRoot) {
 // Returns CLAUDE.md content or null when missing/unreadable. Missing-file
 // reporting is owned by checkClaudeMd — callers that use this helper should
 // skip reporting (return []) to avoid duplicate complaints.
-async function readClaudeMd(projectRoot) {
-  try {
-    return await readFile(path.join(projectRoot, 'CLAUDE.md'));
-  } catch {
-    return null;
-  }
-}
-
 async function checkClaudeMdSize(projectRoot) {
   const content = await readClaudeMd(projectRoot);
   if (content === null) return [];
@@ -201,23 +194,14 @@ async function checkClaudeMdLineCount(projectRoot) {
 async function checkClaudeMdMemoryGuidance(projectRoot) {
   const content = await readClaudeMd(projectRoot);
   if (content === null) return [];
-  const indicators = [
-    'memory architecture',
-    'native memory',
-    '.claude/learnings',
-    '[LEARN]',
-    '/learn',
-  ];
-  const lower = content.toLowerCase();
-  const hasGuidance = indicators.some((i) => lower.includes(i.toLowerCase()));
-  if (hasGuidance) {
+  if (hasClaudeMdMemoryGuidance(content)) {
     return [result(PASS, 'CLAUDE.md memory guidance', null)];
   }
   return [
     result(
       WARN,
       'CLAUDE.md memory guidance',
-      'CLAUDE.md has no memory architecture guidance. Auto-learnings may pollute this file. Run worclaude upgrade to add.'
+      'CLAUDE.md lacks memory-architecture guidance. Run worclaude upgrade to write a CLAUDE.md.workflow-ref.md sidecar with suggested additions.'
     ),
   ];
 }
