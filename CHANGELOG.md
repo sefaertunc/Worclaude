@@ -4,6 +4,18 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.8] — 2026-04-20
+
+Bug fix release — `worclaude doctor` reported `File integrity: 1/54 files missing` on every v2.4.6+ install. `checkHashIntegrity` resolved every `workflow-meta.json` `fileHashes` key under `.claude/`, so `root/AGENTS.md` (tracked at project root since v2.4.6) got looked up at `.claude/root/AGENTS.md` — which doesn't exist. `worclaude upgrade` already handled the `root/` prefix correctly; only doctor had missed the update.
+
+### Fixed
+
+- `worclaude doctor` now uses the shared `resolveKeyPath` helper from `src/core/file-categorizer.js` for every `fileHashes` key, so `root/<path>` entries resolve at the project root and `hooks/<name>` entries resolve under `.claude/hooks/`. No behavior change for `agents/`, `commands/`, or `skills/` keys.
+
+### Changed
+
+- `docs/reference/configuration.md` — `fileHashes` example extended with `hooks/` and `root/` entries and a one-line description of the key-prefix vocabulary. The field description no longer claims scope is "all files in `.claude/`" — that stopped being true in v2.4.6 when `root/AGENTS.md` started being tracked.
+
 ## [2.4.7] — 2026-04-20
 
 Bug fix release — the learn-capture Stop hook writes `.claude/.stop-hook-active` as a runtime re-entry guard, but the scaffolded `.gitignore` never covered it. Every project scaffolded or upgraded to 2.4.6 saw a dirty `git status` right after the Stop hook fired. `worclaude delete` also left the now-stale line in `.gitignore`. Both are fixed symmetrically.

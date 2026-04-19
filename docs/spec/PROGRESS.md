@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.7
+**Version:** 2.4.8
 **Last Updated:** 2026-04-20
 
 ## Completed
@@ -414,6 +414,13 @@
   - [x] Dogfood-sync commit for v2.4.6 (`b0124a4`) also rode in on this merge window: 4 new hook scripts landed in `.claude/hooks/`, `AGENTS.md` added at repo root, `CLAUDE.md` gained a Memory Architecture section, sidecar `CLAUDE.md.workflow-ref.md` merged then deleted.
   - [x] Pre-merge verification: 538/538 tests pass, ESLint clean, `npm run docs:build` clean. Manual scenario-A on fresh repo confirmed `git status` stays clean after simulating a Stop-hook write.
 
+- [x] v2.4.8: `worclaude doctor` false positive on `root/AGENTS.md` (2026-04-20)
+  - [x] **PR #84 — fix `checkHashIntegrity` resolving every `fileHashes` key under `.claude/`.** Discovered during 2.4.7 dogfood: `worclaude doctor` reported `File integrity: 1/54 files missing` on a clean install. Root cause: `src/commands/doctor.js:537` joined every key as `path.join(projectRoot, '.claude', ...relPath.split('/'))`, so `root/AGENTS.md` (tracked since 2.4.6) was looked up at `.claude/root/AGENTS.md` instead of the project root. `worclaude upgrade` already routes all keys through `resolveKeyPath` in `file-categorizer.js`; doctor never got the memo.
+  - [x] `doctor.js` imports `resolveKeyPath` and drops the hardcoded `.claude/` prefix. No behavior change for `agents/`, `commands/`, `skills/`, `hooks/` keys; `root/<path>` now resolves at project root.
+  - [x] Fixture hygiene: `tests/commands/doctor.test.js scaffoldProject()` now hashes `AGENTS.md` as `root/AGENTS.md` (matching real installs — previously the fixture wrote the file but skipped the hash, which is why the "passes all checks" test never caught this). Added an explicit regression test asserting doctor reports `all N files present` and NOT `X/N files missing` when `root/` keys are present.
+  - [x] `docs/reference/configuration.md` — the `fileHashes` example was missing `hooks/` and `root/` entries, and the description claimed scope was "all files in `.claude/`" which stopped being true in 2.4.6. Example now includes both prefixes plus a one-line note describing the key-prefix vocabulary (`hooks/<name>` → `.claude/hooks/<name>`; `root/<path>` → project root).
+  - [x] Pre-merge verification: 539/539 tests pass (+1 regression test), ESLint clean, `npm run docs:build` clean. Manual: `node src/index.js doctor` on this repo now reports `File integrity: 4/54 files customized (expected)` with no FAIL — previously `1/54 files missing`.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -424,7 +431,7 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 538 tests across 32 test files
+- 539 tests across 32 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
