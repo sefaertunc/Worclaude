@@ -53,6 +53,12 @@ See `.claude/skills/` for project-specific guidance.
 **After merging PRs:** git checkout develop → git pull → /conflict-resolver (if needed) → /sync
 **Mid-task stop:** /end (writes handoff file)
 
+## Memory Architecture
+
+- Auto-memory: `.claude/learnings/` (captured by hooks; reviewed via `/learn`).
+- CLAUDE.md stays lean — it is shared with teammates. Long-form notes belong in `docs/memory/` or the learnings directory.
+- The `[LEARN]` marker in tool output flags moments worth capturing.
+
 ## Hook Profiles
 
 Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:

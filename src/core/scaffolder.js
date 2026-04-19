@@ -54,6 +54,7 @@ export async function updateGitignore(projectDir) {
     '.claude/worktrees/',
     '.claude-backup-*/',
     '.claude/learnings/',
+    '.claude/.stop-hook-active',
   ];
   const header = '# Worclaude (generated workflow files)';
 

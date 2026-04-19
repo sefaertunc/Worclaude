@@ -378,6 +378,7 @@ describe('delete command', () => {
       expect(content).not.toContain('.claude/settings.local.json');
       expect(content).not.toContain('.claude/workflow-meta.json');
       expect(content).not.toContain('.claude/worktrees/');
+      expect(content).not.toContain('.claude/.stop-hook-active');
     });
 
     it('keeps .claude-backup-*/ entry', async () => {
