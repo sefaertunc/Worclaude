@@ -84,22 +84,26 @@ Installation metadata used by `worclaude upgrade`, `worclaude status`, and `worc
   "fileHashes": {
     "agents/plan-reviewer.md": "a1b2c3...",
     "commands/start.md": "d4e5f6...",
-    "skills/testing/SKILL.md": "g7h8i9..."
+    "skills/testing/SKILL.md": "g7h8i9...",
+    "hooks/learn-capture.cjs": "j0k1l2...",
+    "root/AGENTS.md": "m3n4o5..."
   }
 }
 ```
 
-| Field             | Type     | Purpose                                                                                                        |
-| ----------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| `version`         | string   | Worclaude CLI version at install/upgrade time                                                                  |
-| `installedAt`     | ISO 8601 | When `worclaude init` was first run                                                                            |
-| `lastUpdated`     | ISO 8601 | When `worclaude init` or `worclaude upgrade` last ran                                                          |
-| `projectTypes`    | string[] | Selected project types from init                                                                               |
-| `techStack`       | string[] | Selected language identifiers (e.g., `"node"`, `"python"`)                                                     |
-| `universalAgents` | string[] | Names of installed universal agents                                                                            |
-| `optionalAgents`  | string[] | Names of installed optional agents                                                                             |
-| `useDocker`       | boolean  | Whether Docker was selected during init                                                                        |
-| `fileHashes`      | object   | SHA-256 hashes of all files in `.claude/` at install time (excluding `workflow-meta.json` and `settings.json`) |
+Keys are relative paths with a small prefix vocabulary: bare paths (e.g., `agents/...`) resolve under `.claude/`; `hooks/<name>` resolves to `.claude/hooks/<name>`; `root/<path>` resolves at the project root (used for `AGENTS.md`).
+
+| Field             | Type     | Purpose                                                                                                                                                                                                  |
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`         | string   | Worclaude CLI version at install/upgrade time                                                                                                                                                            |
+| `installedAt`     | ISO 8601 | When `worclaude init` was first run                                                                                                                                                                      |
+| `lastUpdated`     | ISO 8601 | When `worclaude init` or `worclaude upgrade` last ran                                                                                                                                                    |
+| `projectTypes`    | string[] | Selected project types from init                                                                                                                                                                         |
+| `techStack`       | string[] | Selected language identifiers (e.g., `"node"`, `"python"`)                                                                                                                                               |
+| `universalAgents` | string[] | Names of installed universal agents                                                                                                                                                                      |
+| `optionalAgents`  | string[] | Names of installed optional agents                                                                                                                                                                       |
+| `useDocker`       | boolean  | Whether Docker was selected during init                                                                                                                                                                  |
+| `fileHashes`      | object   | SHA-256 hashes of tracked scaffold files — everything in `.claude/` (excluding `workflow-meta.json` and `settings.json`) plus the `root/`-prefixed tracked root files such as `root/AGENTS.md` (v2.4.6+) |
 
 **Hash tracking:** File hashes enable `worclaude diff` to detect user modifications and `worclaude upgrade` to determine which files can be auto-updated (unchanged) vs which need conflict resolution (modified by user).
 
