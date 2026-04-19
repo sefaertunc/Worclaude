@@ -188,6 +188,7 @@ export async function cleanGitignore(projectRoot) {
     '.claude/settings.local.json',
     '.claude/workflow-meta.json',
     '.claude/worktrees/',
+    '.claude/.stop-hook-active',
   ]);
 
   const filtered = lines.filter((line) => !REMOVE_LINES.has(line.trim()));
