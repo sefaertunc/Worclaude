@@ -48,6 +48,58 @@ import inquirer from 'inquirer';
 import { execSync } from 'node:child_process';
 import { getLatestNpmVersion } from '../../src/utils/npm.js';
 import { upgradeCommand } from '../../src/commands/upgrade.js';
+import { buildTemplateHashMap } from '../../src/core/file-categorizer.js';
+import { substituteVariables } from '../../src/core/scaffolder.js';
+import { buildAgentsMdVariables } from '../../src/core/variables.js';
+import { hashFile } from '../../src/utils/hash.js';
+
+async function seedCompleteInstall(tmpDir, currentVersion) {
+  await fs.ensureDir(path.join(tmpDir, '.claude'));
+  const templateMap = await buildTemplateHashMap();
+  const variables = await buildAgentsMdVariables({ techStack: [], useDocker: false }, tmpDir);
+  const fileHashes = {};
+  for (const [key, entry] of Object.entries(templateMap)) {
+    if (entry.type === 'optional-agent' || entry.type === 'template-skill') continue;
+    const raw = await readTemplate(entry.templatePath);
+    const finalContent = entry.type === 'root-file' ? substituteVariables(raw, variables) : raw;
+    const destPath = key.startsWith('root/')
+      ? path.join(tmpDir, ...key.slice('root/'.length).split('/'))
+      : path.join(tmpDir, '.claude', ...key.split('/'));
+    await fs.ensureDir(path.dirname(destPath));
+    await fs.writeFile(destPath, finalContent);
+    fileHashes[key] = await hashFile(destPath);
+  }
+  await fs.ensureDir(path.join(tmpDir, '.claude', 'learnings'));
+  await fs.writeFile(path.join(tmpDir, '.claude', 'learnings', '.gitkeep'), '');
+  // Keep CLAUDE.md absent so the sidecar check short-circuits.
+  const meta = {
+    version: currentVersion,
+    installedAt: '2026-03-24T12:00:00.000Z',
+    lastUpdated: '2026-03-24T12:00:00.000Z',
+    projectTypes: [],
+    techStack: [],
+    universalAgents: [],
+    optionalAgents: [],
+    useDocker: false,
+    fileHashes,
+  };
+  await fs.writeFile(
+    path.join(tmpDir, '.claude', 'workflow-meta.json'),
+    JSON.stringify(meta, null, 2)
+  );
+  return meta;
+}
+
+async function readPackageVersion() {
+  const pkgPath = path.resolve(
+    path.dirname(new URL(import.meta.url).pathname),
+    '..',
+    '..',
+    'package.json'
+  );
+  const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf-8'));
+  return pkg.version;
+}
 
 describe('upgrade command', () => {
   let tmpDir;
@@ -71,38 +123,161 @@ describe('upgrade command', () => {
     expect(output).toContain('Workflow is not installed');
   });
 
-  it('shows already up to date when versions match', async () => {
-    // Read actual package version
-    const pkgPath = path.resolve(
-      path.dirname(new URL(import.meta.url).pathname),
-      '..',
-      '..',
-      'package.json'
-    );
-    const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf-8'));
-    const currentVersion = pkg.version;
-
-    const meta = {
-      version: currentVersion,
-      installedAt: '2026-03-24T12:00:00.000Z',
-      lastUpdated: '2026-03-24T12:00:00.000Z',
-      projectTypes: [],
-      techStack: [],
-      universalAgents: [],
-      optionalAgents: [],
-      fileHashes: {},
-    };
-
-    await fs.ensureDir(path.join(tmpDir, '.claude'));
-    await fs.writeFile(
-      path.join(tmpDir, '.claude', 'workflow-meta.json'),
-      JSON.stringify(meta, null, 2)
-    );
+  it('shows already up to date when versions match and install is complete', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
 
     await upgradeCommand();
 
     const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(output).toContain('up to date');
+  });
+
+  it('enters repair-only flow when versions match but a tracked hook is missing', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs');
+    await fs.remove(hookPath);
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    expect(await fs.pathExists(hookPath)).toBe(true);
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('WORCLAUDE REPAIR');
+    expect(output).toContain('Restore (missing from disk)');
+    expect(output).toContain('Restored:');
+
+    const updatedMeta = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8')
+    );
+    expect(updatedMeta.version).toBe(currentVersion);
+    expect(updatedMeta.fileHashes['hooks/learn-capture.cjs']).toBeDefined();
+  });
+
+  it('writes CLAUDE.md.workflow-ref.md sidecar when memory guidance missing', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Project\n\nJust rules.\n');
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'))).toBe(true);
+    const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(claudeMd).toBe('# Project\n\nJust rules.\n');
+  });
+
+  it('does NOT write sidecar when CLAUDE.md already has memory guidance', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    await fs.writeFile(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Project\n\n## Memory Architecture\n\nNotes.\n'
+    );
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'))).toBe(false);
+  });
+
+  it('--dry-run previews repair without writing files or meta', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs');
+    await fs.remove(hookPath);
+    const beforeMeta = await fs.readFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      'utf-8'
+    );
+
+    await upgradeCommand({ dryRun: true });
+
+    expect(await fs.pathExists(hookPath)).toBe(false);
+    const afterMeta = await fs.readFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      'utf-8'
+    );
+    expect(afterMeta).toBe(beforeMeta);
+    expect(inquirer.prompt).not.toHaveBeenCalled();
+  });
+
+  it('--yes skips confirmation and applies repair', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs');
+    await fs.remove(hookPath);
+
+    await upgradeCommand({ yes: true });
+
+    expect(await fs.pathExists(hookPath)).toBe(true);
+    expect(inquirer.prompt).not.toHaveBeenCalled();
+  });
+
+  it('--repair-only restores files but does not bump version even when mismatched', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const metaPath = path.join(tmpDir, '.claude', 'workflow-meta.json');
+    const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+    meta.version = '0.9.0';
+    await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs');
+    await fs.remove(hookPath);
+
+    await upgradeCommand({ yes: true, repairOnly: true });
+
+    expect(await fs.pathExists(hookPath)).toBe(true);
+    const updatedMeta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+    expect(updatedMeta.version).toBe('0.9.0');
+  });
+
+  it('restores missing AGENTS.md from root/AGENTS.md template', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    await fs.remove(path.join(tmpDir, 'AGENTS.md'));
+
+    await upgradeCommand({ yes: true });
+
+    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+  });
+
+  it('migration: user-edited AGENTS.md + no root/AGENTS.md entry → writes sidecar', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const metaPath = path.join(tmpDir, '.claude', 'workflow-meta.json');
+    const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+    delete meta.fileHashes['root/AGENTS.md'];
+    await fs.writeFile(metaPath, JSON.stringify(meta, null, 2));
+    await fs.writeFile(
+      path.join(tmpDir, 'AGENTS.md'),
+      '# My heavily edited AGENTS.md\n\nCustom content.\n'
+    );
+
+    await upgradeCommand({ yes: true });
+
+    const preserved = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(preserved).toBe('# My heavily edited AGENTS.md\n\nCustom content.\n');
+    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.workflow-ref.md'))).toBe(true);
+  });
+
+  it('hash-prune preserves fileHashes entries for restored missingExpected keys', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs');
+    await fs.remove(hookPath);
+
+    await upgradeCommand({ yes: true });
+
+    const updatedMeta = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8')
+    );
+    expect(updatedMeta.fileHashes['hooks/learn-capture.cjs']).toBeDefined();
+    const freshHash = await hashFile(hookPath);
+    expect(updatedMeta.fileHashes['hooks/learn-capture.cjs']).toBe(freshHash);
   });
 
   it('shows error for corrupted workflow-meta.json', async () => {

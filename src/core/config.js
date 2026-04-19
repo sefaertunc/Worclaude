@@ -70,6 +70,8 @@ export async function requireWorkflowMeta(projectRoot) {
   return { meta, error: null };
 }
 
+const ROOT_TRACKED_FILES = ['AGENTS.md'];
+
 export async function computeFileHashes(projectRoot) {
   const claudeDir = path.join(projectRoot, '.claude');
   const allFiles = await listFilesRecursive(claudeDir);
@@ -82,6 +84,12 @@ export async function computeFileHashes(projectRoot) {
       !relKey.startsWith('sessions/')
     ) {
       fileHashes[relKey] = await hashFile(filePath);
+    }
+  }
+  for (const rel of ROOT_TRACKED_FILES) {
+    const filePath = path.join(projectRoot, rel);
+    if (await fileExists(filePath)) {
+      fileHashes[`root/${rel}`] = await hashFile(filePath);
     }
   }
   return fileHashes;

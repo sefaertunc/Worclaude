@@ -56,7 +56,7 @@ describe('diff command', () => {
     expect(output).toContain('custom-file.md');
   });
 
-  it('shows deleted files', async () => {
+  it('shows files removed in current version under Deleted', async () => {
     const meta = {
       version: '1.0.0',
       fileHashes: { 'agents/deleted-agent.md': 'somehash' },
@@ -72,8 +72,28 @@ describe('diff command', () => {
     await diffCommand();
 
     const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
-    expect(output).toContain('Deleted');
+    expect(output).toContain('Deleted (removed in current version)');
     expect(output).toContain('deleted-agent.md');
+  });
+
+  it('shows files missing from install (still in templates) under Missing', async () => {
+    const meta = {
+      version: '1.0.0',
+      fileHashes: { 'agents/plan-reviewer.md': 'somehash' },
+      optionalAgents: [],
+    };
+
+    await fs.ensureDir(path.join(tmpDir, '.claude'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+
+    await diffCommand();
+
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Missing (will be restored by upgrade)');
+    expect(output).toContain('plan-reviewer.md');
   });
 
   it('shows user-added files', async () => {

@@ -1,17 +1,27 @@
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import fs from 'fs-extra';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { requireWorkflowMeta, writeWorkflowMeta, getPackageVersion } from '../core/config.js';
 import { createBackup } from '../core/backup.js';
-import { categorizeFiles } from '../core/file-categorizer.js';
+import { categorizeFiles, resolveKeyPath } from '../core/file-categorizer.js';
 import { buildSettingsJson, mergeSettingsPermissionsAndHooks } from '../core/merger.js';
-import { readTemplate, updateGitignore } from '../core/scaffolder.js';
-import { writeFile, fileExists } from '../utils/file.js';
+import { readTemplate, substituteVariables, updateGitignore } from '../core/scaffolder.js';
+import { buildAgentsMdVariables } from '../core/variables.js';
+import {
+  hasClaudeMdMemoryGuidance,
+  ensureLearningsDir,
+  writeMemoryGuidanceSidecar,
+  readClaudeMd,
+} from '../core/drift-checks.js';
+import { writeFile, readFile, fileExists } from '../utils/file.js';
 import { hashFile } from '../utils/hash.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
 import * as display from '../utils/display.js';
 import { semverLessThan, migrateSkillFormat, patchAgentDescriptions } from '../core/migration.js';
+
+const CONFLICT_CHECK_TYPES = new Set(['hook', 'root-file']);
 
 function selfUpdate(latestVersion) {
   const spinner = ora(`Updating worclaude to v${latestVersion}...`).start();
@@ -31,7 +41,270 @@ function selfUpdate(latestVersion) {
   }
 }
 
-export async function upgradeCommand() {
+function sidecarPathFor(dest) {
+  const ext = path.extname(dest);
+  const base = ext ? dest.slice(0, dest.length - ext.length) : dest;
+  return `${base}.workflow-ref${ext}`;
+}
+
+async function renderTemplate({ templatePath, type }, variables) {
+  const templateContent = await readTemplate(templatePath);
+  return type === 'root-file' ? substituteVariables(templateContent, variables) : templateContent;
+}
+
+async function writeTemplateToDest(entry, dest, variables) {
+  await fs.ensureDir(path.dirname(dest));
+  await writeFile(dest, await renderTemplate(entry, variables));
+}
+
+async function writeSidecarFor(entry, dest, variables) {
+  const sidecarPath = sidecarPathFor(dest);
+  await writeFile(sidecarPath, await renderTemplate(entry, variables));
+  return sidecarPath;
+}
+
+async function diskContentMatchesTemplate(entry, dest, variables) {
+  const currentContent = await readFile(dest);
+  return currentContent === (await renderTemplate(entry, variables));
+}
+
+async function buildRepairPlan(projectRoot, categories, claudeMdContent) {
+  const migrationNewFiles = categories.newFiles.filter((f) => CONFLICT_CHECK_TYPES.has(f.type));
+  const templateNewFiles = categories.newFiles.filter((f) => !CONFLICT_CHECK_TYPES.has(f.type));
+  const learningsGitkeep = path.join(projectRoot, '.claude', 'learnings', '.gitkeep');
+  const learningsDirMissing = !(await fileExists(learningsGitkeep));
+  const claudeMdNeedsSidecar =
+    typeof claudeMdContent === 'string' && !hasClaudeMdMemoryGuidance(claudeMdContent);
+  return {
+    missingExpected: categories.missingExpected,
+    migrationNewFiles,
+    templateNewFiles,
+    learningsDirMissing,
+    claudeMdNeedsSidecar,
+  };
+}
+
+function hasRepairWork(plan) {
+  return (
+    plan.missingExpected.length > 0 ||
+    plan.migrationNewFiles.length > 0 ||
+    plan.learningsDirMissing ||
+    plan.claudeMdNeedsSidecar
+  );
+}
+
+function hasTemplateWork(categories, plan) {
+  return (
+    categories.autoUpdate.length > 0 ||
+    categories.conflict.length > 0 ||
+    plan.templateNewFiles.length > 0
+  );
+}
+
+function renderRepairPreview(plan) {
+  if (plan.missingExpected.length > 0) {
+    display.barLine(`${display.green('+')} Restore (missing from disk):`);
+    for (const { key } of plan.missingExpected) {
+      display.barLine(`  ${display.green('+')} ${key}`);
+    }
+    display.newline();
+  }
+  if (plan.migrationNewFiles.length > 0) {
+    display.barLine(`${display.green('+')} Track & install (new file type in this CLI version):`);
+    for (const { key } of plan.migrationNewFiles) {
+      display.barLine(`  ${display.green('+')} ${key}`);
+    }
+    display.newline();
+  }
+  const sidecarLines = [];
+  if (plan.learningsDirMissing) {
+    sidecarLines.push('  ~ `.claude/learnings/` directory missing (will be created)');
+  }
+  if (plan.claudeMdNeedsSidecar) {
+    sidecarLines.push(
+      '  ~ CLAUDE.md memory guidance missing (will write CLAUDE.md.workflow-ref.md)'
+    );
+  }
+  if (sidecarLines.length > 0) {
+    display.barLine(`${display.yellow('~')} Also:`);
+    for (const line of sidecarLines) {
+      display.barLine(line);
+    }
+    display.newline();
+  }
+}
+
+function renderTemplatePreview(categories, plan) {
+  if (categories.autoUpdate.length > 0) {
+    display.barLine(`${display.green('✓')} Auto-update (unchanged since install):`);
+    const showCount = Math.min(categories.autoUpdate.length, 3);
+    for (let i = 0; i < showCount; i++) {
+      display.barLine(`  ${display.green('✓')} ${categories.autoUpdate[i].key}`);
+    }
+    if (categories.autoUpdate.length > 3) {
+      display.barLine(`  ${display.green('✓')} ${categories.autoUpdate.length - 3} more files`);
+    }
+    display.newline();
+  }
+  if (categories.conflict.length > 0) {
+    display.barLine(`${display.yellow('~')} Needs review (you've customized these):`);
+    for (const { key } of categories.conflict) {
+      display.barLine(
+        `  ${display.yellow('~')} ${key} ${display.dimColor('(modified since install)')}`
+      );
+    }
+    display.newline();
+  }
+  if (plan.templateNewFiles.length > 0) {
+    display.barLine(`${display.green('+')} New in this version:`);
+    for (const { key } of plan.templateNewFiles) {
+      display.barLine(`  ${display.green('+')} ${key}`);
+    }
+    display.newline();
+  }
+  if (categories.unchanged.length > 0) {
+    display.barLine(
+      `${display.dimColor('=')} Unchanged: ${display.dimColor(`${categories.unchanged.length} files`)}`
+    );
+    display.newline();
+  }
+  if (categories.modified.length > 0) {
+    display.barLine(`${display.yellow('~')} Your customizations (no workflow updates available):`);
+    for (const { key } of categories.modified) {
+      display.barLine(`  ${display.yellow('~')} ${key}`);
+    }
+    display.newline();
+  }
+}
+
+async function applyRepairPass(projectRoot, plan, variables) {
+  const result = {
+    restored: [],
+    migrated: [],
+    migrationConflicts: [],
+    createdDirs: [],
+    sidecars: [],
+  };
+
+  for (const entry of plan.missingExpected) {
+    const dest = resolveKeyPath(entry.key, projectRoot);
+    await writeTemplateToDest(entry, dest, variables);
+    result.restored.push({ key: entry.key, dest });
+  }
+
+  for (const entry of plan.migrationNewFiles) {
+    const dest = resolveKeyPath(entry.key, projectRoot);
+    if (await fileExists(dest)) {
+      const matches = await diskContentMatchesTemplate(entry, dest, variables);
+      if (!matches) {
+        const sidecarPath = await writeSidecarFor(entry, dest, variables);
+        result.migrationConflicts.push({ key: entry.key, dest, sidecarPath });
+        continue;
+      }
+    }
+    await writeTemplateToDest(entry, dest, variables);
+    result.migrated.push({ key: entry.key, dest });
+  }
+
+  if (plan.learningsDirMissing) {
+    const created = await ensureLearningsDir(projectRoot);
+    if (created) {
+      result.createdDirs.push(path.join(projectRoot, '.claude', 'learnings'));
+    }
+  }
+
+  if (plan.claudeMdNeedsSidecar) {
+    const sidecarPath = await writeMemoryGuidanceSidecar(projectRoot);
+    result.sidecars.push(sidecarPath);
+  }
+
+  return result;
+}
+
+async function promptProceed(message) {
+  const { proceed } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'proceed',
+      message,
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+    },
+  ]);
+  return proceed;
+}
+
+async function runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, yes }) {
+  display.sectionHeader(`WORCLAUDE REPAIR (v${meta.version})`);
+  display.newline();
+  display.barLine('Drift detected:');
+  renderRepairPreview(plan);
+
+  if (dryRun) {
+    display.info('Dry run — no changes written.');
+    return;
+  }
+
+  if (!yes) {
+    const proceed = await promptProceed('Repair drifted files?');
+    if (!proceed) {
+      display.info('Repair cancelled.');
+      return;
+    }
+  }
+
+  const spinner = ora('Repairing...').start();
+  try {
+    const backupDir = await createBackup(projectRoot);
+    spinner.text = 'Backup created, restoring files...';
+
+    const result = await applyRepairPass(projectRoot, plan, variables);
+
+    const fileHashes = { ...meta.fileHashes };
+    for (const { key, dest } of [...result.restored, ...result.migrated]) {
+      fileHashes[key] = await hashFile(dest);
+    }
+
+    meta.lastUpdated = new Date().toISOString();
+    meta.fileHashes = fileHashes;
+    await writeWorkflowMeta(projectRoot, meta);
+
+    spinner.succeed('Repair complete.');
+
+    display.newline();
+    if (result.restored.length > 0) {
+      display.barLine(`Restored:    ${result.restored.length} files`);
+    }
+    if (result.migrated.length > 0) {
+      display.barLine(`Installed:   ${result.migrated.length} files`);
+    }
+    if (result.migrationConflicts.length > 0) {
+      display.barLine(
+        `Conflicts:   ${result.migrationConflicts.length} files ${display.dimColor('(saved as .workflow-ref)')}`
+      );
+    }
+    if (result.createdDirs.length > 0) {
+      display.barLine(`Created:     ${result.createdDirs.length} directories`);
+    }
+    if (result.sidecars.length > 0) {
+      display.barLine(`Sidecar:     ${result.sidecars.length} suggestion files`);
+    }
+    display.barLine(display.dimColor(`Backup: ${path.basename(backupDir)}/`));
+
+    if (result.migrationConflicts.length > 0 || result.sidecars.length > 0) {
+      display.newline();
+      display.barLine(`Review .workflow-ref files and merge what's useful.`);
+    }
+  } catch (err) {
+    spinner.fail('Repair failed.');
+    display.error(err.message);
+  }
+}
+
+export async function upgradeCommand(options = {}) {
+  const { dryRun = false, yes = false, repairOnly = false } = options;
   const projectRoot = process.cwd();
 
   // 1. Check for CLI self-update from npm
@@ -75,104 +348,70 @@ export async function upgradeCommand() {
     return;
   }
 
-  // 3. Version comparison
+  // 3. Version + categorize
   const currentVersion = await getPackageVersion();
   const installedVersion = meta.version;
+  const versionMatch = installedVersion === currentVersion;
 
-  if (installedVersion === currentVersion) {
+  const categories = await categorizeFiles(projectRoot, meta);
+  const claudeMdContent = await readClaudeMd(projectRoot);
+  const plan = await buildRepairPlan(projectRoot, categories, claudeMdContent);
+
+  const repairWork = hasRepairWork(plan);
+  const templateWork = hasTemplateWork(categories, plan);
+
+  // Version match + no repair + no template work → up to date.
+  // Early return keeps the clean-install fast path free of package.json I/O.
+  if (versionMatch && !repairWork && !templateWork) {
     display.success(`Already up to date (v${currentVersion}).`);
     return;
   }
 
-  // 4. Categorize files
-  const categories = await categorizeFiles(projectRoot, meta);
+  const variables = await buildAgentsMdVariables(meta, projectRoot);
 
-  // 5. Preview
+  // Version match + repair only OR explicit --repair-only → repair-only flow
+  if ((versionMatch && !templateWork) || repairOnly) {
+    await runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, yes });
+    return;
+  }
+
+  // Full upgrade flow (version mismatch)
   display.sectionHeader(`WORCLAUDE UPGRADE (v${installedVersion} → v${currentVersion})`);
   display.newline();
-
   display.barLine('Changes:');
 
-  if (categories.autoUpdate.length > 0) {
-    display.barLine(`${display.green('✓')} Auto-update (unchanged since install):`);
-    const showCount = Math.min(categories.autoUpdate.length, 3);
-    for (let i = 0; i < showCount; i++) {
-      display.barLine(`  ${display.green('✓')} ${categories.autoUpdate[i].key}`);
-    }
-    if (categories.autoUpdate.length > 3) {
-      display.barLine(`  ${display.green('✓')} ${categories.autoUpdate.length - 3} more files`);
-    }
-    display.newline();
+  if (repairWork) {
+    renderRepairPreview(plan);
   }
+  renderTemplatePreview(categories, plan);
 
-  if (categories.conflict.length > 0) {
-    display.barLine(`${display.yellow('~')} Needs review (you've customized these):`);
-    for (const { key } of categories.conflict) {
-      display.barLine(
-        `  ${display.yellow('~')} ${key} ${display.dimColor('(modified since install)')}`
-      );
-    }
-    display.newline();
-  }
-
-  if (categories.newFiles.length > 0) {
-    display.barLine(`${display.green('+')} New in this version:`);
-    for (const { key } of categories.newFiles) {
-      display.barLine(`  ${display.green('+')} ${key}`);
-    }
-    display.newline();
-  }
-
-  if (categories.unchanged.length > 0) {
-    display.barLine(
-      `${display.dimColor('=')} Unchanged: ${display.dimColor(`${categories.unchanged.length} files`)}`
-    );
-    display.newline();
-  }
-
-  if (categories.modified.length > 0) {
-    display.barLine(`${display.yellow('~')} Your customizations (no workflow updates available):`);
-    for (const { key } of categories.modified) {
-      display.barLine(`  ${display.yellow('~')} ${key}`);
-    }
-    display.newline();
-  }
-
-  const hasWork =
-    categories.autoUpdate.length > 0 ||
-    categories.conflict.length > 0 ||
-    categories.newFiles.length > 0;
-
-  if (!hasWork) {
+  if (!repairWork && !templateWork) {
     display.info('No file changes needed — only updating version metadata.');
     display.newline();
   }
 
-  // 6. Confirm
-  const { proceed } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'proceed',
-      message: 'Proceed with upgrade?',
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-    },
-  ]);
-
-  if (!proceed) {
-    display.info('Upgrade cancelled.');
+  if (dryRun) {
+    display.info('Dry run — no changes written.');
     return;
   }
 
-  // 7. Execute
+  if (!yes) {
+    const proceed = await promptProceed('Proceed with upgrade?');
+    if (!proceed) {
+      display.info('Upgrade cancelled.');
+      return;
+    }
+  }
+
   const spinner = ora('Upgrading...').start();
 
   try {
-    // Create backup first
     const backupDir = await createBackup(projectRoot);
     spinner.text = 'Backup created, applying updates...';
+
+    // Repair pass (restoration + migration) runs first so hash-prune below
+    // cannot drop entries we just rewrote.
+    const repairResult = await applyRepairPass(projectRoot, plan, variables);
 
     // v2.0.0 migrations (version-gated)
     let skillReport = { migrated: 0, skipped: 0, names: [] };
@@ -181,10 +420,8 @@ export async function upgradeCommand() {
     if (semverLessThan(installedVersion, '2.0.0')) {
       spinner.text = 'Running v2.0.0 migrations...';
 
-      // Item 14: Skill format migration (flat .md → skill-name/SKILL.md)
       skillReport = await migrateSkillFormat(projectRoot, meta);
 
-      // Item 15: Agent frontmatter patch (add missing description)
       spinner.stop();
       agentReport = await patchAgentDescriptions(projectRoot, meta, async (agentName) => {
         const { patch } = await inquirer.prompt([
@@ -206,20 +443,21 @@ export async function upgradeCommand() {
     // Auto-update files
     for (const { key, templatePath } of categories.autoUpdate) {
       const content = await readTemplate(templatePath);
-      await writeFile(path.join(projectRoot, '.claude', ...key.split('/')), content);
+      await writeFile(resolveKeyPath(key, projectRoot), content);
     }
 
     // Conflict files: save as .workflow-ref.md
     for (const { key, templatePath } of categories.conflict) {
       const content = await readTemplate(templatePath);
       const refKey = key.replace(/\.md$/, '.workflow-ref.md');
-      await writeFile(path.join(projectRoot, '.claude', ...refKey.split('/')), content);
+      await writeFile(resolveKeyPath(refKey, projectRoot), content);
     }
 
-    // New files: add directly
-    for (const { key, templatePath } of categories.newFiles) {
-      const content = await readTemplate(templatePath);
-      await writeFile(path.join(projectRoot, '.claude', ...key.split('/')), content);
+    // New files (non-migration types handled here; migration types were
+    // processed in applyRepairPass with conflict safety)
+    for (const entry of plan.templateNewFiles) {
+      const content = await readTemplate(entry.templatePath);
+      await writeFile(resolveKeyPath(entry.key, projectRoot), content);
     }
 
     // Settings.json merge: append new permissions and hooks
@@ -236,29 +474,26 @@ export async function upgradeCommand() {
     // Ensure sessions directory exists for session persistence
     await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
 
-    // Partial hash update — rehash ONLY files we just wrote. User-customized
-    // ("modified") files and conflict-sidecar'd files keep their original
-    // stored hash so their "install state" baseline is preserved across
-    // upgrades. Otherwise the next template change would silently overwrite
-    // the customization via the autoUpdate path.
+    // Hash refresh — files we just wrote (repair restored, repair migrated,
+    // autoUpdate, templateNewFiles). Modified / conflict / unchanged /
+    // userAdded / missingUntracked keep their prior hash; missingUntracked
+    // keys are dropped below.
     const fileHashes = { ...meta.fileHashes };
-    for (const { key } of categories.autoUpdate) {
-      const filePath = path.join(projectRoot, '.claude', ...key.split('/'));
-      fileHashes[key] = await hashFile(filePath);
+    const rehashTargets = [
+      ...repairResult.restored,
+      ...repairResult.migrated,
+      ...categories.autoUpdate.map(({ key }) => ({ key, dest: resolveKeyPath(key, projectRoot) })),
+      ...plan.templateNewFiles.map(({ key }) => ({ key, dest: resolveKeyPath(key, projectRoot) })),
+    ];
+    for (const { key, dest } of rehashTargets) {
+      fileHashes[key] = await hashFile(dest);
     }
-    for (const { key } of categories.newFiles) {
-      const filePath = path.join(projectRoot, '.claude', ...key.split('/'));
-      fileHashes[key] = await hashFile(filePath);
-    }
-    for (const { key } of categories.deleted) {
+    for (const { key } of categories.missingUntracked) {
       delete fileHashes[key];
     }
-    // modified, conflict, unchanged, userAdded: stored hash deliberately left alone
 
-    // Ensure .gitignore has worclaude entries
     await updateGitignore(projectRoot);
 
-    // Update meta
     meta.version = currentVersion;
     meta.lastUpdated = new Date().toISOString();
     meta.fileHashes = fileHashes;
@@ -266,8 +501,18 @@ export async function upgradeCommand() {
 
     spinner.succeed(`Upgrade complete! (${installedVersion} → ${currentVersion})`);
 
-    // 8. Display report
     display.newline();
+    if (repairResult.restored.length > 0) {
+      display.barLine(`Restored:    ${repairResult.restored.length} files`);
+    }
+    if (repairResult.migrated.length > 0) {
+      display.barLine(`Installed:   ${repairResult.migrated.length} files (migration)`);
+    }
+    if (repairResult.migrationConflicts.length > 0) {
+      display.barLine(
+        `Migration conflicts: ${repairResult.migrationConflicts.length} ${display.dimColor('(saved as .workflow-ref)')}`
+      );
+    }
     if (categories.autoUpdate.length > 0) {
       display.barLine(`Updated:     ${categories.autoUpdate.length} files`);
     }
@@ -276,14 +521,17 @@ export async function upgradeCommand() {
         `Conflicts:   ${categories.conflict.length} files ${display.dimColor('(saved as .workflow-ref.md)')}`
       );
     }
-    if (categories.newFiles.length > 0) {
-      display.barLine(`New:         ${categories.newFiles.length} files added`);
+    if (plan.templateNewFiles.length > 0) {
+      display.barLine(`New:         ${plan.templateNewFiles.length} files added`);
     }
     display.barLine(`Unchanged:   ${categories.unchanged.length} files`);
     if (categories.modified.length > 0) {
       display.barLine(
         `Customized:  ${categories.modified.length} files ${display.dimColor('(no updates needed)')}`
       );
+    }
+    if (repairResult.sidecars.length > 0) {
+      display.barLine(`Sidecar:     ${repairResult.sidecars.length} suggestion files`);
     }
     if (skillReport.migrated > 0) {
       display.barLine(`Migrated:    ${skillReport.migrated} skills to directory format`);
@@ -304,9 +552,13 @@ export async function upgradeCommand() {
     display.newline();
     display.barLine(display.dimColor(`Backup: ${path.basename(backupDir)}/`));
 
-    if (categories.conflict.length > 0) {
+    if (
+      categories.conflict.length > 0 ||
+      repairResult.migrationConflicts.length > 0 ||
+      repairResult.sidecars.length > 0
+    ) {
       display.newline();
-      display.barLine(`Review .workflow-ref.md files and merge what's useful.`);
+      display.barLine(`Review .workflow-ref files and merge what's useful.`);
     }
   } catch (err) {
     spinner.fail('Upgrade failed.');

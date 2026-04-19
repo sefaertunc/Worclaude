@@ -12,16 +12,16 @@
 
 ## Core Commands
 
-| Command             | Purpose                                              |
-| ------------------- | ---------------------------------------------------- |
-| `worclaude init`    | Scaffold workflow into a project (fresh or existing) |
-| `worclaude upgrade` | Update universal components to latest version        |
-| `worclaude status`  | Show current workflow state, version, customizations |
-| `worclaude backup`  | Manual backup of current Claude setup                |
-| `worclaude restore` | Restore from a backup                                |
-| `worclaude diff`    | Compare current setup vs latest workflow version     |
-| `worclaude delete`  | Remove worclaude workflow from project               |
-| `worclaude doctor`  | Check installation health and file integrity         |
+| Command                                                 | Purpose                                              |
+| ------------------------------------------------------- | ---------------------------------------------------- |
+| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing) |
+| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift           |
+| `worclaude status`                                      | Show current workflow state, version, customizations |
+| `worclaude backup`                                      | Manual backup of current Claude setup                |
+| `worclaude restore`                                     | Restore from a backup                                |
+| `worclaude diff`                                        | Compare current setup vs latest workflow version     |
+| `worclaude delete`                                      | Remove worclaude workflow from project               |
+| `worclaude doctor`                                      | Check installation health and file integrity         |
 
 ---
 
@@ -347,6 +347,19 @@ Uses hashes stored in workflow-meta.json to detect which files user has customiz
   Needs review (you've customized these):
     context-management.md
 ```
+
+### Step 2b: Drift Repair (Tier 1)
+
+Before applying version-driven changes, `upgrade` reconciles the installation against the current template set. This is Tier 1 behavior ("scaffold if absent"):
+
+- Files in `fileHashes` missing on disk AND still in `buildTemplateHashMap` AND of an always-scaffolded type (`universal-agent`, selected `optional-agent`, `command`, `universal-skill`, `hook`, `root-file`) → restored from templates; hash refreshed.
+- Files in `fileHashes` missing on disk but no longer in `buildTemplateHashMap` → removed from tracking.
+- Hook scripts (`.claude/hooks/*.{cjs,js}`) and `AGENTS.md` (as `root/AGENTS.md`) are tracked in `fileHashes` as of v2.4.6. Installs predating v2.4.6 pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved; a `.workflow-ref` sidecar is written instead of overwriting.
+- `.claude/learnings/` + `.gitkeep` are (re-)created if missing.
+- When `CLAUDE.md` lacks memory-architecture guidance keywords, `CLAUDE.md.workflow-ref.md` is written alongside. `CLAUDE.md` itself is never auto-modified.
+- Repair runs every `upgrade`. When versions match AND drift exists, `upgrade` enters a "Repair-only" flow (preview → confirm → apply), version unchanged. Without drift, behavior is unchanged ("Already up to date").
+
+Flags: `--dry-run` previews without writing; `--yes` skips confirmations; `--repair-only` runs only the repair pass (no template updates even at version mismatch).
 
 ### Step 3: Apply
 
