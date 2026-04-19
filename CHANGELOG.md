@@ -4,6 +4,10 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+### Changed
+
+- All three GitHub Actions workflows (`ci.yml`, `deploy-docs.yml`, `upstream-check.yml`) bumped past the Node.js 20 runtime deprecation. GitHub is force-running Node 20 actions on Node 24 starting 2026-06-02 and removing Node 20 from runners on 2026-09-16. Target versions (all ship a Node 24 runtime): `actions/checkout@v4 → @v6`, `actions/setup-node@v4 → @v6`, `actions/configure-pages@v4 → @v6`, `actions/deploy-pages@v4 → @v5`, `actions/upload-pages-artifact@v3 → @v5`. `setup-node@v6` limits automatic caching to npm, but every usage already sets `cache: 'npm'` explicitly — no-op. `anthropics/claude-code-action` (Docker action, SHA-pinned per v2.4.3 policy) is unaffected and untouched.
+
 ## [2.4.4] — 2026-04-19
 
 Docs-only patch. Adds an Acknowledgments section to the README crediting 13 community sources that informed Worclaude's design.
