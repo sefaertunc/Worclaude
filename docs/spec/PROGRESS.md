@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.9
+**Version:** 2.4.10
 **Last Updated:** 2026-04-20
 
 ## Completed
@@ -427,6 +427,14 @@
   - [x] `docs/reference/upstream-automation.md` — permissions row in "How It Runs" updated from two to three permissions with a one-line note explaining the OIDC requirement.
   - [x] Pre-merge verification: YAML parse OK. `gh workflow run upstream-check.yml --ref fix/upstream-check-id-token-permission` confirmed the OIDC phase now passes (`OIDC token successfully obtained`). The follow-on `App token exchange failed: 401 Workflow validation failed` is Anthropic's GitHub App guardrail — the workflow file on the current ref must match `main` before the App will issue a token. Expected on feature-branch dispatch; resolves on merge.
 
+- [x] v2.4.10: `upstream-parse` fallback body too large (2026-04-20)
+  - [x] **PR #88 — cap fallback body at 60 KB and write assistant text instead of the full transcript.** Discovered on the first post-OIDC-fix run (workflow run 24689703608): Claude cross-reference succeeded but the parse step failed (`no contract line (SKIP_ISSUE or "# Title: ") found in response`), and the parse-error fallback step — which is supposed to file a diagnostic issue with the raw output so a human can intervene — then failed itself with `GraphQL: Body is too long (maximum is 65536 characters) (createIssue)`. Root cause: `saveRaw()` in `scripts/upstream-parse.mjs` wrote the entire `.jsonl` execution transcript (system init + user message + assistant turns + every `Read` tool call & result) as the body. Claude reads three input files on every run (`new_items.json`, feed report, `.claude/commands/upstream-check.md`), so the transcript comfortably exceeds 65 KB.
+  - [x] `scripts/upstream-parse.mjs` — `buildRawBody()` now prefers `extractAssistantText()` over the full transcript (Claude's last assistant turn only — no tool-result noise). Falls back to the transcript when assistant text is empty or unparseable. Truncates at `MAX_RAW_BYTES = 60_000` with a `[truncated]` marker, byte-aware so UTF-8 sequences aren't split. Script now also exports `runParse`, `buildRawBody`, `extractAssistantText`, `MAX_RAW_BYTES` and guards the CLI entry with `import.meta.url` — still executable via `node scripts/upstream-parse.mjs`, now unit-testable.
+  - [x] `scripts/_gha-outputs.mjs` — moved the `GITHUB_OUTPUT` env read from module load into `writeOutputs()` so tests that set env vars after importing the helper can observe writes. No production behavior change.
+  - [x] `tests/scripts/upstream-parse.test.js` — new test file, 14 tests covering the three happy paths (issue contract, `SKIP_ISSUE`, plaintext fallback), every error branch, the new truncation logic (oversize content stays ≤ `MAX_RAW_BYTES` and ends with `[truncated]`), the assistant-text-only fallback (asserts no `"type":"system"` in the raw body), and `extractAssistantText` unit cases (null / multi-block / multi-turn).
+  - [x] Pre-merge verification: 553/553 tests pass (+14 new), ESLint clean on both `src/ tests/` and `scripts/`, smoke test via CLI entry (`RUNNER_TEMP=... GITHUB_OUTPUT=... node scripts/upstream-parse.mjs tests/fixtures/upstream/exec-skip.jsonl`) correctly emits `skip=true`.
+  - [x] Tracking issue `#89` — the _separate_ question of why Claude dropped the contract on 2026-04-20 remains open. The raw transcript is gone (runner temp), so prompt changes would be cargo-cult. Once v2.4.10 ships, the next parse-error will open a readable fallback issue with Claude's actual output — that data gates any prompt/parser hardening.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -437,7 +445,7 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 539 tests across 32 test files
+- 553 tests across 33 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

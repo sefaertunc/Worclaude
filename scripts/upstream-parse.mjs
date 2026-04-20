@@ -3,17 +3,17 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ensureRunnerTemp, requireRunnerTemp, writeOutputs } from './_gha-outputs.mjs';
 
-requireRunnerTemp();
+// GitHub's issue body limit is 65,536 chars. The parse-error fallback step
+// feeds `claude-raw.md` straight to `gh issue create --body-file`, so we
+// must stay under that. 60,000 bytes leaves headroom for the `Parse error:`
+// header plus the `[truncated]` marker.
+export const MAX_RAW_BYTES = 60_000;
+const TRUNCATION_MARKER = '\n\n[truncated]';
 
-const execPath = process.argv[2];
-if (!execPath) {
-  console.error('FATAL: execution file path missing (argv[2])');
-  process.exit(1);
-}
-
-function extractAssistantText(raw) {
+export function extractAssistantText(raw) {
   const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
   let lastAssistantText = null;
 
@@ -51,15 +51,34 @@ function extractAssistantText(raw) {
   return lastAssistantText;
 }
 
-async function saveRaw(raw, reason) {
+export function buildRawBody(assistantText, transcript, reason) {
+  const header = `Parse error: ${reason}\n\n---\n\n`;
+  const source =
+    assistantText && assistantText.trim().length > 0 ? assistantText : transcript || '';
+
+  const budget = MAX_RAW_BYTES - Buffer.byteLength(header, 'utf8');
+  if (Buffer.byteLength(source, 'utf8') <= budget) {
+    return header + source;
+  }
+
+  // Byte-aware truncation: slice by bytes, then drop any trailing partial
+  // multibyte sequence so the result is valid UTF-8.
+  const markerBytes = Buffer.byteLength(TRUNCATION_MARKER, 'utf8');
+  const sliceBudget = budget - markerBytes;
+  const buf = Buffer.from(source, 'utf8');
+  const clipped = buf.subarray(0, sliceBudget).toString('utf8');
+  return header + clipped + TRUNCATION_MARKER;
+}
+
+async function saveRaw(assistantText, transcript, reason) {
   const runnerTemp = await ensureRunnerTemp();
   const rawPath = path.join(runnerTemp, 'claude-raw.md');
-  await writeFile(rawPath, `Parse error: ${reason}\n\n---\n\n${raw}`);
+  await writeFile(rawPath, buildRawBody(assistantText, transcript, reason));
   return rawPath;
 }
 
-async function reportParseError(reason, raw) {
-  const rawPath = await saveRaw(raw, reason);
+async function reportParseError(reason, transcript, assistantText) {
+  const rawPath = await saveRaw(assistantText, transcript, reason);
   await writeOutputs({
     skip: 'false',
     title: '',
@@ -74,19 +93,17 @@ function stripBomAndLeading(s) {
   return s.replace(/^\uFEFF/, '').replace(/^\s+/, '');
 }
 
-async function main() {
+export async function runParse(execPath) {
   let raw;
   try {
     raw = await readFile(execPath, 'utf8');
   } catch (err) {
-    await reportParseError(`execution file unreadable: ${err.message}`, '');
+    await reportParseError(`execution file unreadable: ${err.message}`, '', '');
     return;
   }
 
-  let response = extractAssistantText(raw);
-  if (response === null || response.trim().length === 0) {
-    response = raw;
-  }
+  const extracted = extractAssistantText(raw);
+  const response = extracted !== null && extracted.trim().length > 0 ? extracted : raw;
 
   const cleaned = stripBomAndLeading(response);
   const rawLines = cleaned.split(/\r?\n/);
@@ -96,7 +113,11 @@ async function main() {
   });
 
   if (contractIdx === -1) {
-    await reportParseError('no contract line (SKIP_ISSUE or "# Title: ") found in response', raw);
+    await reportParseError(
+      'no contract line (SKIP_ISSUE or "# Title: ") found in response',
+      raw,
+      extracted
+    );
     return;
   }
 
@@ -116,14 +137,14 @@ async function main() {
 
   const title = firstLine.slice('# Title: '.length).trim();
   if (!title) {
-    await reportParseError('empty title after "# Title: "', raw);
+    await reportParseError('empty title after "# Title: "', raw, extracted);
     return;
   }
 
   const bodyIdx = rawLines.findIndex((l, i) => i > contractIdx && l.trim() === '# Body');
 
   if (bodyIdx === -1) {
-    await reportParseError('"# Body" marker missing after title', raw);
+    await reportParseError('"# Body" marker missing after title', raw, extracted);
     return;
   }
 
@@ -147,18 +168,32 @@ async function main() {
   console.log(`parsed: title="${title}" body_path=${bodyPath}`);
 }
 
-main().catch(async (err) => {
-  console.error('FATAL:', err.stack || err.message);
-  try {
-    await writeOutputs({
-      skip: 'false',
-      title: '',
-      body_path: '',
-      parse_error: `parser crashed: ${err.message}`,
-      raw_path: '',
-    });
-  } catch {
-    // best-effort
+async function cli() {
+  requireRunnerTemp();
+  const execPath = process.argv[2];
+  if (!execPath) {
+    console.error('FATAL: execution file path missing (argv[2])');
+    process.exit(1);
   }
-  process.exit(1);
-});
+  await runParse(execPath);
+}
+
+const isDirectRun =
+  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isDirectRun) {
+  cli().catch(async (err) => {
+    console.error('FATAL:', err.stack || err.message);
+    try {
+      await writeOutputs({
+        skip: 'false',
+        title: '',
+        body_path: '',
+        parse_error: `parser crashed: ${err.message}`,
+        raw_path: '',
+      });
+    } catch {
+      // best-effort
+    }
+    process.exit(1);
+  });
+}

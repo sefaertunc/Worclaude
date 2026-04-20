@@ -4,6 +4,23 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.10] — 2026-04-20
+
+Internal fix release — the `upstream-check` workflow's parse-error fallback (which files a diagnostic issue when Claude's response fails the parser contract) itself failed on 2026-04-20 with `GraphQL: Body is too long (maximum is 65536 characters) (createIssue)`. The fallback wrote the entire `.jsonl` execution transcript — assistant turns plus every `Read` tool call and result — as the issue body. Claude reads three input files per run, so the transcript routinely exceeds GitHub's 65 KB issue body limit. The fallback path broke precisely when it was supposed to deliver diagnostic data.
+
+### Fixed
+
+- `scripts/upstream-parse.mjs` — `buildRawBody()` now prefers the extracted last assistant turn over the full transcript (no tool-result noise). Falls back to the transcript only when assistant text is empty or unparseable. Truncates at 60,000 bytes with a `[truncated]` marker, byte-aware so UTF-8 sequences aren't split. The next parse-error will open a readable fallback issue with Claude's actual response, enabling diagnosis of contract drift (tracked in issue #89).
+
+### Changed
+
+- `scripts/upstream-parse.mjs` now exports `runParse`, `buildRawBody`, `extractAssistantText`, and `MAX_RAW_BYTES`. The CLI entry is guarded with an `import.meta.url` check — still directly executable via `node scripts/upstream-parse.mjs`, now also unit-testable.
+- `scripts/_gha-outputs.mjs` moves the `GITHUB_OUTPUT` env read from module-load into `writeOutputs()`. No production behavior change; enables tests that set the env after importing the helper.
+
+### Tests
+
+- New `tests/scripts/upstream-parse.test.js` — 14 tests covering happy paths, every error branch, the new truncation logic, the assistant-text-only fallback, and `extractAssistantText` unit cases. Suite now 553 tests across 33 files.
+
 ## [2.4.9] — 2026-04-20
 
 CI fix release — the daily `upstream-check` workflow failed at `anthropics/claude-code-action` with `Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable`. The action exchanges an OIDC token for a GitHub App token before the Anthropic API auth layer runs; that exchange requires `id-token: write` in workflow permissions regardless of `CLAUDE_CODE_OAUTH_TOKEN`. Prior runs succeeded intermittently because GitHub does not consistently inject the token URL when no job in the run declares the permission.
