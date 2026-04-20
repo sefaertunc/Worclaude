@@ -4,6 +4,14 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.12] — 2026-04-20
+
+Internal fix release — first post-v2.4.11 `upstream-check` run on `main` (workflow run 24693290867) failed with `error_max_turns / num_turns: 16` at the Claude cross-reference step. Not a parser issue: the v2.4.11 format-drift fix still works; Claude simply couldn't fit the workload into 15 turns. The prompt requires ~9 `Read` calls (feed inputs + `.claude/commands/upstream-check.md` + cross-reference against agents/commands/hooks templates, `src/data/agents.js`, `src/data/agent-registry.js`, `docs/spec/BACKLOG-v2.1.md`, `CLAUDE.md`) before the final response — each Read burns a turn, so 15 was tight by luck, not by design.
+
+### Fixed
+
+- `.github/workflows/upstream-check.yml` — `--max-turns` bumped from 15 to 25 in the `claude_args` string. Gives comfortable headroom for reads + reasoning + response without being excessive. If the cross-reference list grows further, revisit.
+
 ## [2.4.11] — 2026-04-20
 
 Internal fix release — the `upstream-check` workflow parser has been unable to classify any item correctly since the `anthropics/claude-code-action` SHA was pinned to v1.0.101. The action writes `$RUNNER_TEMP/claude-execution-output.json` as a pretty-printed JSON array (`JSON.stringify(messages, null, 2)`), not the newline-delimited JSONL our parser assumed. Every per-line `JSON.parse` failed on fragments like `[` and `{`, so `extractAssistantText` always returned `null` and the parser fell through to the raw-content fallback — which never matched the `SKIP_ISSUE` / `# Title: ` contract, producing a parse-error fallback issue on every run with new items. Misdiagnosed as prompt/contract drift (issue #89); the 2.4.10 fallback-size fix delivered the diagnostic (issue #91) that revealed the real cause.

@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.11
+**Version:** 2.4.12
 **Last Updated:** 2026-04-20
 
 ## Completed
@@ -443,6 +443,11 @@
   - [x] Post-merge `/refactor-clean` + `/simplify` pass (PR #92 follow-up commit `a542863`): removed the unreachable "empty title" branch and `stripBomAndLeading()` (ECMAScript `trim()` already strips U+FEFF); hoisted parser grammar to named constants (`SKIP_MARKER`, `TITLE_PREFIX`, `BODY_MARKER`) and the empty-output template to `EMPTY_OUTPUTS`; added defaults to `reportParseError(reason, transcript='', assistantText='')`; fixed double UTF-8 encoding in `buildRawBody` (`Buffer.from` happens once, `buf.byteLength` reused). Script went from 205 → 188 lines with no behavior change.
   - [x] Pre-merge verification: 559/559 tests pass, ESLint clean on `src/ tests/` and `scripts/`, `npm run docs:build` clean, CLI smoke test (`RUNNER_TEMP=... GITHUB_OUTPUT=... node scripts/upstream-parse.mjs tests/fixtures/upstream/exec-skip.json`) emits `skip=true`.
   - [x] Issues to close post-merge: `#89` (root cause fixed) and `#91` (fallback did its job and delivered the diagnostic that led to this PR). Both linked from PR #92.
+
+- [x] v2.4.12: `upstream-check` Claude turn-budget exhaustion (2026-04-20)
+  - [x] **PR #94 — raise `--max-turns` from 15 to 25 in `.github/workflows/upstream-check.yml`.** Workflow run 24693290867 (first post-v2.4.11 run on `main`) failed with `error_max_turns / num_turns: 16`. Not a parser issue — the v2.4.11 rewrite still works, the Claude step just couldn't fit the workload into 15 turns. The prompt requires ~9 `Read` calls (2 input files + `.claude/commands/upstream-check.md` + cross-reference against `templates/agents/**`, `templates/commands/**`, `templates/hooks/**`, `src/data/agents.js`, `src/data/agent-registry.js`, `docs/spec/BACKLOG-v2.1.md`, `CLAUDE.md`) before the final response — each Read burns a turn, so 15 was tight by luck on earlier runs, not by design. 25 gives comfortable headroom without being excessive.
+  - [x] No prompt simplification (the cross-reference IS the feature), no model change, no parser touch. One-line tuning fix.
+  - [x] Issue `#89` (umbrella "Claude dropped the contract") stays open until a successful end-to-end run on `main` with v2.4.12 confirms the full pipeline works. Then close with a summary of both root causes (format drift in v2.4.11, turn exhaustion in v2.4.12) and their fixes.
 
 ## Stats
 
