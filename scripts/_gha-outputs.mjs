@@ -3,8 +3,6 @@
 
 import { appendFile, mkdir } from 'node:fs/promises';
 
-const GITHUB_OUTPUT = process.env.GITHUB_OUTPUT;
-
 export function requireRunnerTemp() {
   const runnerTemp = process.env.RUNNER_TEMP;
   if (!runnerTemp) {
@@ -21,9 +19,10 @@ export async function ensureRunnerTemp() {
 }
 
 export async function writeOutputs(pairs) {
-  if (!GITHUB_OUTPUT) return;
+  const outputPath = process.env.GITHUB_OUTPUT;
+  if (!outputPath) return;
   const lines = Object.entries(pairs)
     .map(([k, v]) => `${k}=${v ?? ''}`)
     .join('\n');
-  await appendFile(GITHUB_OUTPUT, lines + '\n');
+  await appendFile(outputPath, lines + '\n');
 }
