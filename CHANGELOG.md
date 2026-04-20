@@ -4,6 +4,22 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.11] — 2026-04-20
+
+Internal fix release — the `upstream-check` workflow parser has been unable to classify any item correctly since the `anthropics/claude-code-action` SHA was pinned to v1.0.101. The action writes `$RUNNER_TEMP/claude-execution-output.json` as a pretty-printed JSON array (`JSON.stringify(messages, null, 2)`), not the newline-delimited JSONL our parser assumed. Every per-line `JSON.parse` failed on fragments like `[` and `{`, so `extractAssistantText` always returned `null` and the parser fell through to the raw-content fallback — which never matched the `SKIP_ISSUE` / `# Title: ` contract, producing a parse-error fallback issue on every run with new items. Misdiagnosed as prompt/contract drift (issue #89); the 2.4.10 fallback-size fix delivered the diagnostic (issue #91) that revealed the real cause.
+
+### Fixed
+
+- `scripts/upstream-parse.mjs` — `extractAssistantText` now parses the execution file as a single JSON array and pulls text-only content from the last non-empty `assistant` event. `tool_use` blocks are filtered out so tool-call turns (Claude reading feed files) cannot clobber the real final response. Falls back to treating the raw content as the response only when JSON parsing fails — preserves the existing plaintext path. JSONL support removed entirely: the action SHA is pinned and the format is deterministic.
+
+### Changed
+
+- `scripts/upstream-parse.mjs` — post-implementation cleanup (PR #92 follow-up): removed the unreachable "empty title" branch and the redundant `stripBomAndLeading()` (ECMAScript `trim()` already strips U+FEFF); hoisted parser grammar to named constants (`SKIP_MARKER`, `TITLE_PREFIX`, `BODY_MARKER`) and the empty-output template to `EMPTY_OUTPUTS`; added defaults to `reportParseError`; fixed a double UTF-8 encoding in `buildRawBody` (encode once, reuse `buf.byteLength`). Script reduced from 205 to 188 lines with no behavior change.
+
+### Tests
+
+- `tests/scripts/upstream-parse.test.js` — 14 → 20 tests. New fixtures `exec-with-tool-use.json` (tool_use filtering across multiple turns) and `exec-with-hooks.json` (worclaude's dogfooded `SessionStart` hook emits `system:hook_response` events carrying a payload that includes the literal token `SKIP_ISSUE` in prose — parser must NOT treat hook output as Claude's response). Old `.jsonl` fixtures deleted and regenerated as `.json` arrays to match the real on-disk filename. Suite now 559 tests across 33 files.
+
 ## [2.4.10] — 2026-04-20
 
 Internal fix release — the `upstream-check` workflow's parse-error fallback (which files a diagnostic issue when Claude's response fails the parser contract) itself failed on 2026-04-20 with `GraphQL: Body is too long (maximum is 65536 characters) (createIssue)`. The fallback wrote the entire `.jsonl` execution transcript — assistant turns plus every `Read` tool call and result — as the issue body. Claude reads three input files per run, so the transcript routinely exceeds GitHub's 65 KB issue body limit. The fallback path broke precisely when it was supposed to deliver diagnostic data.
