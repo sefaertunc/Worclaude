@@ -13,20 +13,25 @@ import { ensureRunnerTemp, requireRunnerTemp, writeOutputs } from './_gha-output
 export const MAX_RAW_BYTES = 60_000;
 const TRUNCATION_MARKER = '\n\n[truncated]';
 
+// `claude-code-action@v1.0.101` writes `$RUNNER_TEMP/claude-execution-output.json`
+// as a pretty-printed JSON array: `JSON.stringify(messages, null, 2)`. Each
+// element is an `SDKMessage` with a `type` discriminator (`system` / `user` /
+// `assistant` / `result`). See
+// https://github.com/anthropics/claude-code-action/blob/38ec876110f9fbf8b950c79f534430740c3ac009/base-action/src/run-claude-sdk.ts
+// If `JSON.parse` fails or the root is not an array, we return null and let
+// the caller treat the raw content as the response (plaintext fallback).
 export function extractAssistantText(raw) {
-  const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  let lastAssistantText = null;
+  let events;
+  try {
+    events = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(events)) return null;
 
-  for (const line of lines) {
-    let event;
-    try {
-      event = JSON.parse(line);
-    } catch {
-      continue;
-    }
+  let lastNonEmpty = null;
 
-    // Support both stream-json shapes: {type:'assistant', message:{content:[...]}}
-    // (Claude Code stream) and {type:'assistant', content:[...]} (legacy).
+  for (const event of events) {
     const isAssistant = event?.type === 'assistant' || event?.role === 'assistant';
     if (!isAssistant) continue;
 
@@ -34,21 +39,22 @@ export function extractAssistantText(raw) {
     if (!content) continue;
 
     if (typeof content === 'string') {
-      lastAssistantText = content;
+      if (content.trim().length > 0) lastNonEmpty = content;
       continue;
     }
 
     if (Array.isArray(content)) {
-      const textBlocks = content
+      // tool_use blocks are not assistant "text". Only text blocks count,
+      // otherwise a tool_use-only turn would clobber the real final response.
+      const text = content
         .filter((b) => b?.type === 'text' && typeof b.text === 'string')
-        .map((b) => b.text);
-      if (textBlocks.length > 0) {
-        lastAssistantText = textBlocks.join('\n');
-      }
+        .map((b) => b.text)
+        .join('\n');
+      if (text.trim().length > 0) lastNonEmpty = text;
     }
   }
 
-  return lastAssistantText;
+  return lastNonEmpty;
 }
 
 export function buildRawBody(assistantText, transcript, reason) {
