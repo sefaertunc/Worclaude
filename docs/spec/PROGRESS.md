@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.10
+**Version:** 2.4.11
 **Last Updated:** 2026-04-20
 
 ## Completed
@@ -435,6 +435,15 @@
   - [x] Pre-merge verification: 553/553 tests pass (+14 new), ESLint clean on both `src/ tests/` and `scripts/`, smoke test via CLI entry (`RUNNER_TEMP=... GITHUB_OUTPUT=... node scripts/upstream-parse.mjs tests/fixtures/upstream/exec-skip.jsonl`) correctly emits `skip=true`.
   - [x] Tracking issue `#89` — the _separate_ question of why Claude dropped the contract on 2026-04-20 remains open. The raw transcript is gone (runner temp), so prompt changes would be cargo-cult. Once v2.4.10 ships, the next parse-error will open a readable fallback issue with Claude's actual output — that data gates any prompt/parser hardening.
 
+- [x] v2.4.11: `upstream-parse` execution-file format drift (2026-04-20)
+  - [x] **PR #92 — rewrite `extractAssistantText` for the real `claude-code-action@v1.0.101` output shape.** On the first post-2.4.10 run (workflow run 24691083747) the fallback from PR #88 successfully fired and filed issue #91 with Claude's actual output. Inspecting that content closed issue #89: it was NOT prompt/contract drift — it was **format drift**. `anthropics/claude-code-action` writes `$RUNNER_TEMP/claude-execution-output.json` as a pretty-printed JSON array via `JSON.stringify(messages, null, 2)` (see `base-action/src/run-claude-sdk.ts` line 184 at pinned SHA `38ec876`), not JSONL with one event per line. Our parser split on newlines and `JSON.parse`'d each line; every line-parse failed on fragments like `[`, `{`, `"type": "system",`, so `extractAssistantText` returned `null` for every run and the whole transcript fell through to the contract search. `SKIP_ISSUE` strings inside hook-dumped PROGRESS.md passages then produced false negatives.
+  - [x] `scripts/upstream-parse.mjs` — `extractAssistantText` rewritten: single `JSON.parse(raw)`, require `Array.isArray`, walk events, pull text-only content from the **last non-empty** `assistant` event (so tool_use-only turns like `Read` calls on feed files cannot clobber the real final response). Returns `null` on invalid JSON, non-array roots, or no assistant text — the existing plaintext fallback then handles the `exec-plaintext.md` case. JSONL support dropped entirely: the action SHA is pinned, the format is deterministic, and keeping a JSONL branch was untested dead code.
+  - [x] Fixtures: five new `.json` files replacing the stale `.jsonl` ones. `exec-issue.json`, `exec-skip.json`, `exec-malformed.json` port the old cases into JSON-array shape. `exec-with-tool-use.json` mixes text + `tool_use` blocks across multiple turns (proves we filter tool_use and prefer the last text turn). `exec-with-hooks.json` begins with a `system:hook_response` event whose `output` payload carries the literal token `SKIP_ISSUE` in prose — simulating worclaude's dogfooded `SessionStart:startup` hook, which always runs inside the action's runner and was identified as the exact noise pattern that masked the format bug in production.
+  - [x] `tests/scripts/upstream-parse.test.js` — 14 → 20 tests in-file, 553 → 559 total. New cases cover hook-noise filtering, tool_use filtering, multi-turn last-non-empty preference, invalid JSON, non-array roots, and mixed text+tool_use content extraction.
+  - [x] Post-merge `/refactor-clean` + `/simplify` pass (PR #92 follow-up commit `a542863`): removed the unreachable "empty title" branch and `stripBomAndLeading()` (ECMAScript `trim()` already strips U+FEFF); hoisted parser grammar to named constants (`SKIP_MARKER`, `TITLE_PREFIX`, `BODY_MARKER`) and the empty-output template to `EMPTY_OUTPUTS`; added defaults to `reportParseError(reason, transcript='', assistantText='')`; fixed double UTF-8 encoding in `buildRawBody` (`Buffer.from` happens once, `buf.byteLength` reused). Script went from 205 → 188 lines with no behavior change.
+  - [x] Pre-merge verification: 559/559 tests pass, ESLint clean on `src/ tests/` and `scripts/`, `npm run docs:build` clean, CLI smoke test (`RUNNER_TEMP=... GITHUB_OUTPUT=... node scripts/upstream-parse.mjs tests/fixtures/upstream/exec-skip.json`) emits `skip=true`.
+  - [x] Issues to close post-merge: `#89` (root cause fixed) and `#91` (fallback did its job and delivered the diagnostic that led to this PR). Both linked from PR #92.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -445,7 +454,7 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 553 tests across 33 test files
+- 559 tests across 33 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

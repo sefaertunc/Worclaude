@@ -1,0 +1,83 @@
+[
+  {
+    "type": "system",
+    "subtype": "init",
+    "model": "claude-sonnet-4-6",
+    "session_id": "fixture-exec-with-tool-use"
+  },
+  {
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [{ "type": "text", "text": "Audit new upstream items." }]
+    }
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [
+        { "type": "text", "text": "I'll read the input files first." },
+        {
+          "type": "tool_use",
+          "id": "toolu_01",
+          "name": "Read",
+          "input": { "file_path": "/tmp/new_items.json" }
+        }
+      ]
+    }
+  },
+  {
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01",
+          "content": "[{\"id\":\"foo\",\"title\":\"resolved status incident\"}]"
+        }
+      ]
+    }
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_02",
+          "name": "Read",
+          "input": { "file_path": "/tmp/run-report.json" }
+        }
+      ]
+    }
+  },
+  {
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02",
+          "content": "{\"sources\":[]}"
+        }
+      ]
+    }
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [{ "type": "text", "text": "SKIP_ISSUE" }]
+    }
+  },
+  {
+    "type": "result",
+    "subtype": "success",
+    "num_turns": 3,
+    "is_error": false
+  }
+]

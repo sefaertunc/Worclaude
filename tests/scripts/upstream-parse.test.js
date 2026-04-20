@@ -48,8 +48,8 @@ describe('upstream-parse', () => {
   });
 
   describe('happy paths', () => {
-    it('extracts title and body for a valid # Title / # Body transcript', async () => {
-      await runParse(path.join(FIXTURES, 'exec-issue.jsonl'));
+    it('extracts title and body from a valid JSON-array transcript', async () => {
+      await runParse(path.join(FIXTURES, 'exec-issue.json'));
       const out = await readOutputs(outputPath);
       expect(out.skip).toBe('false');
       expect(out.parse_error).toBe('');
@@ -61,7 +61,7 @@ describe('upstream-parse', () => {
     });
 
     it('emits skip=true for a SKIP_ISSUE transcript', async () => {
-      await runParse(path.join(FIXTURES, 'exec-skip.jsonl'));
+      await runParse(path.join(FIXTURES, 'exec-skip.json'));
       const out = await readOutputs(outputPath);
       expect(out.skip).toBe('true');
       expect(out.parse_error).toBe('');
@@ -70,18 +70,41 @@ describe('upstream-parse', () => {
       expect(out.raw_path).toBe('');
     });
 
-    it('falls back to raw content when the file is plaintext (not JSONL)', async () => {
+    it('falls back to raw content when the file is not valid JSON (plaintext)', async () => {
       await runParse(path.join(FIXTURES, 'exec-plaintext.md'));
       const out = await readOutputs(outputPath);
       expect(out.skip).toBe('false');
       expect(out.parse_error).toBe('');
       expect(out.title).toBe('upstream: 1 new item to review (2026-04-18)');
     });
+
+    it('ignores hook events and finds the assistant text after them', async () => {
+      // Real workflow runs execute worclaude's dogfooded SessionStart hook,
+      // which emits `system:hook_response` events carrying a large `output`
+      // string (CLAUDE.md + PROGRESS.md dumps). That payload can contain the
+      // literal token SKIP_ISSUE in prose. The extractor must only look at
+      // assistant events, not hook outputs.
+      await runParse(path.join(FIXTURES, 'exec-with-hooks.json'));
+      const out = await readOutputs(outputPath);
+      expect(out.skip).toBe('true');
+      expect(out.parse_error).toBe('');
+    });
+
+    it('ignores tool_use blocks and prefers the last turn with real text', async () => {
+      // Multi-turn fixture: turn 1 mixes text with a `Read` tool_use, turn 2
+      // is tool_use-only, turn 3 is the final SKIP_ISSUE. The extractor must
+      // return "SKIP_ISSUE" — not "I'll read the input files first.", and
+      // tool_use turns must not clobber the preceding text turn.
+      await runParse(path.join(FIXTURES, 'exec-with-tool-use.json'));
+      const out = await readOutputs(outputPath);
+      expect(out.skip).toBe('true');
+      expect(out.parse_error).toBe('');
+    });
   });
 
   describe('error paths', () => {
     it('reports parse_error and writes raw file when no contract line exists', async () => {
-      await runParse(path.join(FIXTURES, 'exec-malformed.jsonl'));
+      await runParse(path.join(FIXTURES, 'exec-malformed.json'));
       const out = await readOutputs(outputPath);
       expect(out.skip).toBe('false');
       expect(out.parse_error).toBe(
@@ -89,19 +112,18 @@ describe('upstream-parse', () => {
       );
       expect(out.raw_path).toBeTruthy();
 
-      // The raw file must carry Claude's assistant text — not the full JSONL
-      // transcript. This is the behavior that prevents the >65KB fallback
-      // failure seen in production on 2026-04-20.
+      // The raw file must carry Claude's assistant text — not the full JSON
+      // transcript. This prevents the >65KB fallback failure seen on
+      // 2026-04-20 (issue #91).
       const raw = await fs.readFile(out.raw_path, 'utf8');
       expect(raw).toContain('Parse error:');
       expect(raw).toContain("I've analyzed the new items and here are my thoughts");
-      // Must NOT contain transcript-level noise like the system init event.
-      expect(raw).not.toContain('"type":"system"');
-      expect(raw).not.toContain('"subtype":"init"');
+      expect(raw).not.toContain('"type": "system"');
+      expect(raw).not.toContain('"subtype": "init"');
     });
 
     it('reports parse_error when execution file is missing', async () => {
-      await runParse(path.join(tmpDir, 'does-not-exist.jsonl'));
+      await runParse(path.join(tmpDir, 'does-not-exist.json'));
       const out = await readOutputs(outputPath);
       expect(out.skip).toBe('false');
       expect(out.parse_error).toMatch(/^execution file unreadable:/);
@@ -109,16 +131,20 @@ describe('upstream-parse', () => {
     });
 
     it('reports missing # Body marker when title is present but body is not', async () => {
-      const fixturePath = path.join(tmpDir, 'exec-no-body.jsonl');
+      const fixturePath = path.join(tmpDir, 'exec-no-body.json');
       await fs.writeFile(
         fixturePath,
-        JSON.stringify({
-          type: 'assistant',
-          message: {
-            role: 'assistant',
-            content: [{ type: 'text', text: '# Title: a real title\njust prose, no body marker' }],
+        JSON.stringify([
+          {
+            type: 'assistant',
+            message: {
+              role: 'assistant',
+              content: [
+                { type: 'text', text: '# Title: a real title\njust prose, no body marker' },
+              ],
+            },
           },
-        })
+        ])
       );
       await runParse(fixturePath);
       const out = await readOutputs(outputPath);
@@ -129,17 +155,29 @@ describe('upstream-parse', () => {
   describe('raw-body fallback (prevents >65KB gh issue create failures)', () => {
     it('writes just the assistant text, not the full transcript', () => {
       const assistantText = 'Claude said something off-contract.';
-      const transcript =
-        '{"type":"system"}\n' +
-        '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"..."}]}}\n' +
-        '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"' +
-        assistantText +
-        '"}]}}\n';
+      const transcript = JSON.stringify(
+        [
+          { type: 'system', subtype: 'init' },
+          {
+            type: 'user',
+            message: { role: 'user', content: [{ type: 'text', text: '...' }] },
+          },
+          {
+            type: 'assistant',
+            message: {
+              role: 'assistant',
+              content: [{ type: 'text', text: assistantText }],
+            },
+          },
+        ],
+        null,
+        2
+      );
       const body = buildRawBody(assistantText, transcript, 'some reason');
       expect(body).toContain('Parse error: some reason');
       expect(body).toContain(assistantText);
-      expect(body).not.toContain('"type":"system"');
-      expect(body).not.toContain('"type":"user"');
+      expect(body).not.toContain('"type": "system"');
+      expect(body).not.toContain('"type": "user"');
     });
 
     it('falls back to the transcript when assistant text is empty', () => {
@@ -163,7 +201,7 @@ describe('upstream-parse', () => {
     });
 
     it('the malformed-transcript run produces a raw file that fits the budget', async () => {
-      await runParse(path.join(FIXTURES, 'exec-malformed.jsonl'));
+      await runParse(path.join(FIXTURES, 'exec-malformed.json'));
       const out = await readOutputs(outputPath);
       const stat = await fs.stat(out.raw_path);
       expect(stat.size).toBeLessThanOrEqual(MAX_RAW_BYTES);
@@ -171,38 +209,105 @@ describe('upstream-parse', () => {
   });
 
   describe('extractAssistantText', () => {
-    it('returns null for content with no assistant events', () => {
-      const raw =
-        '{"type":"system"}\n{"type":"user","message":{"role":"user","content":[{"type":"text","text":"hi"}]}}';
+    it('returns null when the content is not valid JSON', () => {
+      expect(extractAssistantText('not json at all')).toBeNull();
+    });
+
+    it('returns null when the JSON root is not an array', () => {
+      expect(
+        extractAssistantText(
+          JSON.stringify({
+            type: 'assistant',
+            message: { role: 'assistant', content: [{ type: 'text', text: 'hi' }] },
+          })
+        )
+      ).toBeNull();
+    });
+
+    it('returns null when the array contains no assistant events', () => {
+      const raw = JSON.stringify([
+        { type: 'system', subtype: 'init' },
+        {
+          type: 'user',
+          message: { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+        },
+      ]);
       expect(extractAssistantText(raw)).toBeNull();
     });
 
     it('joins multiple text blocks from the last assistant turn', () => {
-      const raw = JSON.stringify({
-        type: 'assistant',
-        message: {
-          role: 'assistant',
-          content: [
-            { type: 'text', text: 'first' },
-            { type: 'text', text: 'second' },
-          ],
+      const raw = JSON.stringify([
+        {
+          type: 'assistant',
+          message: {
+            role: 'assistant',
+            content: [
+              { type: 'text', text: 'first' },
+              { type: 'text', text: 'second' },
+            ],
+          },
         },
-      });
+      ]);
       expect(extractAssistantText(raw)).toBe('first\nsecond');
     });
 
-    it('prefers the last assistant turn when several are present', () => {
-      const raw = [
-        JSON.stringify({
+    it('prefers the last non-empty assistant turn', () => {
+      const raw = JSON.stringify([
+        {
           type: 'assistant',
-          message: { role: 'assistant', content: [{ type: 'text', text: 'first turn' }] },
-        }),
-        JSON.stringify({
+          message: {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'first turn' }],
+          },
+        },
+        {
           type: 'assistant',
-          message: { role: 'assistant', content: [{ type: 'text', text: 'final turn' }] },
-        }),
-      ].join('\n');
+          message: {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'final turn' }],
+          },
+        },
+      ]);
       expect(extractAssistantText(raw)).toBe('final turn');
+    });
+
+    it('skips tool_use-only turns so a prior text turn survives', () => {
+      // Claude often reads input files via a tool_use, producing an
+      // assistant turn with no text. That turn must not clobber an
+      // earlier text-carrying turn when no later text turn exists.
+      const raw = JSON.stringify([
+        {
+          type: 'assistant',
+          message: {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'the real response' }],
+          },
+        },
+        {
+          type: 'assistant',
+          message: {
+            role: 'assistant',
+            content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: '/x' } }],
+          },
+        },
+      ]);
+      expect(extractAssistantText(raw)).toBe('the real response');
+    });
+
+    it('extracts only text blocks when content mixes text and tool_use', () => {
+      const raw = JSON.stringify([
+        {
+          type: 'assistant',
+          message: {
+            role: 'assistant',
+            content: [
+              { type: 'text', text: 'narration before the call' },
+              { type: 'tool_use', id: 't1', name: 'Read', input: { file_path: '/x' } },
+            ],
+          },
+        },
+      ]);
+      expect(extractAssistantText(raw)).toBe('narration before the call');
     });
   });
 });

@@ -1,0 +1,45 @@
+[
+  {
+    "type": "system",
+    "subtype": "hook_started",
+    "hook_id": "hook-1",
+    "hook_name": "SessionStart:startup",
+    "hook_event": "SessionStart",
+    "uuid": "fixture-uuid",
+    "session_id": "fixture-exec-with-hooks"
+  },
+  {
+    "type": "system",
+    "subtype": "hook_response",
+    "hook_id": "hook-1",
+    "hook_name": "SessionStart:startup",
+    "hook_event": "SessionStart",
+    "output": "=== CLAUDE.md ===\nworclaude — CLI tool.\n\n=== PROGRESS.md ===\n**Version:** 2.4.10\n\n(... a lot of hook-dumped project context that should NOT be parsed as Claude's response. Includes the literal token SKIP_ISSUE in a sentence describing the parser itself. ...)"
+  },
+  {
+    "type": "system",
+    "subtype": "init",
+    "model": "claude-sonnet-4-6",
+    "session_id": "fixture-exec-with-hooks"
+  },
+  {
+    "type": "user",
+    "message": {
+      "role": "user",
+      "content": [{ "type": "text", "text": "Audit new upstream items." }]
+    }
+  },
+  {
+    "type": "assistant",
+    "message": {
+      "role": "assistant",
+      "content": [{ "type": "text", "text": "SKIP_ISSUE" }]
+    }
+  },
+  {
+    "type": "result",
+    "subtype": "success",
+    "num_turns": 1,
+    "is_error": false
+  }
+]
