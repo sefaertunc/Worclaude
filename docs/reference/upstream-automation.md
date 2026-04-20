@@ -16,7 +16,7 @@ This page documents the server-side automation. For the on-demand counterpart, s
 | ----------------- | ------------------------------------------------------------------------------------------------- |
 | Trigger           | `schedule: '30 9 * * *'` (09:30 UTC daily) + `workflow_dispatch`                                  |
 | Concurrency       | Group `upstream-check`, queued (no cancellation)                                                  |
-| Permissions       | `contents: write`, `issues: write`                                                                |
+| Permissions       | `contents: write`, `issues: write`, `id-token: write` (required by `claude-code-action` for OIDC) |
 | Runner            | `ubuntu-latest`                                                                                   |
 | Model             | `claude-sonnet-4-6` (pinned)                                                                      |
 | Auth              | Repo secret `CLAUDE_CODE_OAUTH_TOKEN` (uses the maintainer's Max plan quota)                      |
