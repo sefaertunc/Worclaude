@@ -13,6 +13,22 @@ import { ensureRunnerTemp, requireRunnerTemp, writeOutputs } from './_gha-output
 export const MAX_RAW_BYTES = 60_000;
 const TRUNCATION_MARKER = '\n\n[truncated]';
 
+// Parser contract emitted by the workflow prompt — see `.github/workflows/upstream-check.yml`.
+const SKIP_MARKER = 'SKIP_ISSUE';
+const TITLE_PREFIX = '# Title: ';
+const BODY_MARKER = '# Body';
+
+// All five outputs the downstream workflow steps expect. Spread as
+// `{ ...EMPTY_OUTPUTS, ...overrides }` so each call reads as "emit a
+// skip / an issue / an error" without burying the intent in defaults.
+const EMPTY_OUTPUTS = {
+  skip: 'false',
+  title: '',
+  body_path: '',
+  parse_error: '',
+  raw_path: '',
+};
+
 // `claude-code-action@v1.0.101` writes `$RUNNER_TEMP/claude-execution-output.json`
 // as a pretty-printed JSON array: `JSON.stringify(messages, null, 2)`. Each
 // element is an `SDKMessage` with a `type` discriminator (`system` / `user` /
@@ -59,21 +75,18 @@ export function extractAssistantText(raw) {
 
 export function buildRawBody(assistantText, transcript, reason) {
   const header = `Parse error: ${reason}\n\n---\n\n`;
-  const source =
-    assistantText && assistantText.trim().length > 0 ? assistantText : transcript || '';
+  const source = assistantText?.trim() ? assistantText : transcript || '';
+  const buf = Buffer.from(source, 'utf8');
 
   const budget = MAX_RAW_BYTES - Buffer.byteLength(header, 'utf8');
-  if (Buffer.byteLength(source, 'utf8') <= budget) {
+  if (buf.byteLength <= budget) {
     return header + source;
   }
 
   // Byte-aware truncation: slice by bytes, then drop any trailing partial
   // multibyte sequence so the result is valid UTF-8.
-  const markerBytes = Buffer.byteLength(TRUNCATION_MARKER, 'utf8');
-  const sliceBudget = budget - markerBytes;
-  const buf = Buffer.from(source, 'utf8');
-  const clipped = buf.subarray(0, sliceBudget).toString('utf8');
-  return header + clipped + TRUNCATION_MARKER;
+  const sliceBudget = budget - Buffer.byteLength(TRUNCATION_MARKER, 'utf8');
+  return header + buf.subarray(0, sliceBudget).toString('utf8') + TRUNCATION_MARKER;
 }
 
 async function saveRaw(assistantText, transcript, reason) {
@@ -83,20 +96,10 @@ async function saveRaw(assistantText, transcript, reason) {
   return rawPath;
 }
 
-async function reportParseError(reason, transcript, assistantText) {
+async function reportParseError(reason, transcript = '', assistantText = '') {
   const rawPath = await saveRaw(assistantText, transcript, reason);
-  await writeOutputs({
-    skip: 'false',
-    title: '',
-    body_path: '',
-    parse_error: reason,
-    raw_path: rawPath,
-  });
+  await writeOutputs({ ...EMPTY_OUTPUTS, parse_error: reason, raw_path: rawPath });
   console.error(`parse-error: ${reason}`);
-}
-
-function stripBomAndLeading(s) {
-  return s.replace(/^\uFEFF/, '').replace(/^\s+/, '');
 }
 
 export async function runParse(execPath) {
@@ -104,23 +107,22 @@ export async function runParse(execPath) {
   try {
     raw = await readFile(execPath, 'utf8');
   } catch (err) {
-    await reportParseError(`execution file unreadable: ${err.message}`, '', '');
+    await reportParseError(`execution file unreadable: ${err.message}`);
     return;
   }
 
   const extracted = extractAssistantText(raw);
-  const response = extracted !== null && extracted.trim().length > 0 ? extracted : raw;
+  const response = extracted?.trim() ? extracted : raw;
 
-  const cleaned = stripBomAndLeading(response);
-  const rawLines = cleaned.split(/\r?\n/);
+  const rawLines = response.split(/\r?\n/);
   const contractIdx = rawLines.findIndex((l) => {
     const t = l.trim();
-    return t === 'SKIP_ISSUE' || t.startsWith('# Title: ');
+    return t === SKIP_MARKER || t.startsWith(TITLE_PREFIX);
   });
 
   if (contractIdx === -1) {
     await reportParseError(
-      'no contract line (SKIP_ISSUE or "# Title: ") found in response',
+      `no contract line (${SKIP_MARKER} or "${TITLE_PREFIX}") found in response`,
       raw,
       extracted
     );
@@ -129,28 +131,21 @@ export async function runParse(execPath) {
 
   const firstLine = rawLines[contractIdx].trim();
 
-  if (firstLine === 'SKIP_ISSUE') {
-    await writeOutputs({
-      skip: 'true',
-      title: '',
-      body_path: '',
-      parse_error: '',
-      raw_path: '',
-    });
+  if (firstLine === SKIP_MARKER) {
+    await writeOutputs({ ...EMPTY_OUTPUTS, skip: 'true' });
     console.log('skip=true');
     return;
   }
 
-  const title = firstLine.slice('# Title: '.length).trim();
-  if (!title) {
-    await reportParseError('empty title after "# Title: "', raw, extracted);
-    return;
-  }
+  // firstLine.startsWith(TITLE_PREFIX) was the match predicate above, with the
+  // trailing space — so a title of just whitespace can never reach here: the
+  // per-line trim would have shrunk the line to '# Title:', failing startsWith.
+  const title = firstLine.slice(TITLE_PREFIX.length).trim();
 
-  const bodyIdx = rawLines.findIndex((l, i) => i > contractIdx && l.trim() === '# Body');
+  const bodyIdx = rawLines.findIndex((l, i) => i > contractIdx && l.trim() === BODY_MARKER);
 
   if (bodyIdx === -1) {
-    await reportParseError('"# Body" marker missing after title', raw, extracted);
+    await reportParseError(`"${BODY_MARKER}" marker missing after title`, raw, extracted);
     return;
   }
 
@@ -163,13 +158,7 @@ export async function runParse(execPath) {
   const bodyPath = path.join(runnerTemp, 'issue-body.md');
   await writeFile(bodyPath, body);
 
-  await writeOutputs({
-    skip: 'false',
-    title,
-    body_path: bodyPath,
-    parse_error: '',
-    raw_path: '',
-  });
+  await writeOutputs({ ...EMPTY_OUTPUTS, title, body_path: bodyPath });
 
   console.log(`parsed: title="${title}" body_path=${bodyPath}`);
 }
@@ -190,13 +179,7 @@ if (isDirectRun) {
   cli().catch(async (err) => {
     console.error('FATAL:', err.stack || err.message);
     try {
-      await writeOutputs({
-        skip: 'false',
-        title: '',
-        body_path: '',
-        parse_error: `parser crashed: ${err.message}`,
-        raw_path: '',
-      });
+      await writeOutputs({ ...EMPTY_OUTPUTS, parse_error: `parser crashed: ${err.message}` });
     } catch {
       // best-effort
     }
