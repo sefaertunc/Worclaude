@@ -4,6 +4,18 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.4.9] — 2026-04-20
+
+CI fix release — the daily `upstream-check` workflow failed at `anthropics/claude-code-action` with `Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable`. The action exchanges an OIDC token for a GitHub App token before the Anthropic API auth layer runs; that exchange requires `id-token: write` in workflow permissions regardless of `CLAUDE_CODE_OAUTH_TOKEN`. Prior runs succeeded intermittently because GitHub does not consistently inject the token URL when no job in the run declares the permission.
+
+### Fixed
+
+- `.github/workflows/upstream-check.yml` now grants `id-token: write` alongside `contents: write` and `issues: write`. Matches the canonical workflow template at `anthropics/claude-code-action/examples/claude.yml`.
+
+### Changed
+
+- `docs/reference/upstream-automation.md` — permissions row lists all three permissions with a note on why `id-token: write` is required.
+
 ## [2.4.8] — 2026-04-20
 
 Bug fix release — `worclaude doctor` reported `File integrity: 1/54 files missing` on every v2.4.6+ install. `checkHashIntegrity` resolved every `workflow-meta.json` `fileHashes` key under `.claude/`, so `root/AGENTS.md` (tracked at project root since v2.4.6) got looked up at `.claude/root/AGENTS.md` — which doesn't exist. `worclaude upgrade` already handled the `root/` prefix correctly; only doctor had missed the update.

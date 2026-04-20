@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.8
+**Version:** 2.4.9
 **Last Updated:** 2026-04-20
 
 ## Completed
@@ -420,6 +420,12 @@
   - [x] Fixture hygiene: `tests/commands/doctor.test.js scaffoldProject()` now hashes `AGENTS.md` as `root/AGENTS.md` (matching real installs — previously the fixture wrote the file but skipped the hash, which is why the "passes all checks" test never caught this). Added an explicit regression test asserting doctor reports `all N files present` and NOT `X/N files missing` when `root/` keys are present.
   - [x] `docs/reference/configuration.md` — the `fileHashes` example was missing `hooks/` and `root/` entries, and the description claimed scope was "all files in `.claude/`" which stopped being true in 2.4.6. Example now includes both prefixes plus a one-line note describing the key-prefix vocabulary (`hooks/<name>` → `.claude/hooks/<name>`; `root/<path>` → project root).
   - [x] Pre-merge verification: 539/539 tests pass (+1 regression test), ESLint clean, `npm run docs:build` clean. Manual: `node src/index.js doctor` on this repo now reports `File integrity: 4/54 files customized (expected)` with no FAIL — previously `1/54 files missing`.
+
+- [x] v2.4.9: `upstream-check` workflow OIDC permission (2026-04-20)
+  - [x] **PR #86 — grant `id-token: write` so `anthropics/claude-code-action` can exchange OIDC for a GitHub App token.** The 2026-04-20 scheduled run failed three OIDC retries with `Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable`. Root cause: `claude-code-action` has two independent auth layers — a GitHub App token obtained by exchanging a workflow OIDC token at `api.anthropic.com/api/github/github-app-token-exchange`, and an Anthropic API credential (`CLAUDE_CODE_OAUTH_TOKEN`). OIDC is mandatory for layer 1 regardless of layer 2, verified against `src/github/token.ts` at pinned SHA `38ec876` (v1.0.101). Prior runs succeeded intermittently because GitHub does not consistently inject `ACTIONS_ID_TOKEN_REQUEST_URL` when no job in a run declares `id-token: write` — documented flake in upstream issues `#701` and `#814`.
+  - [x] `.github/workflows/upstream-check.yml` — adds `id-token: write` alongside existing `contents: write` and `issues: write`. Matches the canonical [examples/claude.yml](https://github.com/anthropics/claude-code-action/blob/main/examples/claude.yml) template.
+  - [x] `docs/reference/upstream-automation.md` — permissions row in "How It Runs" updated from two to three permissions with a one-line note explaining the OIDC requirement.
+  - [x] Pre-merge verification: YAML parse OK. `gh workflow run upstream-check.yml --ref fix/upstream-check-id-token-permission` confirmed the OIDC phase now passes (`OIDC token successfully obtained`). The follow-on `App token exchange failed: 401 Workflow validation failed` is Anthropic's GitHub App guardrail — the workflow file on the current ref must match `main` before the App will issue a token. Expected on feature-branch dispatch; resolves on merge.
 
 ## Stats
 
