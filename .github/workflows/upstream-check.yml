@@ -161,7 +161,7 @@ jobs:
           RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--model claude-sonnet-4-6 --max-turns 15 --disallowedTools Edit Write Bash NotebookEdit'
+          claude_args: '--model claude-sonnet-4-6 --max-turns 25 --disallowedTools Edit Write Bash NotebookEdit'
           prompt: |
             You are auditing new Anthropic upstream items to decide whether the Worclaude maintainer should open a GitHub issue about them.
 
