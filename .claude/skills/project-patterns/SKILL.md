@@ -100,7 +100,7 @@ Don't simplify to a single pass.
 
 ### Tiered merge hierarchy
 - **Tier 1 (additive):** only when target file doesn't exist at all
-- **Tier 2 (safe alongside):** always saves as `.workflow-ref.md` when same-name file exists (even if content is identical)
+- **Tier 2 (reference copy):** always saves the template under `.claude/workflow-ref/<path>` when same-name file exists (even if content is identical). Preserves the original filename so `diff` against the live file is trivial. Kept out of `.claude/commands/` and `.claude/agents/` to avoid being discovered as a phantom command or agent.
 - **Tier 3 (interactive):** only for CLAUDE.md and hook matcher conflicts
 
 ### Adding a new agent end-to-end

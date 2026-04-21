@@ -528,7 +528,7 @@ function displayMergeReport(report, backupPath) {
     }
     if (report.added.skills.length > 0) {
       display.barLine(
-        `  ${display.green('✓')} ${report.added.skills.length} skills added${report.conflicts.skills.length > 0 ? ` (${report.conflicts.skills.length} conflicts saved as .workflow-ref.md)` : ''}`
+        `  ${display.green('✓')} ${report.added.skills.length} skills added${report.conflicts.skills.length > 0 ? ` (${report.conflicts.skills.length} conflicts saved under .claude/workflow-ref/)` : ''}`
       );
     }
     if (report.added.permissions > 0) {
@@ -549,10 +549,11 @@ function displayMergeReport(report, backupPath) {
     ...report.conflicts.commands,
   ];
   if (allConflicts.length > 0) {
-    display.barLine(`${display.yellow('~')} Conflicts (saved alongside for review):`);
+    display.barLine(
+      `${display.yellow('~')} Conflicts (template copy saved under .claude/workflow-ref/):`
+    );
     for (const file of allConflicts) {
-      const refName = file.replace('.md', '.workflow-ref.md');
-      display.barLine(`  ${display.yellow('⚠')} ${file} → ${refName}`);
+      display.barLine(`  ${display.yellow('⚠')} ${file}`);
     }
     display.newline();
   }
@@ -606,12 +607,14 @@ function displayMergeReport(report, backupPath) {
   display.divider('NEXT');
   display.newline();
   if (allConflicts.length > 0) {
-    console.log(`  ${display.white('1.')} Review .workflow-ref.md files and merge what's useful`);
+    console.log(
+      `  ${display.white('1.')} Review files under .claude/workflow-ref/ and merge what's useful`
+    );
   }
   if (report.claudeMdHandling === 'suggestions-generated') {
     console.log(`  ${display.white('2.')} Review CLAUDE.md.workflow-suggestions`);
     console.log(
-      `  ${display.white('3.')} Delete .workflow-ref.md and .workflow-suggestions files when done`
+      `  ${display.white('3.')} Delete .claude/workflow-ref/ and .workflow-suggestions when done`
     );
   }
   console.log(

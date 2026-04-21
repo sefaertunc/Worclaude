@@ -50,7 +50,7 @@ Creates all of the following:
 1. Displays a detection report showing what already exists.
 2. Creates a timestamped backup before any changes.
 3. Merges new files alongside existing ones.
-4. Saves conflicts as `.workflow-ref.md` files for manual review.
+4. Saves conflicts under `.claude/workflow-ref/<same-path>` for manual review (kept out of `.claude/commands/` and `.claude/agents/` so references cannot shadow live files).
 5. Generates `CLAUDE.md.workflow-suggestions` if CLAUDE.md already exists.
 
 **Examples**
@@ -122,7 +122,7 @@ Every tracked file lands in one of these buckets:
 | Category                | Meaning                                                                                    | Action                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- |
 | **Auto-update**         | File unchanged since install, template has new version                                     | Replaced with new version                          |
-| **Conflict**            | User has customized the file, template has new version                                     | New version saved as `.workflow-ref.md`            |
+| **Conflict**            | User has customized the file, template has new version                                     | New version saved under `.claude/workflow-ref/`    |
 | **New**                 | File added in this CLI version                                                             | Installed directly                                 |
 | **Missing (expected)**  | File tracked in `fileHashes` but deleted on disk, and still shipped by the current version | **Restored** from template (hash refreshed)        |
 | **Missing (untracked)** | File tracked in `fileHashes` but no longer in templates                                    | Removed from `fileHashes`; on-disk state unchanged |
@@ -134,9 +134,9 @@ Every tracked file lands in one of these buckets:
 Before applying version-driven changes, `upgrade` reconciles the installation against the current template set:
 
 - **Missing expected files** are restored from templates; their hashes are refreshed.
-- **Hook scripts** (`.claude/hooks/*.{cjs,js}`) and **`AGENTS.md`** (tracked as `root/AGENTS.md`) became part of `buildTemplateHashMap` in v2.4.6. Installs predating v2.4.6 pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved — a `.workflow-ref<ext>` sidecar is written instead of overwriting.
+- **Hook scripts** (`.claude/hooks/*.{cjs,js}`) and **`AGENTS.md`** (tracked as `root/AGENTS.md`) became part of `buildTemplateHashMap` in v2.4.6. Installs predating v2.4.6 pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved — a reference copy is written under `.claude/workflow-ref/<same-path>` instead of overwriting.
 - **`.claude/learnings/`** (+ `.gitkeep`) is (re-)created if missing.
-- When `CLAUDE.md` lacks memory-architecture guidance keywords, a **`CLAUDE.md.workflow-ref.md`** sidecar is written alongside with suggested additions. `CLAUDE.md` itself is never auto-modified.
+- When `CLAUDE.md` lacks memory-architecture guidance keywords, a sidecar is written at **`.claude/workflow-ref/CLAUDE.md`** with suggested additions. `CLAUDE.md` itself is never auto-modified.
 
 **Examples**
 
@@ -164,7 +164,7 @@ worclaude upgrade
 **Notes**
 
 - A backup is always created before any changes are applied (including repair-only runs).
-- Conflict files and `.workflow-ref` sidecars should be reviewed manually; delete them when done.
+- Reference copies under `.claude/workflow-ref/` should be reviewed manually; delete the directory (or individual files) when done.
 - Settings merge is additive — existing permissions and hooks are preserved.
 - Repair only restores files missing from disk. It never overwrites files the user edited; those migrate via the sidecar path.
 
@@ -172,7 +172,8 @@ worclaude upgrade
 
 When upgrading from a version below 2.0.0, two additional migrations run automatically:
 
-- **Skill format migration** -- Flat `skill.md` files are moved to `skill/SKILL.md` directory format. Hash keys in `workflow-meta.json` are updated. Corresponding `.workflow-ref.md` files are also moved inside the skill directory.
+- **Skill format migration** -- Flat `skill.md` files are moved to `skill/SKILL.md` directory format. Hash keys in `workflow-meta.json` are updated. Corresponding reference copies are moved along with them.
+- **Workflow-ref relocation (v2.5.1)** -- Legacy `*.workflow-ref.md` files (and root-level `CLAUDE.md.workflow-ref.md` / `AGENTS.md.workflow-ref`) from pre-v2.5.1 installs are moved into `.claude/workflow-ref/<same-path>`. Idempotent — safe to run repeatedly.
 - **Agent description patching** -- Agents missing the required `description` frontmatter field get it added. Unmodified agents are patched silently. Modified agents prompt for confirmation before patching.
 
 The upgrade report shows migration counts (e.g., "Migrated: 14 skills to directory format", "Patched: 5 agents with description").
@@ -195,15 +196,15 @@ Requires `workflow-meta.json`. Shows a setup prompt if not found.
 
 **Output includes**
 
-| Section          | Details                                                 |
-| ---------------- | ------------------------------------------------------- |
-| Version info     | Installed version, install date, last update date       |
-| Project info     | Project types, tech stack                               |
-| Agents           | Universal count, optional count, optional agent names   |
-| Files            | Command count, skill count                              |
-| Customized files | Files whose hash differs from the installed version     |
-| Pending review   | Any `.workflow-ref.md` or `.workflow-suggestions` files |
-| Settings         | Number of active hooks, number of permission rules      |
+| Section          | Details                                                                 |
+| ---------------- | ----------------------------------------------------------------------- |
+| Version info     | Installed version, install date, last update date                       |
+| Project info     | Project types, tech stack                                               |
+| Agents           | Universal count, optional count, optional agent names                   |
+| Files            | Command count, skill count                                              |
+| Customized files | Files whose hash differs from the installed version                     |
+| Pending review   | Any files under `.claude/workflow-ref/` or `.workflow-suggestions` file |
+| Settings         | Number of active hooks, number of permission rules                      |
 
 **Examples**
 
@@ -404,7 +405,7 @@ Requires `workflow-meta.json`. Reports failure if not found.
 | **Documentation**     | `docs/spec/PROGRESS.md` and `docs/spec/SPEC.md` presence                                                                                                                      |
 | **Learnings**         | `.claude/learnings/` directory, `index.json` validity, orphaned entries                                                                                                       |
 | **Git Integration**   | `.claude/sessions/` and `.claude/learnings/` are gitignored (via `git check-ignore`)                                                                                          |
-| **Integrity**         | File hash verification against `workflow-meta.json`, pending `.workflow-ref.md` or `.workflow-suggestions` files                                                              |
+| **Integrity**         | File hash verification against `workflow-meta.json`, pending files under `.claude/workflow-ref/` or `.workflow-suggestions`                                                   |
 
 **Output**
 

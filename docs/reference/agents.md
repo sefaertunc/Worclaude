@@ -287,7 +287,7 @@ All agent files are installed to `.claude/agents/` as flat Markdown files:
   ...
 ```
 
-Agent files can be customized after installation. The `worclaude diff` command tracks modifications, and `worclaude upgrade` preserves customizations by saving new versions as `.workflow-ref.md` files.
+Agent files can be customized after installation. The `worclaude diff` command tracks modifications, and `worclaude upgrade` preserves customizations by saving new versions under `.claude/workflow-ref/agents/<name>.md` — the live agent at `.claude/agents/<name>.md` is never overwritten, and the reference copy is kept out of Claude Code's agent-discovery path so it cannot register as a phantom agent.
 
 ---
 

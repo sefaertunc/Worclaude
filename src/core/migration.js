@@ -1,7 +1,16 @@
 import path from 'node:path';
 import { AGENT_CATALOG } from '../data/agents.js';
-import { readFile, writeFile, dirExists, moveFile, listFiles } from '../utils/file.js';
+import {
+  fileExists,
+  readFile,
+  writeFile,
+  dirExists,
+  moveFile,
+  listFiles,
+  listFilesRecursive,
+} from '../utils/file.js';
 import { hashFile } from '../utils/hash.js';
+import { WORKFLOW_REF_DIR } from './file-categorizer.js';
 
 // --- Version comparison ---
 
@@ -138,6 +147,73 @@ export async function patchAgentDescriptions(projectRoot, meta, promptFn) {
     // Insert description after name line
     const updated = content.replace(/^(name:\s*.+)$/m, `$1\ndescription: "${description}"`);
     await writeFile(filePath, updated);
+  }
+
+  return report;
+}
+
+// --- Workflow-ref relocation (v2.5.1) ---
+
+const LEGACY_ROOT_REFS = ['CLAUDE.md.workflow-ref.md', 'AGENTS.md.workflow-ref'];
+
+// Legacy ref files could only live inside these subdirs. Scoping the scan
+// here instead of walking all of .claude/ matters because `sessions/` and
+// `learnings/` can accumulate hundreds of files that will never be refs.
+const LEGACY_REF_SUBDIRS = ['commands', 'agents', 'skills'];
+
+function legacyClaudeRefTarget(relKey) {
+  // relKey is relative to .claude/, e.g. "commands/sync.workflow-ref.md".
+  // Lookahead `(?=\.[^.]+$)` ensures ".workflow-ref" is stripped only when
+  // followed by a final extension — so "sync.workflow-ref.md" → "sync.md",
+  // but a hypothetical "sync.workflow-ref" (no final ext) wouldn't match.
+  const parts = relKey.split('/');
+  const name = parts.pop();
+  parts.push(name.replace(/\.workflow-ref(?=\.[^.]+$)/, ''));
+  return path.join(WORKFLOW_REF_DIR, ...parts);
+}
+
+export async function migrateWorkflowRefLocation(projectRoot) {
+  const report = { moved: 0, names: [], skipped: [] };
+  const claudeDir = path.join(projectRoot, '.claude');
+  const refDir = path.join(claudeDir, WORKFLOW_REF_DIR);
+
+  // 1. Scan only the subdirs where legacy `.workflow-ref.md` siblings could
+  //    live. Walking all of .claude/ would re-stat hundreds of session files
+  //    on every upgrade for no benefit.
+  for (const subdir of LEGACY_REF_SUBDIRS) {
+    const scanRoot = path.join(claudeDir, subdir);
+    if (!(await dirExists(scanRoot))) continue;
+
+    const allFiles = await listFilesRecursive(scanRoot);
+    for (const fp of allFiles) {
+      const rel = path.relative(claudeDir, fp).split(path.sep).join('/');
+      if (!rel.endsWith('.workflow-ref.md')) continue;
+
+      const target = path.join(claudeDir, legacyClaudeRefTarget(rel));
+      if (await fileExists(target)) {
+        report.skipped.push(rel);
+        continue;
+      }
+      await moveFile(fp, target);
+      report.moved++;
+      report.names.push(rel);
+    }
+  }
+
+  // 2. Legacy root-level refs (CLAUDE.md.workflow-ref.md, AGENTS.md.workflow-ref).
+  for (const legacyName of LEGACY_ROOT_REFS) {
+    const src = path.join(projectRoot, legacyName);
+    if (!(await fileExists(src))) continue;
+
+    const original = legacyName.replace(/\.workflow-ref(?:\.md)?$/, '');
+    const target = path.join(refDir, original);
+    if (await fileExists(target)) {
+      report.skipped.push(legacyName);
+      continue;
+    }
+    await moveFile(src, target);
+    report.moved++;
+    report.names.push(legacyName);
   }
 
   return report;
