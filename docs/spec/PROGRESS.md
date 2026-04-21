@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.12
-**Last Updated:** 2026-04-20
+**Version:** 2.4.13
+**Last Updated:** 2026-04-21
 
 ## Completed
 
@@ -448,6 +448,17 @@
   - [x] **PR #94 — raise `--max-turns` from 15 to 25 in `.github/workflows/upstream-check.yml`.** Workflow run 24693290867 (first post-v2.4.11 run on `main`) failed with `error_max_turns / num_turns: 16`. Not a parser issue — the v2.4.11 rewrite still works, the Claude step just couldn't fit the workload into 15 turns. The prompt requires ~9 `Read` calls (2 input files + `.claude/commands/upstream-check.md` + cross-reference against `templates/agents/**`, `templates/commands/**`, `templates/hooks/**`, `src/data/agents.js`, `src/data/agent-registry.js`, `docs/spec/BACKLOG-v2.1.md`, `CLAUDE.md`) before the final response — each Read burns a turn, so 15 was tight by luck on earlier runs, not by design. 25 gives comfortable headroom without being excessive.
   - [x] No prompt simplification (the cross-reference IS the feature), no model change, no parser touch. One-line tuning fix.
   - [x] Issue `#89` (umbrella "Claude dropped the contract") stays open until a successful end-to-end run on `main` with v2.4.12 confirms the full pipeline works. Then close with a summary of both root causes (format drift in v2.4.11, turn exhaustion in v2.4.12) and their fixes.
+
+- [x] v2.4.13: npm package health hardening (2026-04-21)
+  - [x] **PR #96 — automate publishes with SLSA provenance and close the remaining community-metadata gaps.** Snyk's package health score was 27/100; the diagnosis identified provenance (Security `?` rating) and a handful of small community gaps as the only signals fixable from within the repo. Popularity (0 weekly downloads, 2 stars) is organic and out of scope for this PR.
+  - [x] `.github/workflows/release.yml` (new) — publishes to npm on `release: [published]` + `workflow_dispatch`. Runs lint + tests, then `npm publish --provenance --access public`. Uses `permissions: id-token: write` for OIDC-based SLSA attestations. Requires either an npm Trusted Publisher entry or an `NPM_TOKEN` repo secret (this repo uses `NPM_TOKEN`, added 2026-04-21).
+  - [x] `package.json` — adds `publishConfig: { access: "public", provenance: true }` so any publish path produces provenance; adds top-level `funding` for npm UI parity with `.github/FUNDING.yml`; extends the `files` array to ship `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md` in the tarball. Side effect: local `npm publish` now fails outside CI (no OIDC) unless `--no-provenance` is passed — intentional, the whole point is to funnel publishes through the workflow.
+  - [x] `.github/FUNDING.yml` (new) — GitHub Sponsors link. Closes the one real Community gap Snyk tracks.
+  - [x] `.github/ISSUE_TEMPLATE/config.yml` (new) — routes vulnerability reports to GitHub Security Advisories instead of public issues.
+  - [x] `SECURITY.md` — Supported Versions refreshed from 2.1.x/2.2.x to 2.4.x; GitHub Security Advisories promoted to primary reporting channel (email remains as fallback).
+  - [x] `CONTRIBUTING.md` + `.claude/skills/git-conventions/SKILL.md` — document the new Release-driven publish flow; local `npm publish` demoted to emergency-only.
+  - [x] Pre-merge verification: 559/559 tests pass, ESLint clean, `npm pack --dry-run` confirms the three community files now ship in the tarball.
+  - [x] Post-merge follow-ups (not in this PR): (1) request a Snyk re-crawl via "Found a mistake?" after the first release with provenance publishes; (2) verify `npm view worclaude@2.4.13 dist.attestations` returns an attestations object; (3) confirm the "Provenance" badge on the npmjs.com package page. Expected Snyk re-score window: 1–7 days. Projected score after re-crawl: ~50–65/100 (Security `?` → Healthy is the largest lever).
 
 ## Stats
 
