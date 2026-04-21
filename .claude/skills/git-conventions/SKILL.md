@@ -114,14 +114,14 @@ This prevents merge conflicts when running parallel feature branches.
 
 ## Versioning Policy
 
-Follow [semver](https://semver.org/) when the project publishes releases. **Every merge to `main` gets at least a patch bump** — even docs-only, CI-only, or test-only changes. This gives every release a unique, tagged version so the npm history matches the git history one-to-one.
+Follow [semver](https://semver.org/) when the project publishes releases. **Every merge to `main` is a user-visible release and carries a version bump** (`patch`, `minor`, or `major`). Internal-only work (docs, CI, tests) accumulates on `develop` and does not reach `main` until at least one user-visible change is ready to ship with it — see `Per-PR bump declarations` below.
 
 | What changed | Bump | Example |
 |---|---|---|
 | Breaking change to public API or CLI | **major** | Renamed config key, removed flag |
 | New feature, command, or API surface | **minor** | Added CSV export option |
 | Bug fix, patch to existing behavior | **patch** | Fixed edge case in date parser |
-| Docs, CI, tests, internal refactor | **patch** | Updated README, added test |
+| Docs, CI, tests, internal refactor | **none** (no release) | Updated README, added test |
 
 **Publish from the primary branch (usually `main`),** not from feature or development branches. What is published must always match what is on the release branch.
 
@@ -135,6 +135,55 @@ Follow [semver](https://semver.org/) when the project publishes releases. **Ever
 If CI is unavailable and a release must ship urgently, local `npm publish` is a fallback — but follow up by re-publishing from CI on the next patch.
 
 **Rule of thumb:** If something landed on `main`, it needs a version. The only question is which semver level — patch by default, minor if it's a new feature, major if it breaks backward compatibility.
+
+### Per-PR bump declarations
+
+Every PR targeting `develop` declares its intended version bump in the PR
+description:
+
+```
+Version bump: {major|minor|patch|none}
+```
+
+- `major` — breaking change to public API, CLI, or scaffold contract
+- `minor` — new feature, command, agent, or flag
+- `patch` — bug fix or user-visible behavior change with no new surface
+- `none` — docs, CI, tests, internal refactor (nothing consumers notice)
+
+`/sync` aggregates declarations from all PRs merged since the last version
+tag and picks the highest: `major > minor > patch > none`. If all merged
+PRs are `none`, no release is cut — `/sync` updates shared-state files but
+does not bump the version or open a PR to `main`.
+
+This is how release batching works: internal-only work accumulates on
+develop without triggering publishes, and multiple user-facing PRs group
+into a single well-documented release.
+
+### Edge cases
+
+- **Release PRs (develop → main):** `/sync` excludes these from scanning.
+  They ARE the release, not an input to one. Known limitation: any
+  develop→main PR is excluded regardless of content. Safe in practice
+  because that direction is only used for releases.
+- **Revert PRs:** Declare the same bump level as the PR being reverted.
+  Reverting a `patch` is itself a `patch`. A `patch` + matching revert
+  in the same release group produces a net-zero user-visible change but
+  still bumps the version — something shipped internally and was
+  un-shipped, which is part of the release's history. Do not cancel
+  them out.
+- **Missing declarations:** Treated as `none` with a warning that
+  propagates to the release PR body and CHANGELOG entry. Do not manually
+  backfill old PR bodies — let them flow through as `none` so
+  under-documentation is visible rather than silent.
+- **No tags yet (first release):** `/sync` prompts to create a starting
+  tag (default `v0.1.0`, customizable, cancelable). The tool does NOT
+  silently invent a tag.
+- **Hotfix merged directly to main:** Bypasses `/sync` entirely. Requires
+  manual version management. Known limitation; out of scope.
+
+**Optional:** GitHub labels (`release:major`, `release:minor`, etc.) can
+replace body-text declarations for maintainers who prefer them. Deferred
+to a future phase; not scaffolded by default.
 
 ## Gotchas
 

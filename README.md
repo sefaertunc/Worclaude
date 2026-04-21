@@ -144,6 +144,7 @@ See the [full command reference](https://sefaertunc.github.io/Worclaude/referenc
 - **Hook profiles.** Dial strictness up or down via one environment variable. `minimal` for CI, `standard` for daily work, `strict` for type-heavy projects.
 - **Smart merge.** Detects existing Claude Code setups and merges additively — existing files never overwritten without confirmation. Three-tier strategy: additive for missing content, safe-alongside for conflicts, interactive for CLAUDE.md.
 - **Self-healing doctor.** Catches drift, stale hashes, deprecated models, broken learnings — before they bite.
+- **Batched releases.** Every PR declares `Version bump: {major|minor|patch|none}` in its body; `/sync` aggregates declarations across merged PRs and only cuts a release when at least one rises above `none`. Internal-only work (docs, CI, tests) accumulates on `develop` without triggering noisy publishes.
 
 ---
 
