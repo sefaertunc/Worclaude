@@ -329,7 +329,7 @@ describe('doctor command', () => {
     await doctorCommand();
     const output = getOutput();
     expect(output).toContain('lacks memory-architecture guidance');
-    expect(output).toContain('CLAUDE.md.workflow-ref.md');
+    expect(output).toContain('.claude/workflow-ref/CLAUDE.md');
   });
 
   // Hook event name validation (Task 3)

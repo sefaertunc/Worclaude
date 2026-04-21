@@ -9,6 +9,7 @@ import {
   listFilesRecursive,
   removeDirectory,
 } from '../utils/file.js';
+import { WORKFLOW_REF_DIR } from './file-categorizer.js';
 
 /**
  * Classify .claude/ files into safe-to-delete, modified, missing, and user-owned.
@@ -55,8 +56,9 @@ export async function classifyClaudeFiles(projectRoot, meta) {
     const relKey = path.relative(claudeDir, fp).split(path.sep).join('/');
     if (allTrackedKeys.has(relKey)) continue;
 
-    // .workflow-ref.md files are upgrade artifacts — safe to delete
-    if (relKey.endsWith('.workflow-ref.md')) {
+    // Upgrade artifacts — safe to delete: anything under workflow-ref/ (new
+    // location) or the legacy `.workflow-ref.md` sibling suffix.
+    if (relKey.startsWith(`${WORKFLOW_REF_DIR}/`) || relKey.endsWith('.workflow-ref.md')) {
       safeToDelete.push(relKey);
     } else {
       userOwned.push(relKey);
@@ -115,7 +117,7 @@ export async function removeTrackedFiles(projectRoot, fileKeys) {
   }
 
   // Clean up empty subdirectories
-  for (const subdir of ['agents', 'commands', 'skills']) {
+  for (const subdir of ['agents', 'commands', 'skills', WORKFLOW_REF_DIR]) {
     const dirPath = path.join(claudeDir, subdir);
     if (await dirExists(dirPath)) {
       const remaining = await listFilesRecursive(dirPath);

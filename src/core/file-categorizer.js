@@ -36,6 +36,7 @@ export function isAlwaysScaffolded(entry, meta) {
 }
 
 export const ROOT_KEY_PREFIX = 'root/';
+export const WORKFLOW_REF_DIR = 'workflow-ref';
 
 export function resolveKeyPath(key, projectRoot) {
   if (key.startsWith(ROOT_KEY_PREFIX)) {
@@ -43,6 +44,43 @@ export function resolveKeyPath(key, projectRoot) {
     return path.join(projectRoot, ...rel.split('/'));
   }
   return path.join(projectRoot, '.claude', ...key.split('/'));
+}
+
+/**
+ * Project-root-relative path for a ref file. Useful for scaffoldFile() which
+ * takes a destRelativePath. Returns e.g. ".claude/workflow-ref/commands/sync.md".
+ * Accepts a workflow key ("commands/sync.md", "root/CLAUDE.md") or a plain
+ * relative path. Root-level files (CLAUDE.md, AGENTS.md) land directly
+ * under workflow-ref/, not under workflow-ref/root/.
+ */
+export function workflowRefRelPath(keyOrRelPath) {
+  const rel = keyOrRelPath.startsWith(ROOT_KEY_PREFIX)
+    ? keyOrRelPath.slice(ROOT_KEY_PREFIX.length)
+    : keyOrRelPath;
+  return path.join('.claude', WORKFLOW_REF_DIR, ...rel.split('/'));
+}
+
+/**
+ * Resolve an absolute ref file destination for a given relative path.
+ * Wraps workflowRefRelPath with projectRoot.
+ */
+export function resolveRefPath(keyOrRelPath, projectRoot) {
+  return path.join(projectRoot, workflowRefRelPath(keyOrRelPath));
+}
+
+/**
+ * Predicate for "is this file a reference copy?". Matches both the v2.5.1+
+ * layout (anywhere under .claude/workflow-ref/) and the legacy sibling
+ * convention (.workflow-ref.md suffix). Used by status, doctor, and remover
+ * so they stay in sync across the two location schemes.
+ *
+ * @param {string} absPath — absolute path on disk
+ * @param {string} claudeDir — absolute path to the project's .claude/ directory
+ */
+export function isWorkflowRefFile(absPath, claudeDir) {
+  const refDirPrefix = path.join(claudeDir, WORKFLOW_REF_DIR) + path.sep;
+  if (absPath.startsWith(refDirPrefix)) return true;
+  return absPath.endsWith('.workflow-ref.md');
 }
 
 /**

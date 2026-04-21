@@ -7,6 +7,7 @@ import {
   semverLessThan,
   migrateSkillFormat,
   patchAgentDescriptions,
+  migrateWorkflowRefLocation,
 } from '../../src/core/migration.js';
 
 describe('semverLessThan', () => {
@@ -360,5 +361,123 @@ describe('patchAgentDescriptions', () => {
 
     expect(report.autoPatched).toBe(0);
     expect(report.skipped).toEqual([]);
+  });
+});
+
+describe('migrateWorkflowRefLocation', () => {
+  let tmpDir;
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-ref-relocate-'));
+  });
+
+  afterEach(async () => {
+    await fs.remove(tmpDir);
+  });
+
+  it('moves legacy .claude/commands/*.workflow-ref.md to workflow-ref/commands/', async () => {
+    const cmdDir = path.join(tmpDir, '.claude', 'commands');
+    await fs.ensureDir(cmdDir);
+    await fs.writeFile(path.join(cmdDir, 'sync.workflow-ref.md'), '# legacy sync ref');
+
+    const report = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(report.moved).toBe(1);
+    expect(report.names).toContain('commands/sync.workflow-ref.md');
+    // Original sibling gone — this is the bug fix: Claude Code's command
+    // loader no longer sees it
+    expect(await fs.pathExists(path.join(cmdDir, 'sync.workflow-ref.md'))).toBe(false);
+    // New location: filename normalized to sync.md (ref suffix stripped) under workflow-ref/
+    expect(
+      await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-ref', 'commands', 'sync.md'))
+    ).toBe(true);
+  });
+
+  it('moves legacy skill ref files to workflow-ref/skills/<name>/SKILL.md', async () => {
+    const skillDir = path.join(tmpDir, '.claude', 'skills', 'git-conventions');
+    await fs.ensureDir(skillDir);
+    await fs.writeFile(path.join(skillDir, 'SKILL.workflow-ref.md'), '# legacy ref');
+
+    const report = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(report.moved).toBe(1);
+    expect(
+      await fs.pathExists(
+        path.join(tmpDir, '.claude', 'workflow-ref', 'skills', 'git-conventions', 'SKILL.md')
+      )
+    ).toBe(true);
+    expect(await fs.pathExists(path.join(skillDir, 'SKILL.workflow-ref.md'))).toBe(false);
+  });
+
+  it('moves root CLAUDE.md.workflow-ref.md into .claude/workflow-ref/CLAUDE.md', async () => {
+    await fs.writeFile(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'), '# legacy claude ref');
+
+    const report = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(report.moved).toBe(1);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-ref', 'CLAUDE.md'))).toBe(
+      true
+    );
+    expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'))).toBe(false);
+  });
+
+  it('moves root AGENTS.md.workflow-ref into .claude/workflow-ref/AGENTS.md', async () => {
+    await fs.writeFile(path.join(tmpDir, 'AGENTS.md.workflow-ref'), '# legacy agents ref');
+
+    const report = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(report.moved).toBe(1);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md'))).toBe(
+      true
+    );
+    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.md.workflow-ref'))).toBe(false);
+  });
+
+  it('skips when target already exists at new location (never overwrites)', async () => {
+    const cmdDir = path.join(tmpDir, '.claude', 'commands');
+    await fs.ensureDir(cmdDir);
+    await fs.writeFile(path.join(cmdDir, 'sync.workflow-ref.md'), '# legacy');
+
+    const newLocation = path.join(tmpDir, '.claude', 'workflow-ref', 'commands', 'sync.md');
+    await fs.ensureDir(path.dirname(newLocation));
+    await fs.writeFile(newLocation, '# newer content');
+
+    const report = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(report.moved).toBe(0);
+    expect(report.skipped).toContain('commands/sync.workflow-ref.md');
+    // Legacy file still sitting there (user must resolve manually)
+    expect(await fs.pathExists(path.join(cmdDir, 'sync.workflow-ref.md'))).toBe(true);
+    // New location untouched
+    expect(await fs.readFile(newLocation, 'utf8')).toBe('# newer content');
+  });
+
+  it('is idempotent — second call with clean state is a no-op', async () => {
+    const cmdDir = path.join(tmpDir, '.claude', 'commands');
+    await fs.ensureDir(cmdDir);
+    await fs.writeFile(path.join(cmdDir, 'sync.workflow-ref.md'), '# legacy');
+
+    await migrateWorkflowRefLocation(tmpDir);
+    const second = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(second.moved).toBe(0);
+    expect(second.skipped).toEqual([]);
+  });
+
+  it('does not touch files already under .claude/workflow-ref/', async () => {
+    const refDir = path.join(tmpDir, '.claude', 'workflow-ref', 'commands');
+    await fs.ensureDir(refDir);
+    await fs.writeFile(path.join(refDir, 'sync.md'), '# already correct');
+
+    const report = await migrateWorkflowRefLocation(tmpDir);
+
+    expect(report.moved).toBe(0);
+    expect(await fs.readFile(path.join(refDir, 'sync.md'), 'utf8')).toBe('# already correct');
+  });
+
+  it('no-ops on empty project', async () => {
+    const report = await migrateWorkflowRefLocation(tmpDir);
+    expect(report.moved).toBe(0);
+    expect(report.names).toEqual([]);
   });
 });

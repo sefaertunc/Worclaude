@@ -85,7 +85,7 @@ worclaude upgrade --repair-only --yes
 Worclaude uses SHA-256 hashes stored in `workflow-meta.json` to categorize every file. Files split into these groups:
 
 1. **Auto-update** — Files you have not modified since installation. Safe to replace with the new version.
-2. **Conflict** — Files you have customized AND the workflow has updated. The new version is saved as `.workflow-ref.md` alongside yours; review manually.
+2. **Conflict** — Files you have customized AND the workflow has updated. The new version is saved under `.claude/workflow-ref/<same-path>` (preserving the original filename); review manually.
 3. **New files** — Files that did not exist in the previous version. Added directly.
 4. **Missing (will be restored)** — Files tracked in `workflow-meta.json` but missing on disk, and still shipped by the current version. Restored from templates during the repair pass.
 5. **Deleted (removed in current version)** — Files tracked in `workflow-meta.json` but no longer in the current templates. Dropped from tracking.
@@ -112,7 +112,7 @@ The preview shows each non-empty category before anything is written:
     + agents/incident-responder.md
 
   ~ Also:
-    ~ CLAUDE.md memory guidance missing (will write CLAUDE.md.workflow-ref.md)
+    ~ CLAUDE.md memory guidance missing (will write .claude/workflow-ref/CLAUDE.md sidecar)
 
   = Unchanged: 8 files
 
@@ -138,7 +138,7 @@ If your CLI and installed versions match but `worclaude doctor` reports drift �
 
   ~ Also:
     ~ .claude/learnings/ directory missing (will be created)
-    ~ CLAUDE.md memory guidance missing (will write CLAUDE.md.workflow-ref.md)
+    ~ CLAUDE.md memory guidance missing (will write .claude/workflow-ref/CLAUDE.md sidecar)
 
 ? Repair drifted files? (Y/n)
 ```
@@ -150,11 +150,11 @@ You can force this flow on any version with `worclaude upgrade --repair-only`, w
 Earlier versions of `worclaude upgrade` did not track hook scripts or `AGENTS.md`, so deleting them went undetected. v2.4.6 fixes this by adding `hooks/*.{cjs,js}` and `root/AGENTS.md` to the tracked file set. Projects initialized before v2.4.6 pick up these entries automatically on first upgrade:
 
 - Hook scripts and `AGENTS.md` already on disk with unmodified content get quietly tracked in `workflow-meta.json`.
-- User-edited hook scripts or `AGENTS.md` on disk — bytes that do not match the template — are **preserved**, and a `.workflow-ref<ext>` sidecar is written alongside so you can compare and merge manually.
+- User-edited hook scripts or `AGENTS.md` on disk — bytes that do not match the template — are **preserved**, and a reference copy is written under `.claude/workflow-ref/<path>` so you can compare and merge manually.
 
 ### CLAUDE.md handling
 
-`CLAUDE.md` is always considered user-owned; `worclaude upgrade` never edits it in place. If it lacks memory-architecture guidance keywords (`memory architecture`, `.claude/learnings`, `[LEARN]`, `/learn`, etc.), upgrade writes a `CLAUDE.md.workflow-ref.md` sidecar with a suggested snippet. Paste the snippet into your `CLAUDE.md` wherever makes sense, then delete the sidecar.
+`CLAUDE.md` is always considered user-owned; `worclaude upgrade` never edits it in place. If it lacks memory-architecture guidance keywords (`memory architecture`, `.claude/learnings`, `[LEARN]`, `/learn`, etc.), upgrade writes a sidecar at `.claude/workflow-ref/CLAUDE.md` with a suggested snippet. Paste the snippet into your `CLAUDE.md` wherever makes sense, then delete the sidecar.
 
 ## What Happens During the Upgrade
 
@@ -162,7 +162,7 @@ After you confirm, Worclaude:
 
 1. **Creates a backup** of your entire Claude Code setup (same timestamped backup as Scenario B).
 2. **Auto-updates** files you have not touched -- replaces them with the new version directly.
-3. **Saves conflict files** as `.workflow-ref.md` alongside your customized versions, so you can review and merge at your own pace.
+3. **Saves conflict files** under `.claude/workflow-ref/<same-path>` (preserving original filenames), so you can review and merge at your own pace without the reference copies being discovered as live slash commands or agents.
 4. **Adds new files** directly to your `.claude/` directory.
 5. **Merges settings.json** -- appends any new permissions and hooks using the same tiered logic as the initial merge (new permissions are appended, hook conflicts are prompted).
 6. **Updates workflow-meta.json** with the new version number, timestamp, and recomputed file hashes.
@@ -172,7 +172,7 @@ After you confirm, Worclaude:
 
   Restored:    4 files
   Updated:     14 files
-  Conflicts:   1 files (saved as .workflow-ref.md)
+  Conflicts:   1 files (saved under .claude/workflow-ref/)
   New:         1 files added
   Unchanged:   8 files
   Customized:  2 files (no updates needed)
@@ -180,7 +180,7 @@ After you confirm, Worclaude:
 
   Backup: .claude-backup-20260419-091500/
 
-  Review .workflow-ref files and merge what's useful.
+  Review files under .claude/workflow-ref/ and merge what's useful.
 ```
 
 ## Upgrading from v1.x to v2.0.0
@@ -197,7 +197,7 @@ v2.0.0 introduces Claude Code runtime integration. Two structural changes requir
 **What `worclaude upgrade` does automatically:**
 
 1. Migrates skill files from flat to directory format (e.g., `testing.md` → `testing/SKILL.md`)
-2. Moves corresponding `.workflow-ref.md` files inside skill directories
+2. Moves corresponding reference copies into skill directories
 3. Patches agent files with missing `description` frontmatter (auto-patches unmodified agents; prompts for modified ones)
 4. Updates hash keys in `workflow-meta.json` for the new skill paths
 
@@ -212,9 +212,13 @@ v2.0.0 introduces Claude Code runtime integration. Two structural changes requir
 
 ## Handling Conflict Files
 
-After the upgrade, review any `.workflow-ref.md` files the same way you would after a Scenario B merge. Open the reference file alongside your customized version, merge what is useful, and delete the reference file when you are done.
+After the upgrade, review any files under `.claude/workflow-ref/` the same way you would after a Scenario B merge. Each reference mirrors the path of the live file it corresponds to (e.g. `.claude/workflow-ref/commands/sync.md` is the new template for `.claude/commands/sync.md`). Open the reference alongside your customized version with `diff`, merge what is useful, and delete the reference when you are done.
 
-See [Existing Projects](/guide/existing-projects) for detailed guidance on reviewing `.workflow-ref.md` files.
+See [Existing Projects](/guide/existing-projects) for detailed guidance on reviewing reference files.
+
+### Upgrading from pre-v2.5.1 installs
+
+Pre-v2.5.1 wrote reference copies as `*.workflow-ref.md` siblings next to the live file, including inside `.claude/commands/` — where Claude Code's command loader picked them up as phantom slash commands. The first `worclaude upgrade` to v2.5.1+ automatically relocates any legacy reference files into `.claude/workflow-ref/<original-path>`. If a reference already exists at the new location (because both a stale legacy copy and a fresh one from this upgrade would land there), the legacy file is left in place and reported as skipped — resolve it manually.
 
 ## Restoring After a Failed Upgrade
 

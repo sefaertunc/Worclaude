@@ -3,6 +3,7 @@ import { requireWorkflowMeta, getPackageVersion } from '../core/config.js';
 import { hashFile } from '../utils/hash.js';
 import { fileExists, readFile, listFilesRecursive } from '../utils/file.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
+import { isWorkflowRefFile } from '../core/file-categorizer.js';
 import { TECH_STACKS } from '../data/agents.js';
 import * as display from '../utils/display.js';
 
@@ -99,16 +100,17 @@ export async function statusCommand() {
     display.newline();
   }
 
-  // Pending review files
+  // Pending review files — anything isWorkflowRefFile() recognizes. That
+  // covers the v2.5.1+ .claude/workflow-ref/ tree plus legacy .workflow-ref.md
+  // siblings, so users mid-migration still see what they need to resolve.
   const pendingReview = [];
   try {
     const claudeDir = path.join(projectRoot, '.claude');
     const allFiles = await listFilesRecursive(claudeDir);
     for (const fp of allFiles) {
+      if (!isWorkflowRefFile(fp, claudeDir)) continue;
       const rel = path.relative(claudeDir, fp).split(path.sep).join('/');
-      if (rel.endsWith('.workflow-ref.md')) {
-        pendingReview.push(`.claude/${rel}`);
-      }
+      pendingReview.push(`.claude/${rel}`);
     }
   } catch {
     // .claude dir might not exist

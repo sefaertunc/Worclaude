@@ -141,7 +141,7 @@ describe('merger', () => {
       expect(await fs.pathExists(skillPath)).toBe(true);
     });
 
-    it('saves conflicting skills as .workflow-ref.md (Tier 2)', async () => {
+    it('saves conflicting skills under .claude/workflow-ref/ (Tier 2)', async () => {
       // Pre-create a conflicting skill in directory format
       await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'context-management'));
       await fs.writeFile(
@@ -173,15 +173,22 @@ describe('merger', () => {
       );
       expect(original).toBe('# My custom context rules');
 
-      // .workflow-ref.md created alongside
+      // Ref lives under .claude/workflow-ref/, not sibling to the live SKILL.md
       const refPath = path.join(
         tmpDir,
         '.claude',
+        'workflow-ref',
         'skills',
         'context-management',
-        'SKILL.workflow-ref.md'
+        'SKILL.md'
       );
       expect(await fs.pathExists(refPath)).toBe(true);
+      // Regression: nothing should land next to the live SKILL.md
+      expect(
+        await fs.pathExists(
+          path.join(tmpDir, '.claude', 'skills', 'context-management', 'SKILL.workflow-ref.md')
+        )
+      ).toBe(false);
     });
 
     it('adds missing agents (Tier 1)', async () => {
@@ -553,7 +560,7 @@ describe('merger', () => {
       expect(content).toContain('bug-fixer');
     });
 
-    it('saves agent-routing as .workflow-ref.md when conflict exists', async () => {
+    it('saves agent-routing under .claude/workflow-ref/ when conflict exists', async () => {
       await fs.ensureDir(path.join(tmpDir, '.claude', 'skills', 'agent-routing'));
       await fs.writeFile(
         path.join(tmpDir, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
@@ -584,13 +591,14 @@ describe('merger', () => {
       );
       expect(original).toBe('# My custom routing');
 
-      // .workflow-ref.md created
+      // Ref lives under .claude/workflow-ref/
       const refPath = path.join(
         tmpDir,
         '.claude',
+        'workflow-ref',
         'skills',
         'agent-routing',
-        'SKILL.workflow-ref.md'
+        'SKILL.md'
       );
       expect(await fs.pathExists(refPath)).toBe(true);
       const refContent = await fs.readFile(refPath, 'utf-8');

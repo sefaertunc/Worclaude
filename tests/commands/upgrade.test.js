@@ -156,7 +156,7 @@ describe('upgrade command', () => {
     expect(updatedMeta.fileHashes['hooks/learn-capture.cjs']).toBeDefined();
   });
 
-  it('writes CLAUDE.md.workflow-ref.md sidecar when memory guidance missing', async () => {
+  it('writes CLAUDE.md memory-guidance sidecar under .claude/workflow-ref/ when missing', async () => {
     const currentVersion = await readPackageVersion();
     await seedCompleteInstall(tmpDir, currentVersion);
     await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Project\n\nJust rules.\n');
@@ -165,7 +165,12 @@ describe('upgrade command', () => {
 
     await upgradeCommand();
 
-    expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-ref', 'CLAUDE.md'))).toBe(
+      true
+    );
+    // Legacy root sibling must not appear — it would confuse users and linger
+    // through future upgrades.
+    expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'))).toBe(false);
     const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     expect(claudeMd).toBe('# Project\n\nJust rules.\n');
   });
@@ -182,6 +187,9 @@ describe('upgrade command', () => {
 
     await upgradeCommand();
 
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-ref', 'CLAUDE.md'))).toBe(
+      false
+    );
     expect(await fs.pathExists(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'))).toBe(false);
   });
 
@@ -261,7 +269,11 @@ describe('upgrade command', () => {
 
     const preserved = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(preserved).toBe('# My heavily edited AGENTS.md\n\nCustom content.\n');
-    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.workflow-ref.md'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md'))).toBe(
+      true
+    );
+    // No legacy sidecar at root
+    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.workflow-ref.md'))).toBe(false);
   });
 
   it('hash-prune preserves fileHashes entries for restored missingExpected keys', async () => {
@@ -347,7 +359,7 @@ describe('upgrade command', () => {
     expect(backups.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('saves conflict files as .workflow-ref.md', async () => {
+  it('saves conflict files under .claude/workflow-ref/ (not sibling to live file)', async () => {
     const fakeOldContent = 'old plan-reviewer v0.9';
     const storedHash = hashContent(fakeOldContent);
 
@@ -390,10 +402,17 @@ describe('upgrade command', () => {
     );
     expect(userContent).toBe('user customized content');
 
-    // .workflow-ref.md should exist with new template
+    // Ref file lives under workflow-ref/, preserving the original filename
+    expect(
+      await fs.pathExists(
+        path.join(tmpDir, '.claude', 'workflow-ref', 'agents', 'plan-reviewer.md')
+      )
+    ).toBe(true);
+    // Regression: ref MUST NOT land in .claude/agents/ where Claude Code's
+    // agent discovery would pick it up as a phantom agent.
     expect(
       await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.workflow-ref.md'))
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('preserves stored hash for user-modified files (prevents silent overwrite on next template change)', async () => {

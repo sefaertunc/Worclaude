@@ -11,7 +11,7 @@ import {
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
 import { hasClaudeMdMemoryGuidance, readClaudeMd } from '../core/drift-checks.js';
-import { resolveKeyPath } from '../core/file-categorizer.js';
+import { resolveKeyPath, isWorkflowRefFile } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 
 // Check categories
@@ -202,7 +202,7 @@ async function checkClaudeMdMemoryGuidance(projectRoot) {
     result(
       WARN,
       'CLAUDE.md memory guidance',
-      'CLAUDE.md lacks memory-architecture guidance. Run worclaude upgrade to write a CLAUDE.md.workflow-ref.md sidecar with suggested additions.'
+      'CLAUDE.md lacks memory-architecture guidance. Run worclaude upgrade to write a sidecar under .claude/workflow-ref/CLAUDE.md with suggested additions.'
     ),
   ];
 }
@@ -828,10 +828,8 @@ async function checkPendingReviewFiles(projectRoot) {
     const claudeDir = path.join(projectRoot, '.claude');
     const allFiles = await listFilesRecursive(claudeDir);
     for (const fp of allFiles) {
-      const rel = path.relative(claudeDir, fp).split(path.sep).join('/');
-      if (rel.endsWith('.workflow-ref.md')) {
-        pending.push(rel);
-      }
+      if (!isWorkflowRefFile(fp, claudeDir)) continue;
+      pending.push(path.relative(claudeDir, fp).split(path.sep).join('/'));
     }
   } catch {
     // .claude dir might not exist
