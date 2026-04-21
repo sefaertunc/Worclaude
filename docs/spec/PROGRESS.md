@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.5.0
+**Version:** 2.5.1
 **Last Updated:** 2026-04-21
 
 ## Completed
@@ -475,6 +475,19 @@
   - [x] Known gap (not fixed in this PR): `git describe --tags --abbrev=0` run from develop returns stale tags because worclaude's release tags live on main without main→develop back-merge. /sync on this run fell back to scanning by date (`merged:>=2026-04-21`) and correctly isolated #98 + #99. A follow-up should either auto-merge main→develop before aggregation, or switch to `git tag --sort=-version:refname | head -1` as the "last tag" source.
   - [x] First release group under the new workflow: **PR #99** (`Version bump: minor`) + **PR #98** (`fix/upstream-advance-state-on-skip`, pre-workflow — treated as `none` with warning). Highest declared bump: `minor`. v2.4.13 → v2.5.0.
 
+- [x] v2.5.1: relocate reference-copy files out of command/agent dirs (2026-04-21)
+  - [x] **PR #101 — fix phantom slash commands from `.workflow-ref.md` siblings.** Discovered during dogfooding the v2.5.0 upgrade: `.claude/commands/sync.workflow-ref.md` etc. were being discovered by Claude Code's command loader as live `/sync.workflow-ref` slash commands, and `.claude/agents/*.workflow-ref.md` could shadow live agents.
+  - [x] All reference copies (upgrade conflicts, Scenario B merge conflicts, CLAUDE.md memory sidecar, AGENTS.md sidecar) now written under `.claude/workflow-ref/<original-path>/` with the original filename preserved. Outside of Claude Code's command/agent/skill scan paths, so references can never shadow live files. `diff .claude/workflow-ref/commands/sync.md .claude/commands/sync.md` reads cleanly.
+  - [x] New helpers in `src/core/file-categorizer.js`: `WORKFLOW_REF_DIR` constant, `workflowRefRelPath(keyOrRelPath)`, `resolveRefPath(keyOrRelPath, projectRoot)`, `isWorkflowRefFile(absPath, claudeDir)` predicate that encapsulates new-location-or-legacy-suffix detection for readers.
+  - [x] New `migrateWorkflowRefLocation()` in `src/core/migration.js` sweeps any legacy `*.workflow-ref.md` siblings under `.claude/{commands,agents,skills}/` (plus root-level `CLAUDE.md.workflow-ref.md` / `AGENTS.md.workflow-ref`) into the new tree on every upgrade. Idempotent (skips when target exists), deliberately not version-gated (semver gating creates a bug class for downgrade→re-upgrade users). Scoped scan avoids re-stat'ing `.claude/sessions/` which can hold hundreds of files.
+  - [x] All writers switched to helpers: `src/commands/upgrade.js` (conflict write + memory sidecar), `src/core/merger.js` (6 sites: universal/optional agents, commands, skills, agent-routing, AGENTS.md), `src/core/drift-checks.js`. All readers switched to `isWorkflowRefFile`: `src/commands/status.js`, `src/commands/doctor.js`. `src/core/remover.js` extended to auto-delete the entire `workflow-ref/` subtree on `worclaude delete`.
+  - [x] Code quality cleanup during PR: removed 5 redundant `fs.ensureDir(path.dirname(...))` calls (writeFile/outputFile and moveFile already ensure parent dirs), removed unused `workflowRefDir` export, removed unused `fs` import in migration.js after ensureDir cleanup, replaced `'workflow-ref'` string literals with the `WORKFLOW_REF_DIR` constant in remover.js and migration.js.
+  - [x] Tests: 575/575 pass (567 prior + 8 new `migrateWorkflowRefLocation` cases covering subdir sweeps, root-level refs, target-collision skip, idempotency, no-op on empty project, and untouched files already at new location). Regression assertions in `tests/commands/upgrade.test.js`, `tests/commands/init.test.js`, `tests/core/merger.test.js` explicitly verify that `.claude/commands/*.workflow-ref.md` is NEVER created — so the phantom-command class of bug can't silently return.
+  - [x] Doc sweep: `docs/guide/upgrading.md` (7 references + new "Upgrading from pre-v2.5.1 installs" section), `docs/guide/existing-projects.md` (Tier 2 block rewritten + post-merge report sample + "Reviewing" section), `docs/reference/commands.md` (8 references + migration entry), `docs/reference/agents.md`, `.claude/skills/project-patterns/SKILL.md` Tier 2 line. Historical entries in `CHANGELOG.md` and `PROGRESS.md` left as-is (point-in-time records).
+  - [x] **Shared-state override:** `docs/spec/SPEC.md` was edited on the feature branch (normally develop-only). Precedent: PR #79 applied the same override. Rationale: the SPEC edits describe the very behavior this PR adds (new `workflow-ref/` layout + `migrateWorkflowRefLocation`). Five sections updated in PR #101 and not re-touched by this sync.
+  - [x] End-to-end dogfood: scratch project with drifted v2.4.12 install + 3 customized files + 2 legacy `.workflow-ref.md` siblings + 50 session files. After `worclaude upgrade --yes`: `.claude/commands/` and `.claude/agents/` contained 0 leaked refs, `.claude/workflow-ref/` contained exactly 4 expected files (3 conflicts + memory sidecar), 50 session files untouched, `worclaude status` surfaced all 4 refs as pending review.
+  - [x] Release group: **PR #101** (`Version bump: patch`). Only PR since v2.5.0 sync commit. v2.5.0 → v2.5.1. No missing declarations.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -485,7 +498,7 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 567 tests across 34 test files
+- 575 tests across 34 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
