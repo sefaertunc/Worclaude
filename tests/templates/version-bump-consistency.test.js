@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
+
 const FILES_REQUIRING_BUMP_STRING = [
   'CLAUDE.md',
   'templates/commands/commit-push-pr.md',
@@ -16,8 +18,7 @@ const FILES_REQUIRING_BUMP_STRING = [
 describe('Version bump declaration — cross-file consistency', () => {
   for (const relativePath of FILES_REQUIRING_BUMP_STRING) {
     it(`${relativePath} contains the literal "Version bump:" string`, () => {
-      const absolutePath = resolve(process.cwd(), relativePath);
-      const contents = readFileSync(absolutePath, 'utf8');
+      const contents = readFileSync(resolve(REPO_ROOT, relativePath), 'utf8');
       expect(contents).toContain('Version bump:');
     });
   }

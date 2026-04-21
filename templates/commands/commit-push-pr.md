@@ -45,7 +45,7 @@ files (see git-conventions.md for the canonical list).
 3. Write a clear, conventional commit message
 4. Push to the current branch
 5. Create a PR targeting develop: gh pr create --base develop
-6. Determine the version bump type for this PR. Read the Versioning Policy
+6. Determine the version bump level for this PR. Read the Versioning Policy
    in the project's git-conventions document to decide: `major`, `minor`,
    `patch`, or `none`.
    - `major` — breaking change to public API, CLI, or scaffold contract
