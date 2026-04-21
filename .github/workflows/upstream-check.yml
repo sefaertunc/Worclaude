@@ -227,7 +227,13 @@ jobs:
         if: steps.claude.outcome == 'success'
         run: node scripts/upstream-parse.mjs "${{ steps.claude.outputs.execution_file }}"
 
-      - name: State push (before issue create)
+      # Advance state on any successful parse — including SKIP. Leaving state
+      # un-advanced on SKIP causes Claude to re-evaluate the same feed items
+      # on every subsequent run until something is eventually deemed worth an
+      # issue, which is wasteful when upstream is quiet relative to Worclaude.
+      # Parse errors still skip this step so the items get re-evaluated after
+      # a fix.
+      - name: State push
         id: state-push
         if: >-
           github.ref == 'refs/heads/main'
@@ -235,18 +241,23 @@ jobs:
           && steps.claude.outcome == 'success'
           && steps.parse.outcome == 'success'
           && steps.parse.outputs.parse_error == ''
-          && steps.parse.outputs.skip == 'false'
         env:
           NEXT_STATE_PATH: ${{ steps.precheck.outputs.next_state_path }}
           NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
+          PARSE_SKIP: ${{ steps.parse.outputs.skip }}
         run: |
+          if [ "$PARSE_SKIP" = "true" ]; then
+            MSG="chore(upstream): advance state past ${NEW_COUNT} items (none worth issue)"
+          else
+            MSG="chore(upstream): advance state past ${NEW_COUNT} items"
+          fi
           cp "$NEXT_STATE_PATH" .github/upstream-state.json
           git -c user.name='github-actions[bot]' \
               -c user.email='github-actions[bot]@users.noreply.github.com' \
               add .github/upstream-state.json
           git -c user.name='github-actions[bot]' \
               -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m "chore(upstream): update state after ${NEW_COUNT} items"
+              commit -m "$MSG"
           for i in 1 2 3; do
             git fetch origin main
             git rebase origin/main && git push origin HEAD:main && break
