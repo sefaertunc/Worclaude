@@ -10,6 +10,7 @@ import { restoreCommand } from './commands/restore.js';
 import { diffCommand } from './commands/diff.js';
 import { deleteCommand } from './commands/delete.js';
 import { doctorCommand } from './commands/doctor.js';
+import { scanCommand } from './commands/scan.js';
 
 const program = new Command();
 
@@ -61,5 +62,13 @@ program
   .description('Validate workflow installation health')
   .option('--json', 'Output results as JSON')
   .action((options) => doctorCommand(options));
+
+program
+  .command('scan')
+  .description('Scan project for detectable facts (writes .claude/cache/detection-report.json)')
+  .option('--path <dir>', 'Project root to scan', process.cwd())
+  .option('--json', 'Print the detection report as JSON to stdout')
+  .option('--quiet', 'Suppress human-readable summary (still writes the report file)')
+  .action((options) => scanCommand(options));
 
 program.parse();

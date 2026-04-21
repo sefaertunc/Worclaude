@@ -1,0 +1,19 @@
+[project]
+name = "fastapi-pep735-fixture"
+version = "0.1.0"
+dependencies = [
+  "fastapi",
+  "starlette",
+]
+
+[dependency-groups]
+dev = [
+  "pytest",
+]
+lint = [
+  "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

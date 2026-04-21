@@ -4,6 +4,29 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+### Added
+
+- **`worclaude scan` subcommand + detection engine** (Phase Setup Diagnose Part A, PR A1) — new CLI subcommand that statically scans a project and produces a structured `DetectionReport` describing what it found. The report lands at `.claude/cache/detection-report.json` (machine-generated, gitignored, overwritten on every run). Ships 14 Tier 1 detectors under `src/core/project-scanner/detectors/` — one file per concern: `package-manager`, `language`, `frameworks`, `testing`, `linting`, `orm`, `deployment`, `ci`, `scripts`, `env-variables`, `external-apis`, `readme`, `spec-docs`, `monorepo`. Detector registration is directory-scan-based — adding a new detector means adding a new `.js` file, not editing the scanner. Each detector runs in parallel with a 5-second timeout; failures and timeouts are recorded in a per-report `errors` array without aborting the scan.
+- **CLI options for `scan`**: `--path <dir>` (defaults to `process.cwd()`), `--json` (prints the full report to stdout, suppresses summary), `--quiet` (suppresses summary, still writes the cache file). Exit codes: `0` on any completed scan (even with per-detector errors), `1` on fatal errors (invalid path, un-writable cache).
+- **`pyproject.toml` dep flattening** — `frameworks`/`testing`/`linting`/`orm` detectors read all five dep locations (`[project.dependencies]`, `[project.optional-dependencies.*]`, `[tool.poetry.dependencies]`, `[tool.poetry.group.*.dependencies]`, `[dependency-groups.*]`) and flatten into a single map before matching. Fixtures exist for PEP 621, PEP 735, and Poetry-group layouts.
+- **Runtime dependencies**: `smol-toml` (TOML parsing for `pyproject.toml`, `Cargo.toml`) and `yaml` (for `pnpm-workspace.yaml`, `Taskfile.yml`). Both are small, pure-JS, and zero-runtime-cost.
+
+### Changed
+
+- **`.gitignore` scaffolder** — `updateGitignore()` in `src/core/scaffolder.js` now writes `.claude/cache/` in addition to the existing seven entries. `cleanGitignore()` in `src/core/remover.js` removes the new entry on `worclaude delete`.
+
+### Tests
+
+- **107 new tests** across `tests/core/project-scanner/detectors/*.test.js` (14 files, 83 tests covering positive, negative, and edge cases — multiple lockfiles, all four pyproject dep locations, quoted/prefixed env lines, monorepo with and without workspaces, etc.), `tests/core/project-scanner/index.test.js` (12 tests covering happy path against six real fixtures, broken-detector and slow-detector handling via the `overrideDetectors` test seam, JSON round-trip), `tests/core/project-scanner/write-report.test.js` (7 tests), `tests/commands/scan.test.js` (5 tests covering `--path`, `--json`, `--quiet`, cwd default, and exit-code-1 paths). Total suite: 682/682 pass.
+- **Fixtures under `tests/fixtures/scanner/`**: `nextjs-pnpm/`, `fastapi-poetry/`, `fastapi-pep621/`, `fastapi-pep735/`, `rust-cli/`, `monorepo-pnpm/`, `empty/`, `mixed-lockfiles/`. No real source code in any fixture — only the manifests/configs the scanner reads.
+
+### Non-goals (explicitly deferred to Part B)
+
+- No rewrite of `templates/commands/setup.md` (ships separately in PR A2).
+- No state machine, persistence, or resume flow for `/setup`.
+- No architecture classification, directory-tree module inference, CI required-check detection (GitHub API), or monorepo sub-package scanning — all Tier 2.
+- No rename of the existing `src/core/detector.js` (scenario detection). The new scanner lives under `src/core/project-scanner/` to avoid name collision.
+
 ## [2.5.1] — 2026-04-21
 
 Patch release fixing a user-visible bug found while dogfooding the v2.5.0 upgrade: reference-copy template files (the copies worclaude writes when your customized file and the shipped template both change) were being placed as `.workflow-ref.md` siblings next to the live file — including inside `.claude/commands/`, where Claude Code's command loader discovered them as phantom slash commands like `/sync.workflow-ref`, and inside `.claude/agents/`, where they could shadow live agents. Reference copies now live in a dedicated `.claude/workflow-ref/` tree that Claude Code does not scan. Installs upgrading from pre-v2.5.1 have their legacy reference files automatically relocated on the next `worclaude upgrade`.
