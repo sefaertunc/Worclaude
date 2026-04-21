@@ -1,6 +1,6 @@
 {
   "name": "worclaude",
-  "version": "2.4.13",
+  "version": "2.5.0",
   "description": "The Workflow Layer for Claude Code — scaffold agents, commands, skills, hooks, and memory into any project",
   "type": "module",
   "bin": {

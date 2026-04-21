@@ -1090,11 +1090,18 @@ Determine which branch you're on, then follow the appropriate flow.
 On a feature branch (feature/\*, fix/\*, chore/\*, refactor/\*):
 
 - Do NOT touch shared-state files (see git-conventions.md)
-- Stage, commit, push, PR targeting develop
+- Stage, commit, push, create PR targeting develop
+- Declare version bump in the PR body: `Version bump: {major|minor|patch|none}`
+  per the Versioning Policy. Revert PRs match the bump level of the PR being
+  reverted. Ambiguous cases → ASK the user, don't guess. /sync parses this
+  line exactly; other phrasings are ignored.
 
 On develop (after /sync has been run):
 
 - Stage, commit, push, PR targeting main
+- Versioning is handled by /sync, not here. The release PR body is
+  pre-written by /sync with the aggregated bump summary and the list
+  of feature PRs included in the release.
 
 On any other branch: ask user which base branch to target.
 
@@ -1207,9 +1214,34 @@ Run on the develop branch AFTER all PRs are merged and conflicts resolved.
 
 Pre-check: confirm on develop, check for conflict markers, check if
 anything was merged since last sync (early exit if nothing to do).
-Updates: PROGRESS.md (stats, completed items), SPEC.md (if features changed),
-version bump per git-conventions.md Versioning Policy.
-Verify via /verify. Commit, push, PR to main.
+
+Updates: PROGRESS.md (stats, completed items), SPEC.md (if features changed).
+
+Version bump (v2.5.0+ aggregation model):
+
+1. Bootstrap tag: `git describe --tags` — if no tag, prompt yes/custom/cancel
+   to create a starting tag. Never silently invents one. Handles push-failure
+   by preserving the local tag and telling the user to retry.
+2. Aggregation: `gh pr list --state merged --base develop --limit 500`
+   filtered by `merged:>=<last-tag-date>` with `%as` date format. Release
+   PRs (`headRefName=develop` + `baseRefName=main`) filtered out. Each PR's
+   body is scanned for `Version bump: {major|minor|patch|none}`. Missing
+   declarations treated as `none` with a warning (carried through to both
+   the release PR body and CHANGELOG entry).
+3. Highest declared bump wins using precedence `major > minor > patch > none`.
+   If the highest is `none`: update PROGRESS.md / SPEC.md, commit, push, stop.
+   No version bump, no PR to main.
+4. If bump is `patch`/`minor`/`major`: prompt ship/wait with release group
+   summary (always prompts, including for major). On ship: bump
+   package.json, append to CHANGELOG.md with section defaults (major/minor →
+   Added; patch → Fixed; none-with-warning → Changed with ⚠ prefix) and
+   content-driven placement across Added/Changed/Fixed/Tests/Docs.
+5. Verify via /verify. Commit, push. Create PR to main with the release
+   group summary (warnings included) as the PR body verbatim.
+
+Publish is manual: maintainer creates a GitHub Release against main with
+tag vX.Y.Z, which triggers release.yml → npm publish with provenance.
+/sync does not publish.
 ```
 
 ### /conflict-resolver (conflict-resolver.md)
