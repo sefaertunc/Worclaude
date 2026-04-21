@@ -35,23 +35,190 @@ and tell the user to run /conflict-resolver first.
    docs/spec/SPEC.md to reflect the current state.
    If nothing changed spec-wise, leave it alone.
 
-## Version bump
+## Bootstrap: ensure a version tag exists
 
-6. Determine version bump using the Versioning Policy in
-   git-conventions.md. If bump needed: update version in package.json.
+6. Check for a version tag:
+
+   ```bash
+   LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+   ```
+
+   If no tag exists, prompt the user. Do NOT silently auto-tag:
+
+   ```
+   No version tag found. /sync needs a starting tag to compute release scope.
+
+   Proposed: tag current HEAD as v0.1.0
+
+   - yes      → create v0.1.0 tag at HEAD and continue
+   - custom   → specify your own starting version (e.g., v1.0.0 if this
+                project had releases before adopting this workflow)
+   - cancel   → stop; tag manually before re-running
+
+   Choose (yes / custom / cancel):
+   ```
+
+   On "yes": `git tag v0.1.0 && git push origin v0.1.0`, then set
+   `LAST_TAG="v0.1.0"`.
+
+   On "custom": prompt for the version string. Accept any string matching
+   `^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$` (semver with
+   optional pre-release and build metadata, e.g. `v1.0.0-rc.1`, `v2.0.0+build.5`).
+   Reject non-matching input with a clear message and re-prompt. Then tag
+   and push as above.
+
+   On "cancel": exit cleanly with "Tag the current state manually before
+   re-running /sync."
+
+   If `git push origin {tag}` fails (fork clone, expired credentials,
+   network): the local tag is already created and valid. Report:
+   "Local tag created but push failed — retry with `git push origin {tag}`
+   manually before opening a release PR." Then exit cleanly.
+
+   After bootstrap, proceed to step 7. Expect "Nothing publishable since
+   {tag}" if no PRs have been merged yet — that is correct behavior for
+   a first-release bootstrap, not an error.
+
+## Aggregate version bumps from merged PRs
+
+7. Collect `Version bump:` declarations from all PRs merged into develop
+   since the last version tag. Use `%as` for the date format (strict
+   YYYY-MM-DD; `%ai` breaks GitHub search due to space separator and
+   timezone offset). Pass `--limit 500` to avoid the `gh pr list` default
+   cap of 30, which would silently truncate on repos with infrequent
+   tagging:
+
+   ```bash
+   SINCE=$(git log -1 --format=%as "$LAST_TAG")
+   gh pr list --state merged --base develop \
+     --limit 500 \
+     --search "merged:>=$SINCE" \
+     --json number,title,body,headRefName,baseRefName
+   ```
+
+   Filter out release PRs — any PR with `headRefName: develop` AND
+   `baseRefName: main` is a release PR from a prior `/sync` run, not an
+   input. Skip those.
+
+   For each remaining PR, extract the `Version bump:` line from the body.
+   Valid values: `major`, `minor`, `patch`, `none`.
+
+   Missing declarations: treat as `none` and add to a warning list
+   (carried through to step 9's summary and step 10's CHANGELOG entry).
+   Do NOT guess a higher value. Do NOT stop.
+
+8. Compute the release bump using precedence: `major > minor > patch > none`.
+   - If the highest is `none`: update PROGRESS.md and SPEC.md if needed,
+     commit those, push, and stop. Do NOT bump the version. Do NOT open
+     a PR to main. Report:
+
+     ```
+     Nothing publishable since {last-tag}. Shared state updated.
+     ```
+
+   - If the highest is `patch`, `minor`, or `major`: proceed to step 9.
+
+9. Summarize the release group for the user and ask for confirmation.
+   Always prompt, including for `major` — that's exactly when the human
+   sanity-check is most valuable.
+
+   If the warnings list from step 7 is empty, omit the warnings section
+   entirely — do NOT render an empty block or a "no warnings" line.
+
+   Summary format (warnings section included only when warnings exist):
+
+   ```
+   Release group since {last-tag}:
+   - #{num} {title} — {bump}
+   - #{num} {title} — {bump}
+   - ...
+
+   ⚠ PRs without Version bump: declaration (treated as none):
+   - #{num} {title}
+   - ...
+
+   Proposed version: {old} → {new} ({highest-bump})
+
+   Ship now, or wait for more work to land? (ship/wait)
+   ```
+
+   If the user says "wait", stop without bumping. They will re-run `/sync`
+   later when more PRs have merged.
+
+10. On "ship":
+
+    a. Update the `version` field in `package.json` to the new version.
+
+    b. Append to `CHANGELOG.md` at the top of the entries list (after the
+       `# Changelog` header and the `## [Unreleased]` marker if present).
+       If `CHANGELOG.md` does not exist, create it with this header:
+
+       ```markdown
+       # Changelog
+
+       All notable changes to this project are documented in this file.
+       Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
+       versions follow [semver](https://semver.org/).
+
+       ## [Unreleased]
+       ```
+
+       The new entry format:
+
+       ```markdown
+       ## [{new-version}] — {YYYY-MM-DD}
+
+       {one-paragraph prose summary of what this release does — synthesize
+       from the merged PR titles and bodies; no bullet list in the summary}
+
+       ### {Section}
+
+       - {bullet per PR mapped to its section, including PR number}
+       ```
+
+       Section mapping — the declared bump determines the MINIMUM section,
+       but each PR's content governs its actual placement. PRs may be filed
+       under any of `### Added` / `### Changed` / `### Fixed` / `### Tests` /
+       `### Docs` as content warrants. Do not force a mapping that fights
+       the content.
+
+       Defaults when content is ambiguous:
+       - `major`, `minor` → default `### Added` (or `### Changed` for
+         breaking changes)
+       - `patch` → default `### Fixed` (but `### Added` is fine for
+         patch-level additive surface like new optional flags)
+       - `none` with warning → `### Changed` with ⚠ prefix noting
+         "no Version bump declaration — under-documented"
+
+       If a release mixes levels, each PR goes under its own section.
+       Multiple sections per release entry are standard.
+
+       The warning list from step 9 MUST appear in the CHANGELOG entry as
+       ⚠-prefixed bullets under `### Changed` — not just in the transient
+       prompt. This is how under-documentation becomes permanent record.
 
 ## Verify
 
-7. Run /verify to confirm tests and lint pass.
-   If anything fails, fix it before proceeding.
+11. Run /verify to confirm tests and lint pass.
+    If anything fails, fix it before proceeding.
 
 ## Commit, push, and PR
 
-8. git add -A
-9. git commit -m "chore: sync progress, spec, and version to [new version]"
-   Use exactly this message format — no trailers or Co-Authored-By lines.
-10. git push origin develop
-11. gh pr create --base main with description of what was merged
+12. git add -A
+13. git commit -m "chore: sync progress, spec, and version to [new version]"
+    Use exactly this message format — no trailers or Co-Authored-By lines.
+14. git push origin develop
+15. Create the PR to main. Use the release group summary from step 9 as the
+    PR body verbatim (including any warnings block) — that becomes the
+    release notes:
+
+    ```bash
+    gh pr create --base main --title "release: v{new-version}" --body "{step-9-summary}"
+    ```
+
+    The maintainer then manually creates a GitHub Release against main
+    with tag vX.Y.Z — that triggers the release.yml workflow which
+    publishes to npm with provenance. /sync does not publish.
 
 ## Trigger Phrases
 - "sync progress"

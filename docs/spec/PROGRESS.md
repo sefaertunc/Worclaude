@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.4.13
+**Version:** 2.5.0
 **Last Updated:** 2026-04-21
 
 ## Completed
@@ -460,6 +460,21 @@
   - [x] Pre-merge verification: 559/559 tests pass, ESLint clean, `npm pack --dry-run` confirms the three community files now ship in the tarball.
   - [x] Post-merge follow-ups (not in this PR): (1) request a Snyk re-crawl via "Found a mistake?" after the first release with provenance publishes; (2) verify `npm view worclaude@2.4.13 dist.attestations` returns an attestations object; (3) confirm the "Provenance" badge on the npmjs.com package page. Expected Snyk re-score window: 1–7 days. Projected score after re-crawl: ~50–65/100 (Security `?` → Healthy is the largest lever).
 
+- [x] v2.5.0: per-PR version bump declarations + `/sync` aggregation (2026-04-21)
+  - [x] **PR #99 — shift release mechanism from "every `/sync` publishes" to "every PR declares a bump, `/sync` aggregates and releases only when something publishable accumulated."** Motivated by the v2.4.8 → v2.4.12 jump (four patch releases in days, some docs/CI-only). The fix moves the bump decision from `/sync` (where context is lossy) to `/commit-push-pr` (where the author has full context), and has `/sync` aggregate declarations across merged PRs using precedence `major > minor > patch > none`. If everything aggregates to `none`, no release is cut — shared-state files update on develop, but no version bump and no PR to main.
+  - [x] `CLAUDE.md` Rule #13 reworded: "every merge to main gets at least a patch bump" → "every merge to main IS a release." Internal-only `none`-only batches now stop on develop.
+  - [x] `/commit-push-pr` new step 6: author declares `Version bump: {major|minor|patch|none}` in the PR body. Revert PRs match the reverted PR's bump. Ambiguous cases → ASK user, not guess.
+  - [x] `/sync` rewritten: bootstrap (no-tag → yes/custom/cancel prompt, broadened semver regex accepts pre-release/build metadata, push-failure recovery), aggregation (`gh pr list --limit 500`, `%as` date format, release-PR filter via `headRefName=develop+baseRefName=main`, missing-declarations → `none`+warning), ship/wait confirmation (always prompts, including major), `### Added/Changed/Fixed/Tests/Docs` section mapping with content-driven placement, CHANGELOG append with warnings carried forward.
+  - [x] Two-part edit on `.claude/skills/git-conventions/SKILL.md`: (a) fixed pre-existing contradictions at lines 117 and 124 ("every merge to main gets at least a patch bump" / "docs, CI, tests → patch" both negated the new policy); (b) appended new `### Per-PR bump declarations` + `### Edge cases` subsections. `templates/skills/universal/git-conventions.md` already said "no bump" for docs/CI/tests; only the append step applied. Unrelated wording divergence between the two trees left alone.
+  - [x] Dual-tree edits: both `templates/commands/{commit-push-pr,sync}.md` AND `.claude/commands/{commit-push-pr,sync}.md` edited identically. The runtime copies are what Claude Code reads when Worclaude dogfoods its own commands; byte-identical `diff` verified.
+  - [x] `.github/pull_request_template.md` — `Version bump:` field with HTML-comment placeholder.
+  - [x] `README.md` — short mention in "Why Worclaude" section.
+  - [x] `tests/templates/version-bump-consistency.test.js` — new 8-case Vitest asserts `Version bump:` appears literally in all 8 authoritative files; catches typo drift (e.g., rename to `Release bump:` in one file, others stale). Uses `import.meta.dirname`-derived `REPO_ROOT` matching the `v2-audit` test convention.
+  - [x] Post-review cleanup (`8d805d7`): `process.cwd()` → `import.meta.dirname` in the new test; "bump type" → "bump level" terminology alignment in commit-push-pr.md (both trees); other reviewer findings documented as skip/intentional.
+  - [x] Pre-merge verification: 567/567 tests pass (559 existing + 8 new), ESLint clean, byte-identical diff confirmed, `Version bump:` literal found in 9 files (8 required + README).
+  - [x] Known gap (not fixed in this PR): `git describe --tags --abbrev=0` run from develop returns stale tags because worclaude's release tags live on main without main→develop back-merge. /sync on this run fell back to scanning by date (`merged:>=2026-04-21`) and correctly isolated #98 + #99. A follow-up should either auto-merge main→develop before aggregation, or switch to `git tag --sort=-version:refname | head -1` as the "last tag" source.
+  - [x] First release group under the new workflow: **PR #99** (`Version bump: minor`) + **PR #98** (`fix/upstream-advance-state-on-skip`, pre-workflow — treated as `none` with warning). Highest declared bump: `minor`. v2.4.13 → v2.5.0.
+
 ## Stats
 
 - 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
@@ -470,7 +485,7 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 559 tests across 33 test files
+- 567 tests across 34 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

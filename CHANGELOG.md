@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.5.0] — 2026-04-21
+
+First release under the new per-PR bump declaration workflow. Shifts release mechanism from "every `/sync` publishes" to "every PR declares a bump, `/sync` aggregates, and only user-visible work ships." PR authors now declare `Version bump: {major|minor|patch|none}` in their PR body; `/sync` picks the highest declared bump since the last tag using precedence `major > minor > patch > none`. All-`none` batches update shared-state files on develop but never cut a release — internal-only work (docs, CI, tests) accumulates without triggering noisy publishes.
+
+### Added
+
+- **Per-PR `Version bump:` declaration** (PR #99) — new step 6 in `/commit-push-pr` asks authors to declare `major`/`minor`/`patch`/`none` in the PR body; revert PRs match the bump of the PR being reverted; ambiguous cases ASK the user. The declaration is pasted into both `templates/commands/` (scaffolded into user projects) and `.claude/commands/` (Worclaude's own runtime), kept byte-identical by convention.
+- **`/sync` aggregation rewrite** (PR #99) — replaces the single-step version bump with bootstrap (no-tag → yes/custom/cancel prompt, broadened semver regex accepts pre-release/build metadata, push-failure recovery), aggregation (`gh pr list --limit 500`, `%as` date format to avoid GitHub-search incompatibility with `%ai`, release-PR filter via `headRefName=develop`+`baseRefName=main`, missing-declarations treated as `none`+warning carried through to release PR body and CHANGELOG), ship/wait confirmation (always prompts including for `major`), CHANGELOG append with section defaults mapped from bump type (major/minor → Added, patch → Fixed) and content-driven placement across `### Added`/`### Changed`/`### Fixed`/`### Tests`/`### Docs`.
+- **`tests/templates/version-bump-consistency.test.js`** (PR #99) — new 8-case Vitest asserts `Version bump:` appears literally in all 8 authoritative files (`CLAUDE.md`, both tree copies of `commit-push-pr.md`, `sync.md`, `git-conventions`, and `.github/pull_request_template.md`). Catches rename drift (e.g., `Version bump:` → `Release bump:` in one file without the others). Uses `import.meta.dirname`-derived `REPO_ROOT` matching the `v2-audit` test convention.
+- **`.github/pull_request_template.md`** — required `Version bump:` field with HTML-comment placeholder.
+
+### Changed
+
+- **CLAUDE.md Rule #13** reworded: "every merge to `main` gets at least a patch bump" → "every merge to `main` IS a release." Internal-only `none`-only batches now update shared-state files on develop but never reach `main`.
+- **`.claude/skills/git-conventions/SKILL.md`** — fixed two pre-existing statements that contradicted the new policy: line 117 "every merge to main gets at least a patch bump" replaced with release-carries-bump wording; line 124 table row for docs/CI/tests changed from `patch` to `none (no release)`. `templates/skills/universal/git-conventions.md` already said "no bump" so no contradiction-fix was needed there; both files now have the new `### Per-PR bump declarations` + `### Edge cases` subsections appended identically. Unrelated wording divergence between the two trees left alone.
+- **`README.md`** — short "Batched releases" bullet in the "Why Worclaude" section.
+- ⚠ **PR #98 (`fix(upstream): advance state on SKIP_ISSUE`)** — no `Version bump:` declaration (merged 2026-04-21 14:58 UTC, before PR #99 introduced the workflow). Treated as `none` with warning per bootstrap handling. Under-documentation made visible here rather than silently lost. The fix itself advances `.github/upstream-state.json` whenever Claude returns `SKIP_ISSUE` so no-new-item runs don't re-evaluate the same feed indefinitely.
+
 ## [2.4.12] — 2026-04-20
 
 Internal fix release — first post-v2.4.11 `upstream-check` run on `main` (workflow run 24693290867) failed with `error_max_turns / num_turns: 16` at the Claude cross-reference step. Not a parser issue: the v2.4.11 format-drift fix still works; Claude simply couldn't fit the workload into 15 turns. The prompt requires ~9 `Read` calls (feed inputs + `.claude/commands/upstream-check.md` + cross-reference against agents/commands/hooks templates, `src/data/agents.js`, `src/data/agent-registry.js`, `docs/spec/BACKLOG-v2.1.md`, `CLAUDE.md`) before the final response — each Read burns a turn, so 15 was tight by luck, not by design.

@@ -50,6 +50,7 @@ The pre-check script (`scripts/upstream-precheck.mjs`) supports a `STATE_PATH` e
 
 - Issues are labelled `upstream` and `automated`. Titles match `upstream: {N} new items to review ({YYYY-MM-DD})`.
 - **Silent skip** when the delta is empty or Claude replies `SKIP_ISSUE`. Actions run history is the liveness signal.
+- **State advances on SKIP.** When Claude replies `SKIP_ISSUE`, `.github/upstream-state.json` is still pushed so the same items are not re-evaluated on the next cron run. Only parse errors (or a failed fetch) leave state un-advanced, so the items get a fresh look after a fix.
 - **Ordering guarantee:** `.github/upstream-state.json` is committed and pushed to `main` **before** `gh issue create`. A push failure aborts issue creation, so retries never duplicate.
 
 ## Watchdog
