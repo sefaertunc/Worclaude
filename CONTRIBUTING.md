@@ -67,6 +67,19 @@ Every PR is validated by CI before merge:
 - **Prettier** — formatting consistency check
 - **Branch** — must be up-to-date with `develop`
 
+## Release Process (maintainer only)
+
+Releases are cut from `main` and published automatically by GitHub Actions with
+npm provenance (SLSA attestations).
+
+1. Open a PR from `develop` to `main` containing the version bump (handled by `/sync`).
+2. After merge, create a GitHub Release against `main` with tag `vX.Y.Z`.
+3. The `.github/workflows/release.yml` workflow runs `npm publish --provenance`.
+4. Verify the "Provenance" badge on `https://www.npmjs.com/package/worclaude`.
+
+Do not run `npm publish` from a local machine — manual publishes omit provenance
+and weaken the Snyk security score.
+
 ## Reporting Bugs
 
 Open an issue on [GitHub Issues](https://github.com/sefaertunc/Worclaude/issues) with:

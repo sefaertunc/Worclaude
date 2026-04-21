@@ -129,9 +129,10 @@ Follow [semver](https://semver.org/) when the project publishes releases. **Ever
 
 **How to publish:**
 1. Merge the release PR into `main`
-2. Pull locally: `git checkout main && git pull`
-3. Publish using your ecosystem's tool (`npm publish`, `cargo publish`, `twine upload`, etc.)
-4. Sync develop: `git checkout develop && git merge main && git push origin develop`
+2. Create a GitHub Release against `main` with tag `vX.Y.Z` — the `release.yml` workflow publishes to npm with provenance (SLSA attestations). Do not run `npm publish` locally; local publishes omit provenance and weaken the Snyk security score.
+3. Sync develop: `git checkout develop && git merge main && git push origin develop`
+
+If CI is unavailable and a release must ship urgently, local `npm publish` is a fallback — but follow up by re-publishing from CI on the next patch.
 
 **Rule of thumb:** If something landed on `main`, it needs a version. The only question is which semver level — patch by default, minor if it's a new feature, major if it breaks backward compatibility.
 
