@@ -4,14 +4,16 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.2.x   | :white_check_mark: |
-| 2.1.x   | :white_check_mark: |
-| < 2.1   | :x:                |
+| 2.4.x   | :white_check_mark: |
+| < 2.4   | :x:                |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Worclaude,
-please report it privately by emailing **sefaertunc@gmail.com**.
+Please report security issues privately via
+[GitHub Security Advisories](https://github.com/sefaertunc/Worclaude/security/advisories/new).
+This is the preferred channel — it lets us coordinate a fix before disclosure.
+
+As a fallback, you may email **sefaertunc@gmail.com**.
 
 Please do **not** open a public issue for security vulnerabilities.
 
