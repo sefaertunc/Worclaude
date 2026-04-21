@@ -45,11 +45,34 @@ files (see git-conventions.md for the canonical list).
 3. Write a clear, conventional commit message
 4. Push to the current branch
 5. Create a PR targeting develop: gh pr create --base develop
-6. Include in PR description: title, changes, testing done, reviewer notes
+6. Determine the version bump level for this PR. Read the Versioning Policy
+   in the project's git-conventions document to decide: `major`, `minor`,
+   `patch`, or `none`.
+   - `major` — breaking change to public API, CLI, or scaffold contract
+   - `minor` — new feature, command, agent, or flag
+   - `patch` — bug fix or user-visible behavior change with no new surface
+   - `none` — docs, CI, tests, internal refactor (nothing consumers notice)
+
+   For revert PRs: declare the same bump level as the PR being reverted.
+
+   If the change is ambiguous, ASK THE USER. Do not guess.
+
+   The PR description MUST include this line on its own, verbatim:
+
+   ```
+   Version bump: {major|minor|patch|none}
+   ```
+
+   `/sync` parses this string exactly — other phrasings will be ignored.
+7. Include in PR description: title, changes, testing done, reviewer notes
 
 ## On develop
 
 Only used for release merges after /sync has been run.
+
+Versioning happens in `/sync`, not here. The release PR body is pre-written
+by `/sync` with the aggregated bump summary and the list of feature PRs
+included in the release.
 
 1. Write a session summary to .claude/sessions/:
    - Filename: YYYY-MM-DD-HHMM-{short-branch-name}.md
