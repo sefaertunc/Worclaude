@@ -12,16 +12,17 @@
 
 ## Core Commands
 
-| Command                                                 | Purpose                                              |
-| ------------------------------------------------------- | ---------------------------------------------------- |
-| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing) |
-| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift           |
-| `worclaude status`                                      | Show current workflow state, version, customizations |
-| `worclaude backup`                                      | Manual backup of current Claude setup                |
-| `worclaude restore`                                     | Restore from a backup                                |
-| `worclaude diff`                                        | Compare current setup vs latest workflow version     |
-| `worclaude delete`                                      | Remove worclaude workflow from project               |
-| `worclaude doctor`                                      | Check installation health and file integrity         |
+| Command                                                 | Purpose                                                           |
+| ------------------------------------------------------- | ----------------------------------------------------------------- |
+| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing)              |
+| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift                        |
+| `worclaude status`                                      | Show current workflow state, version, customizations              |
+| `worclaude backup`                                      | Manual backup of current Claude setup                             |
+| `worclaude restore`                                     | Restore from a backup                                             |
+| `worclaude diff`                                        | Compare current setup vs latest workflow version                  |
+| `worclaude delete`                                      | Remove worclaude workflow from project                            |
+| `worclaude doctor`                                      | Check installation health and file integrity                      |
+| `worclaude scan [--path] [--json] [--quiet]`            | Detect project facts; write `.claude/cache/detection-report.json` |
 
 ---
 
@@ -1443,14 +1444,19 @@ worclaude/
 │   │   ├── restore.js
 │   │   ├── diff.js
 │   │   ├── delete.js
-│   │   └── doctor.js
+│   │   ├── doctor.js
+│   │   └── scan.js                 # Project-fact detection (worclaude scan)
 │   ├── core/
 │   │   ├── detector.js             # Scenario A/B/C detection
 │   │   ├── merger.js               # Tiered merge logic
 │   │   ├── scaffolder.js           # Template → project file creation
 │   │   ├── backup.js               # Backup/restore logic
 │   │   ├── config.js               # workflow-meta.json management
-│   │   └── file-categorizer.js     # Hash maps + file categorization for upgrade/diff
+│   │   ├── file-categorizer.js     # Hash maps + file categorization for upgrade/diff
+│   │   └── project-scanner/        # Detection engine for `worclaude scan`
+│   │       ├── index.js            # scanProject, writeDetectionReport
+│   │       ├── manifests.js        # Shared package.json / pyproject.toml parsing
+│   │       └── detectors/          # 14 Tier 1 detectors (one file per detector)
 │   ├── prompts/
 │   │   ├── project-type.js
 │   │   ├── agent-selection.js
@@ -1503,8 +1509,9 @@ worclaude/
 │       ├── universal/ (12 files, installed as skill-name/SKILL.md)
 │       └── templates/ (3 files, installed as skill-name/SKILL.md)
 └── tests/
-    ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor)
-    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles, migration)
+    ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor, scan)
+    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles, migration, project-scanner/)
+    ├── fixtures/scanner/ (minimal project fixtures for scanner tests)
     ├── generators/ (agent-routing)
     ├── prompts/ (claude-md-merge)
     └── utils/ (display, file, hash, time)

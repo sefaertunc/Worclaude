@@ -68,7 +68,9 @@
     "commander": "^13.1.0",
     "fs-extra": "^11.3.0",
     "inquirer": "^12.5.0",
-    "ora": "^8.2.0"
+    "ora": "^8.2.0",
+    "smol-toml": "^1.6.1",
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "eslint": "^9.22.0",
