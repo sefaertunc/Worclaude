@@ -75,27 +75,27 @@ Files that do not conflict with anything you already have are added silently:
 - **docs/spec/SPEC.md** -- created if missing, skipped if it already exists
 - **.claude/workflow-meta.json** -- always created (this is how Worclaude tracks that it has been installed)
 
-### Tier 2: Safe Alongside (Notify, Do Not Ask)
+### Tier 2: Reference Copy (Notify, Do Not Ask)
 
-When Worclaude wants to install a file that you already have (for example, a skill or agent with the same name), it does not overwrite yours. Instead, it saves the workflow version alongside your file with a `.workflow-ref.md` suffix.
+When Worclaude wants to install a file that you already have (for example, a skill or agent with the same name), it does not overwrite yours. Instead, it saves the workflow version under `.claude/workflow-ref/<same-path>`, preserving the original filename. That location is kept out of Claude Code's command, agent, and skill discovery so reference copies never shadow your live files.
 
-For skills (directory format), the reference file goes inside the skill directory:
+For skills, the reference mirrors the skill's directory structure:
 
-- Your `context-management/SKILL.md` stays untouched
-- The workflow version is saved as `context-management/SKILL.workflow-ref.md`
+- Your `.claude/skills/context-management/SKILL.md` stays untouched
+- The workflow version is saved as `.claude/workflow-ref/skills/context-management/SKILL.md`
 
-For agents and commands (flat files), the reference file sits alongside:
+For agents and commands:
 
-- Your `plan-reviewer.md` stays untouched
-- The workflow version is saved as `plan-reviewer.workflow-ref.md`
+- Your `.claude/agents/plan-reviewer.md` stays untouched
+- The workflow version is saved as `.claude/workflow-ref/agents/plan-reviewer.md`
 
 This applies to conflicting skills, agents, and commands. You get a notification in the final report but are never prompted to choose during the merge.
 
 ```
-  Conflicts (saved alongside for review):
-  ~ context-management/SKILL.md → context-management/SKILL.workflow-ref.md
-  ~ git-conventions/SKILL.md → git-conventions/SKILL.workflow-ref.md
-  ~ testing/SKILL.md → testing/SKILL.workflow-ref.md
+  Conflicts (template copy saved under .claude/workflow-ref/):
+  ⚠ context-management/SKILL.md
+  ⚠ git-conventions/SKILL.md
+  ⚠ testing/SKILL.md
 ```
 
 ### Tier 3: Interactive (Asks You)
@@ -151,14 +151,14 @@ When the merge completes, you see a full report:
   Added automatically:
   ✓ 9 agents added
   ✓ 16 commands added
-  ✓ 6 skills added (3 conflicts saved as .workflow-ref.md)
+  ✓ 6 skills added (3 conflicts saved under .claude/workflow-ref/)
   ✓ 18 permission rules appended to settings.json
   ✓ 3 hooks added to settings.json
 
-  Conflicts (saved alongside for review):
-  ~ context-management.md → context-management.workflow-ref.md
-  ~ git-conventions.md → git-conventions.workflow-ref.md
-  ~ testing.md → testing.workflow-ref.md
+  Conflicts (template copy saved under .claude/workflow-ref/):
+  ⚠ context-management/SKILL.md
+  ⚠ git-conventions/SKILL.md
+  ⚠ testing/SKILL.md
 
   Suggestions:
   ~ CLAUDE.md.workflow-suggestions (review and merge manually)
@@ -167,17 +167,17 @@ When the merge completes, you see a full report:
 
   What to do next:
 
-  1. Review .workflow-ref.md files and merge what's useful
+  1. Review files under .claude/workflow-ref/ and merge what's useful
   2. Review CLAUDE.md.workflow-suggestions
-  3. Delete .workflow-ref.md and .workflow-suggestions files when done
+  3. Delete .claude/workflow-ref/ and .workflow-suggestions when done
   Run /setup in Claude Code for project-specific configuration
 ```
 
-### Reviewing `.workflow-ref.md` Files
+### Reviewing files under `.claude/workflow-ref/`
 
-These files contain the workflow's version of files you already had. Open them side by side with your versions and merge anything useful. For example, the workflow's `testing.md` might have testing patterns you have not considered.
+These files contain the workflow's version of files you already had. Paths mirror the live tree — `.claude/workflow-ref/commands/sync.md` is the template for `.claude/commands/sync.md` — so `diff .claude/workflow-ref/commands/sync.md .claude/commands/sync.md` reads cleanly. Merge anything useful from the workflow's version into yours.
 
-Once you have merged what you want, delete the `.workflow-ref.md` files -- they are reference copies, not active configuration.
+Once you are done, delete the files under `.claude/workflow-ref/` — they are reference copies, not active configuration.
 
 ### Reviewing `CLAUDE.md.workflow-suggestions`
 

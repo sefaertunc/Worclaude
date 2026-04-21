@@ -10,6 +10,7 @@ import {
   scaffoldPluginJson,
   scaffoldMemoryDocs,
 } from './scaffolder.js';
+import { workflowRefRelPath } from './file-categorizer.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
   detectMissingSections,
@@ -124,10 +125,11 @@ async function mergeSkills(projectRoot, existingScan, variables, report, selecti
     const existsAsFlat = existingScan.existingSkills.includes(`${skill.name}.md`);
 
     if (existsAsDir || existsAsFlat) {
-      // Tier 2: conflict — save as .workflow-ref.md
+      // Tier 2: conflict — save under .claude/workflow-ref/ so the live
+      // SKILL.md stays authoritative and the ref cannot shadow it.
       await scaffoldFile(
         skill.templatePath,
-        path.join('.claude', 'skills', skill.name, 'SKILL.workflow-ref.md'),
+        workflowRefRelPath(`skills/${skill.name}/SKILL.md`),
         skill.vars,
         projectRoot
       );
@@ -147,7 +149,7 @@ async function mergeSkills(projectRoot, existingScan, variables, report, selecti
 
   if (routingExistsAsDir || routingExistsAsFlat) {
     await writeFile(
-      path.join(projectRoot, skillsDir, 'agent-routing', 'SKILL.workflow-ref.md'),
+      path.join(projectRoot, workflowRefRelPath('skills/agent-routing/SKILL.md')),
       routingContent
     );
     report.conflicts.skills.push('agent-routing');
@@ -166,7 +168,7 @@ async function mergeAgents(projectRoot, existingScan, selectedAgents, report) {
     if (existingScan.existingAgents.includes(filename)) {
       await scaffoldFile(
         `agents/universal/${agent}.md`,
-        path.join(destDir, `${agent}.workflow-ref.md`),
+        workflowRefRelPath(`agents/${filename}`),
         {},
         projectRoot
       );
@@ -191,7 +193,7 @@ async function mergeAgents(projectRoot, existingScan, selectedAgents, report) {
     if (existingScan.existingAgents.includes(filename)) {
       await scaffoldFile(
         `agents/optional/${category}/${agent}.md`,
-        path.join(destDir, `${agent}.workflow-ref.md`),
+        workflowRefRelPath(`agents/${filename}`),
         {},
         projectRoot
       );
@@ -216,7 +218,7 @@ async function mergeCommands(projectRoot, existingScan, report) {
     if (existingScan.existingCommands.includes(filename)) {
       await scaffoldFile(
         `commands/${cmd}.md`,
-        path.join(destDir, `${cmd}.workflow-ref.md`),
+        workflowRefRelPath(`commands/${filename}`),
         {},
         projectRoot
       );
@@ -431,7 +433,12 @@ async function mergeAgentsMd(projectRoot, existingScan, variables, report) {
     await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
     report.agentsMdHandling = 'created';
   } else {
-    await scaffoldFile('core/agents-md.md', 'AGENTS.md.workflow-ref', variables, projectRoot);
+    await scaffoldFile(
+      'core/agents-md.md',
+      workflowRefRelPath('root/AGENTS.md'),
+      variables,
+      projectRoot
+    );
     report.agentsMdHandling = 'saved-alongside';
   }
 }

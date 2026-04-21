@@ -515,12 +515,20 @@ describe('init command', () => {
       );
       expect(original).toBe('# My custom context rules');
 
-      // .workflow-ref.md created in directory format for conflicting skill
+      // Ref file for the conflicting skill lands under .claude/workflow-ref/
+      // (not sibling to the live SKILL.md, to avoid shadowing skill discovery)
+      expect(
+        await fs.pathExists(
+          path.join(tmpDir, '.claude', 'workflow-ref', 'skills', 'context-management', 'SKILL.md')
+        )
+      ).toBe(true);
+      // And importantly: nothing leaked into .claude/skills/context-management/
+      // as SKILL.workflow-ref.md (legacy sibling location)
       expect(
         await fs.pathExists(
           path.join(tmpDir, '.claude', 'skills', 'context-management', 'SKILL.workflow-ref.md')
         )
-      ).toBe(true);
+      ).toBe(false);
 
       // Non-conflicting skills added in directory format
       expect(

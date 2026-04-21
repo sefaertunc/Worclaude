@@ -87,17 +87,19 @@ describe('drift-checks', () => {
   });
 
   describe('writeMemoryGuidanceSidecar', () => {
-    it('writes CLAUDE.md.workflow-ref.md at projectRoot', async () => {
+    it('writes sidecar under .claude/workflow-ref/CLAUDE.md', async () => {
       const dest = await writeMemoryGuidanceSidecar(tmpDir);
-      expect(dest).toBe(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'));
+      expect(dest).toBe(path.join(tmpDir, '.claude', 'workflow-ref', 'CLAUDE.md'));
       const content = await fs.readFile(dest, 'utf8');
       expect(hasClaudeMdMemoryGuidance(content)).toBe(true);
     });
 
     it('overwrites existing sidecar idempotently', async () => {
-      await fs.writeFile(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'), 'stale');
+      const dest = path.join(tmpDir, '.claude', 'workflow-ref', 'CLAUDE.md');
+      await fs.ensureDir(path.dirname(dest));
+      await fs.writeFile(dest, 'stale');
       await writeMemoryGuidanceSidecar(tmpDir);
-      const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md.workflow-ref.md'), 'utf8');
+      const content = await fs.readFile(dest, 'utf8');
       expect(content).not.toBe('stale');
       expect(hasClaudeMdMemoryGuidance(content)).toBe(true);
     });

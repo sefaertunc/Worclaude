@@ -256,11 +256,12 @@ Same interactive prompts as Scenario A.
 - docs/spec/SPEC.md → create if missing, skip if exists
 - .claude/workflow-meta.json → create
 
-**Tier 2 — Safe alongside (notify, don't ask):**
+**Tier 2 — Reference copy (notify, don't ask):**
 
-- Conflicting skills → keep user's, save workflow version as `{name}.workflow-ref.md`
-- Conflicting agents → same pattern
-- Conflicting commands → same pattern
+- Conflicting skills → keep user's, save workflow version under `.claude/workflow-ref/skills/{name}/SKILL.md`
+- Conflicting agents → save workflow version under `.claude/workflow-ref/agents/{name}.md`
+- Conflicting commands → save workflow version under `.claude/workflow-ref/commands/{name}.md`
+- `.claude/workflow-ref/` mirrors the live tree and preserves original filenames. Kept out of Claude Code's command, agent, and skill discovery so reference copies never shadow live files.
 
 **Tier 3 — Interactive (ask user):**
 
@@ -294,22 +295,22 @@ Default: keep user's, generate suggestions file.
   Added:
   ✓ 6 universal agents + 4 selected optional agents
   ✓ 18 slash commands
-  ✓ 9 universal skills (3 conflicts saved as .workflow-ref.md)
+  ✓ 9 universal skills (3 conflicts saved under .claude/workflow-ref/)
   ✓ 18 permission rules appended
   ✓ 3 hooks added
 
-  Conflicts (saved alongside):
-  ~ context-management.md → context-management.workflow-ref.md
-  ~ git-conventions.md → git-conventions.workflow-ref.md
-  ~ testing.md → testing.workflow-ref.md
+  Conflicts (template copy saved under .claude/workflow-ref/):
+  ⚠ context-management/SKILL.md
+  ⚠ git-conventions/SKILL.md
+  ⚠ testing/SKILL.md
 
   Suggestions:
   ~ CLAUDE.md.workflow-suggestions (review and merge manually)
 
   Next steps:
-  1. Review .workflow-ref.md files and merge what's useful
+  1. Review files under .claude/workflow-ref/ and merge what's useful
   2. Review CLAUDE.md.workflow-suggestions
-  3. Delete .workflow-ref.md and .workflow-suggestions files when done
+  3. Delete .claude/workflow-ref/ and .workflow-suggestions when done
 ```
 
 ---
@@ -354,9 +355,10 @@ Before applying version-driven changes, `upgrade` reconciles the installation ag
 
 - Files in `fileHashes` missing on disk AND still in `buildTemplateHashMap` AND of an always-scaffolded type (`universal-agent`, selected `optional-agent`, `command`, `universal-skill`, `hook`, `root-file`) → restored from templates; hash refreshed.
 - Files in `fileHashes` missing on disk but no longer in `buildTemplateHashMap` → removed from tracking.
-- Hook scripts (`.claude/hooks/*.{cjs,js}`) and `AGENTS.md` (as `root/AGENTS.md`) are tracked in `fileHashes` as of v2.4.6. Installs predating v2.4.6 pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved; a `.workflow-ref` sidecar is written instead of overwriting.
+- Hook scripts (`.claude/hooks/*.{cjs,js}`) and `AGENTS.md` (as `root/AGENTS.md`) are tracked in `fileHashes` as of v2.4.6. Installs predating v2.4.6 pick them up via the `newFiles` path on first upgrade. User-edited copies on disk with no corresponding `fileHashes` entry are preserved; a reference copy is written under `.claude/workflow-ref/<same-path>` instead of overwriting.
 - `.claude/learnings/` + `.gitkeep` are (re-)created if missing.
-- When `CLAUDE.md` lacks memory-architecture guidance keywords, `CLAUDE.md.workflow-ref.md` is written alongside. `CLAUDE.md` itself is never auto-modified.
+- When `CLAUDE.md` lacks memory-architecture guidance keywords, a sidecar is written at `.claude/workflow-ref/CLAUDE.md`. `CLAUDE.md` itself is never auto-modified.
+- As of v2.5.1, `migrateWorkflowRefLocation` runs at the start of every upgrade. It sweeps legacy `*.workflow-ref.md` siblings (and root-level `CLAUDE.md.workflow-ref.md` / `AGENTS.md.workflow-ref`) from pre-v2.5.1 installs into `.claude/workflow-ref/<original-path>`. Idempotent — skips files that already exist at the new location.
 - Repair runs every `upgrade`. When versions match AND drift exists, `upgrade` enters a "Repair-only" flow (preview → confirm → apply), version unchanged. Without drift, behavior is unchanged ("Already up to date").
 
 Flags: `--dry-run` previews without writing; `--yes` skips confirmations; `--repair-only` runs only the repair pass (no template updates even at version mismatch).
@@ -463,7 +465,7 @@ Removes worclaude workflow files from a project. Two modes:
 - Files tracked but user-modified (hash mismatch) → ask user (default: delete, backed up)
 - `workflow-meta.json` → always delete (pure worclaude metadata)
 - `settings.json` → ask user (may contain user-added permissions/hooks)
-- `.workflow-ref.md` / `.workflow-suggestions` files → auto-delete (upgrade artifacts)
+- Files under `.claude/workflow-ref/` and legacy `.workflow-ref.md` siblings / `.workflow-suggestions` → auto-delete (upgrade artifacts)
 - User-added files in `.claude/` (not in `fileHashes`) → never delete
 - Claude Code system dirs (`projects/`, `worktrees/`, `todos/`, `memory/`) → never delete
 - Root files (`CLAUDE.md`, `.mcp.json`, `docs/spec/*`) → ask user (default: keep)
@@ -565,7 +567,7 @@ Checks installation health across four categories with PASS/WARN/FAIL status per
 ### Integrity
 
 - File hash comparison vs `workflow-meta.json` fileHashes — detects customizations or deletions
-- Pending `.workflow-ref.md` files — flags unresolved merge conflicts
+- Pending files under `.claude/workflow-ref/` — flags unresolved merge conflicts
 
 ```
 $ worclaude doctor

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'fs-extra';
 import { fileExists, readFile, writeFile } from '../utils/file.js';
+import { resolveRefPath } from './file-categorizer.js';
 
 export const MEMORY_GUIDANCE_KEYWORDS = [
   'memory architecture',
@@ -47,7 +48,7 @@ export function buildMemoryGuidanceSidecar() {
 }
 
 export async function writeMemoryGuidanceSidecar(projectRoot) {
-  const dest = path.join(projectRoot, 'CLAUDE.md.workflow-ref.md');
+  const dest = resolveRefPath('root/CLAUDE.md', projectRoot);
   await writeFile(dest, buildMemoryGuidanceSidecar());
   return dest;
 }

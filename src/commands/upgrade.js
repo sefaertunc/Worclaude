@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import { requireWorkflowMeta, writeWorkflowMeta, getPackageVersion } from '../core/config.js';
 import { createBackup } from '../core/backup.js';
-import { categorizeFiles, resolveKeyPath } from '../core/file-categorizer.js';
+import { categorizeFiles, resolveKeyPath, resolveRefPath } from '../core/file-categorizer.js';
 import { buildSettingsJson, mergeSettingsPermissionsAndHooks } from '../core/merger.js';
 import { readTemplate, substituteVariables, updateGitignore } from '../core/scaffolder.js';
 import { buildAgentsMdVariables } from '../core/variables.js';
@@ -19,7 +19,12 @@ import { writeFile, readFile, fileExists } from '../utils/file.js';
 import { hashFile } from '../utils/hash.js';
 import { getLatestNpmVersion } from '../utils/npm.js';
 import * as display from '../utils/display.js';
-import { semverLessThan, migrateSkillFormat, patchAgentDescriptions } from '../core/migration.js';
+import {
+  semverLessThan,
+  migrateSkillFormat,
+  patchAgentDescriptions,
+  migrateWorkflowRefLocation,
+} from '../core/migration.js';
 
 const CONFLICT_CHECK_TYPES = new Set(['hook', 'root-file']);
 
@@ -41,12 +46,6 @@ function selfUpdate(latestVersion) {
   }
 }
 
-function sidecarPathFor(dest) {
-  const ext = path.extname(dest);
-  const base = ext ? dest.slice(0, dest.length - ext.length) : dest;
-  return `${base}.workflow-ref${ext}`;
-}
-
 async function renderTemplate({ templatePath, type }, variables) {
   const templateContent = await readTemplate(templatePath);
   return type === 'root-file' ? substituteVariables(templateContent, variables) : templateContent;
@@ -57,8 +56,8 @@ async function writeTemplateToDest(entry, dest, variables) {
   await writeFile(dest, await renderTemplate(entry, variables));
 }
 
-async function writeSidecarFor(entry, dest, variables) {
-  const sidecarPath = sidecarPathFor(dest);
+async function writeSidecarFor(entry, projectRoot, variables) {
+  const sidecarPath = resolveRefPath(entry.key, projectRoot);
   await writeFile(sidecarPath, await renderTemplate(entry, variables));
   return sidecarPath;
 }
@@ -122,7 +121,7 @@ function renderRepairPreview(plan) {
   }
   if (plan.claudeMdNeedsSidecar) {
     sidecarLines.push(
-      '  ~ CLAUDE.md memory guidance missing (will write CLAUDE.md.workflow-ref.md)'
+      '  ~ CLAUDE.md memory guidance missing (will write .claude/workflow-ref/CLAUDE.md sidecar)'
     );
   }
   if (sidecarLines.length > 0) {
@@ -197,7 +196,7 @@ async function applyRepairPass(projectRoot, plan, variables) {
     if (await fileExists(dest)) {
       const matches = await diskContentMatchesTemplate(entry, dest, variables);
       if (!matches) {
-        const sidecarPath = await writeSidecarFor(entry, dest, variables);
+        const sidecarPath = await writeSidecarFor(entry, projectRoot, variables);
         result.migrationConflicts.push({ key: entry.key, dest, sidecarPath });
         continue;
       }
@@ -282,7 +281,7 @@ async function runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, y
     }
     if (result.migrationConflicts.length > 0) {
       display.barLine(
-        `Conflicts:   ${result.migrationConflicts.length} files ${display.dimColor('(saved as .workflow-ref)')}`
+        `Conflicts:   ${result.migrationConflicts.length} files ${display.dimColor('(saved under .claude/workflow-ref/)')}`
       );
     }
     if (result.createdDirs.length > 0) {
@@ -295,7 +294,7 @@ async function runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, y
 
     if (result.migrationConflicts.length > 0 || result.sidecars.length > 0) {
       display.newline();
-      display.barLine(`Review .workflow-ref files and merge what's useful.`);
+      display.barLine(`Review files under .claude/workflow-ref/ and merge what's useful.`);
     }
   } catch (err) {
     spinner.fail('Repair failed.');
@@ -440,17 +439,25 @@ export async function upgradeCommand(options = {}) {
       spinner.start('Applying updates...');
     }
 
+    // v2.5.1 migration: relocate legacy ref files out of Claude-Code-scanned
+    // dirs. Runs unconditionally since it's idempotent and the fix applies
+    // to any project with legacy refs, regardless of source version.
+    const refRelocationReport = await migrateWorkflowRefLocation(projectRoot);
+    if (refRelocationReport.moved > 0) {
+      spinner.text = `Relocated ${refRelocationReport.moved} legacy ref file(s)...`;
+    }
+
     // Auto-update files
     for (const { key, templatePath } of categories.autoUpdate) {
       const content = await readTemplate(templatePath);
       await writeFile(resolveKeyPath(key, projectRoot), content);
     }
 
-    // Conflict files: save as .workflow-ref.md
+    // Conflict files: save under .claude/workflow-ref/ so they never collide
+    // with Claude Code's command/agent discovery.
     for (const { key, templatePath } of categories.conflict) {
       const content = await readTemplate(templatePath);
-      const refKey = key.replace(/\.md$/, '.workflow-ref.md');
-      await writeFile(resolveKeyPath(refKey, projectRoot), content);
+      await writeFile(resolveRefPath(key, projectRoot), content);
     }
 
     // New files (non-migration types handled here; migration types were
@@ -510,7 +517,7 @@ export async function upgradeCommand(options = {}) {
     }
     if (repairResult.migrationConflicts.length > 0) {
       display.barLine(
-        `Migration conflicts: ${repairResult.migrationConflicts.length} ${display.dimColor('(saved as .workflow-ref)')}`
+        `Migration conflicts: ${repairResult.migrationConflicts.length} ${display.dimColor('(saved under .claude/workflow-ref/)')}`
       );
     }
     if (categories.autoUpdate.length > 0) {
@@ -518,7 +525,12 @@ export async function upgradeCommand(options = {}) {
     }
     if (categories.conflict.length > 0) {
       display.barLine(
-        `Conflicts:   ${categories.conflict.length} files ${display.dimColor('(saved as .workflow-ref.md)')}`
+        `Conflicts:   ${categories.conflict.length} files ${display.dimColor('(saved under .claude/workflow-ref/)')}`
+      );
+    }
+    if (refRelocationReport.moved > 0) {
+      display.barLine(
+        `Relocated:   ${refRelocationReport.moved} legacy ref file(s) ${display.dimColor('→ .claude/workflow-ref/')}`
       );
     }
     if (plan.templateNewFiles.length > 0) {
@@ -558,7 +570,7 @@ export async function upgradeCommand(options = {}) {
       repairResult.sidecars.length > 0
     ) {
       display.newline();
-      display.barLine(`Review .workflow-ref files and merge what's useful.`);
+      display.barLine(`Review files under .claude/workflow-ref/ and merge what's useful.`);
     }
   } catch (err) {
     spinner.fail('Upgrade failed.');
