@@ -1,0 +1,72 @@
+// Socket Community Patch: https://socket.dev
+// Date: Wed, 25 Feb 2026 21:22:48 GMT
+// For more information see https://socket.dev/patch/fd75b415-792c-47a4-8db1-32b7a6df92a2
+// This file includes modifications made by Socket, Inc. on Wed, 25 Feb 2026; these modifications are called the "Patch". In some cases, Socket may be required to make the Patch available to you under specific terms, or may be prohibited from restricting certain rights you may have. For example, the terms of another applicable license may require Socket to make the Patch available under specific terms. In those cases, the Patch is made available to you under the required terms, and Socket does not seek to restrict your rights relative to the Patch where prohibited. In all other cases, the Patch is available to you exclusively under the PolyForm Shield License 1.0.0 (https://polyformproject.org/licenses/shield/1.0.0/). The Patch was distributed by Socket with additional information concerning licensing, attribution, and limitation of liability which may be relevant to you and your use of the Patch. As far as the law allows, the Patch and the software including the patch come as is, without any warranty or condition, and Socket will not be liable to you for any damages arising out of the applicable license terms or the use or nature of the Patch or the software including the patch, under any kind of legal claim.
+// Original License: MIT
+
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+0 && (module.exports = {
+    actionsForbiddenHeaders: null,
+    filterReqHeaders: null,
+    ipcForbiddenHeaders: null
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    actionsForbiddenHeaders: function() {
+        return actionsForbiddenHeaders;
+    },
+    filterReqHeaders: function() {
+        return filterReqHeaders;
+    },
+    ipcForbiddenHeaders: function() {
+        return ipcForbiddenHeaders;
+    }
+});
+const ipcForbiddenHeaders = [
+    "accept-encoding",
+    "keepalive",
+    "keep-alive",
+    "content-encoding",
+    "transfer-encoding",
+    // https://github.com/nodejs/undici/issues/1470
+    "connection",
+    // marked as unsupported by undici: https://github.com/nodejs/undici/blob/c83b084879fa0bb8e0469d31ec61428ac68160d5/lib/core/request.js#L354
+    "expect"
+];
+const actionsForbiddenHeaders = [
+    ...ipcForbiddenHeaders,
+    "content-length",
+    "set-cookie"
+];
+const filterReqHeaders = (headers, forbiddenHeaders)=>{
+    // Some browsers are not matching spec and sending Content-Length: 0. This causes issues in undici
+    // https://github.com/nodejs/undici/issues/2046
+    if (headers["content-length"] && headers["content-length"] === "0") {
+        delete headers["content-length"];
+    }
+    for (const [key, value] of Object.entries(headers)){
+        if (forbiddenHeaders.includes(key) || !(Array.isArray(value) || typeof value === "string")) {
+            delete headers[key];
+        }
+        // Security fix for CVE-2025-29927: If this request didn't originate from
+        // this session, filter out the x-middleware-subrequest header
+        if (
+            key === 'x-middleware-subrequest' &&
+            headers['x-middleware-subrequest-id'] !==
+                globalThis[Symbol.for('@next/middleware-subrequest-id')]
+        ) {
+            delete headers['x-middleware-subrequest'];
+        }
+    }
+    return headers;
+};
+
+//# sourceMappingURL=utils.js.map
