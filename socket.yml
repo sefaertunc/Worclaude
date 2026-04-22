@@ -1,0 +1,11 @@
+version: 2
+
+# Exclude scanner test fixtures from dependency scanning.
+# These are static manifests used to verify project-scanner detectors
+# (see src/core/project-scanner/). They are never installed, and
+# `tests/` is excluded from the published npm tarball via package.json
+# "files". Without this, Socket treats fixture deps (next, react,
+# prisma, vitest 1.4.0, etc.) as real dependencies and flags CVEs
+# that do not apply to worclaude.
+projectIgnorePaths:
+  - tests/fixtures/**
