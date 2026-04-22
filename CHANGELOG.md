@@ -22,10 +22,34 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ### Non-goals (explicitly deferred to Part B)
 
-- No rewrite of `templates/commands/setup.md` (ships separately in PR A2).
-- No state machine, persistence, or resume flow for `/setup`.
 - No architecture classification, directory-tree module inference, CI required-check detection (GitHub API), or monorepo sub-package scanning — all Tier 2.
 - No rename of the existing `src/core/detector.js` (scenario detection). The new scanner lives under `src/core/project-scanner/` to avoid name collision.
+
+## [Unreleased — Part B additions]
+
+### Added
+
+- **`/setup` state machine rewrite** (Phase Setup Diagnose Part B) — `templates/commands/setup.md` is rewritten top-to-bottom as a 12-state state machine (`INIT → SCAN → CONFIRM_HIGH → CONFIRM_MEDIUM → INTERVIEW_STORY/ARCH/FEATURES/WORKFLOW/CONVENTIONS/VERIFICATION → WRITE → DONE`). `/setup` now invokes the Part A scanner at SCAN, presents detected facts via a Claude-rendered numbered checklist at CONFIRM_HIGH (user confirms or unchecks), handles multi-candidate medium-confidence items (`package-manager` with multiple lockfiles → numbered candidate list) at CONFIRM_MEDIUM, asks only residual questions during the six INTERVIEW states, and merge-writes the six output files at WRITE (CLAUDE.md is section-replaced by ATX heading, SPEC/SKILL files are rewritten only when template-only per CRLF-normalized SHA-256 match against `workflow-meta.json`, PROGRESS.md is append-only).
+- **`src/core/setup-state.js`** — persistence module for `.claude/cache/setup-state.json` (schemaVersion 1). Exports `loadSetupState`, `saveSetupState`, `clearSetupState`, `isSetupStateStale`, plus the `STATE_NAMES`, `QUESTION_IDS`, and `UNCHECKED_ROUTING` contract constants. Schema validation rejects unknown `currentState` values, `interviewAnswers` keys outside the QuestionId enumeration, mis-routed `<state>.unchecked.<field>` prefixes, and non-string answer values. `saveSetupState` preserves `startedAt` from an existing file across re-saves and refreshes `updatedAt` automatically.
+- **`worclaude setup-state` CLI subcommand** — four sub-subcommands: `show` (prints state JSON or `no state`), `save --stdin` (reads JSON from stdin, validates, persists — the ONLY mechanism `/setup` uses to write state), `reset` (idempotent delete), `resume-info` (pre-formatted `state: X, age: N unit(s), staleness: fresh|stale` line so Claude echoes rather than computes relative time). Exit codes: `0` success, `1` fatal, `2` invalid args.
+- **Anti-drift rules embedded in `setup.md`** — seven CRITICAL EXECUTION RULES pinned at the top of the command file. Sequential state advance only; no backward advance within an invocation; off-topic input triggers a restate, never an answer; `cancel setup` matches regex `/^(cancel|stop|abort)( setup)?[.!?\s]*$/i` and preserves state; tool use is whitelisted (scanner + `setup-state` CLI + two cache reads between SCAN and WRITE; the six target file reads/writes only at WRITE, plus `workflow-meta.json` for hash lookup); no memory pre-fill from prior sessions; prompts render verbatim in fenced code blocks, including state-machine control prose (resume preamble, back rejection, off-topic restate prefix, cancel acknowledgment).
+- **QuestionId enumeration** as the load-bearing `interviewAnswers` key contract (21 IDs across 6 INTERVIEW states) plus a `<state>.unchecked.<field>` prefix namespace for rejected high-confidence field re-asks, routed per a documented table (e.g., `scripts` rejected at CONFIRM_HIGH → re-asked in INTERVIEW_WORKFLOW under key `workflow.unchecked.scripts`).
+- **Field rendering table** reproduced in `setup.md` — the contract between detection report shapes and the human-readable value strings rendered at CONFIRM_HIGH and CONFIRM_MEDIUM. Mirrors `src/commands/scan.js:summarizeValue` semantics for all 14 detector fields plus the fallback scalar/array/object cases.
+
+### Changed
+
+- **`/setup` precondition** — `.claude/workflow-meta.json` must exist (canonical Worclaude init marker). Non-init'd projects get a clear "Run `worclaude init` first" message and exit, replacing today's behavior of proceeding with undefined semantics.
+
+### Tests
+
+- **46 new tests** across `tests/core/setup-state.test.js` (24 unit tests covering load/save/clear/isStale happy paths, corrupt-JSON, unsupported schemaVersion, unknown currentState, unknown interviewAnswers keys, mis-routed unchecked prefixes, startedAt preservation, updatedAt refresh, custom staleHours) and `tests/commands/setup-state.test.js` (22 CLI tests covering all four subcommands' happy paths plus `save --stdin` schema-rejection modes via `child_process.spawnSync`, `resume-info` unit picking at minute/hour/day boundaries, invalid-arg exit 2).
+
+### Non-goals (explicitly deferred)
+
+- No `/setup --edit <field>` flow for correcting prior answers (Tier 2).
+- No automated state-machine test harness (mock-Claude driver walking every transition). Tier 2.
+- No automated end-to-end testing of `/setup` across fixture projects — manual e2e per the 13-case checklist in the phase prompt.
+- No schema migrator for `setup-state.json`. v1 policy is "reset on schema bump."
 
 ## [2.5.1] — 2026-04-21
 
