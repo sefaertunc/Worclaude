@@ -4,6 +4,22 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.6.1] — 2026-04-22
+
+Supply-chain scanner hygiene. Adds a `socket.yml` at the repo root so Socket (and any tool honoring the same schema) stops treating `tests/fixtures/scanner/**` manifests as real worclaude dependencies. The fixtures pin intentionally-outdated packages (`next@14.2.3`, `vitest@1.4.0`, `prisma@5.10.0`, etc.) as deterministic inputs to the Part A detectors — they are never installed (not referenced from root `package.json`), never shipped (`tests/` is excluded by the npm `files` whitelist), and never executed. Without the ignore, fixture deps surface on PR reviews as critical CVEs (CVE-2025-29927 Next.js middleware auth bypass, Vitest 1.4.0 RCE) that do not apply to worclaude. `SECURITY.md` is expanded with a "Supply Chain Scanner Findings" section documenting the fixture rationale, the real seven-package runtime dependency list, and the by-design `filesystemAccess` capability disclosure on `fs-extra`-heavy scaffolding code.
+
+### Added
+
+- **`socket.yml` at repo root** (PR #107) — `version: 2` schema with `projectIgnorePaths: [tests/fixtures/**]`. Respected by Socket's GitHub App on every PR review and by the Socket CLI's `socket scan create` command. Verified locally via `socket scan create --report`: manifests discovered drop from 21 to 6, scan verdict goes from unhealthy (2 critical + many high/medium false positives) to `healthy: true, alerts: 0` at warn level.
+
+### Changed
+
+- **`SECURITY.md` supported-versions row** bumped to `2.6.x` (from `2.4.x`) to reflect the current support window.
+
+### Docs
+
+- **`SECURITY.md` — Supply Chain Scanner Findings section** (PR #107) documents (1) why `tests/fixtures/scanner/**` manifests are not real dependencies, (2) worclaude's real seven-package runtime dep list, and (3) the `filesystemAccess` capability flag as a by-design disclosure for a scaffolding CLI rather than a vulnerability. Intended as a standing reference for any future SCA tool that surfaces the same false positives.
+
 ## [2.6.0] — 2026-04-22
 
 Diagnose-first `/setup`. This release lands both halves of Phase Setup Diagnose in a single version: Part A (PR #103) ships the static project scanner and the new `worclaude scan` subcommand, and Part B (PR #104) rewrites `/setup` on top of it as a deterministic 12-state state machine with on-disk persistence, a tool-call whitelist, and a Claude-rendered selectable UI. Running `/setup` against a mature project now scans first (14 Tier 1 detectors produce a `DetectionReport`), presents the high-confidence facts as a numbered checklist for the user to confirm or uncheck, handles multi-candidate medium-confidence items (e.g., competing lockfiles), and only asks residual questions during the interview — cutting the interview from ~30 questions to whatever detection didn't cover. State survives interruption via `.claude/cache/setup-state.json`, persisted after every mutation through the new `worclaude setup-state` CLI (the sole write path `setup.md` is permitted to use under its tool whitelist). WRITE merges into existing output files conservatively: `CLAUDE.md` replaces `## Tech Stack` and `## Commands` sections by ATX heading; `SPEC.md` and SKILL files are rewritten only when template-only per CRLF-normalized SHA-256 match against `workflow-meta.json`, otherwise append a timestamped section; `PROGRESS.md` is append-only.
