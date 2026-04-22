@@ -42,7 +42,9 @@ These fixtures are:
   dependency lists; it never imports or runs the packages named inside.
 
 Worclaude's repo includes `socket.yml` to stop Socket from scanning this
-directory. Other SCA tools may need an equivalent `ignore` directive.
+directory, and a `.snyk` policy file with an equivalent `exclude.global`
+entry for Snyk Open Source. Other SCA tools may need an equivalent
+`ignore` directive.
 
 ### Real runtime dependencies
 

@@ -4,6 +4,18 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.6.3] — 2026-04-22
+
+Second supply-chain scanner mirrored after Socket. Adds a `.snyk` policy file at the repo root with `exclude.global: [tests/fixtures/**]` so Snyk Open Source — whether invoked via the Snyk CLI, the `snyk/actions/node` GitHub Action, or any future integration — skips the intentionally-outdated fixture manifests under `tests/fixtures/scanner/**` that exist solely as deterministic inputs to the Part A project-scanner detectors (`next@14.2.3`, `vitest@1.4.0`, `prisma@5.10.0`, etc.). The fixtures are never installed (not referenced from root `package.json`), never shipped (excluded from the npm tarball by the `files` whitelist), and never executed. `SECURITY.md` is updated to name `.snyk` alongside `socket.yml` in the fixture-exclusion paragraph. The installed Snyk GitHub App only imports root `package.json` today, so the most immediate effect is keeping local `snyk test` runs honest; the file is also load-bearing for any future workflow that fails the build on high-severity findings. No runtime change for worclaude consumers.
+
+### Added
+
+- **`.snyk` policy file at repo root** (PR #112) — `version: v1.25.0` schema with `exclude.global: [tests/fixtures/**]` plus empty `ignore` and `patch` blocks. Mirrors the `socket.yml` pattern committed in v2.6.1 so Snyk Open Source treats the scanner fixtures the same way Socket does.
+
+### Docs
+
+- **`SECURITY.md` "Test fixture manifests are not real dependencies"** (PR #112) now names `.snyk` alongside `socket.yml` as the equivalent ignore directive for Snyk. The catch-all "Other SCA tools may need an equivalent `ignore` directive" sentence is preserved for any future scanner.
+
 ## [2.6.2] — 2026-04-22
 
 Dev-dependency security bump. Adds an npm `overrides` entry pinning `brace-expansion` to `^1.1.13` to clear [GHSA-f886-m6hf-6m8v](https://github.com/advisories/GHSA-f886-m6hf-6m8v) — a moderate regex-DoS advisory against the 1.1.12 pulled transitively by `eslint → minimatch`. Post-override the lockfile resolves `brace-expansion@1.1.14` and `npm audit` drops from four moderate advisories to three. `SECURITY.md` is extended with a "Dev-only transitive advisories pending upstream fixes" section documenting the two remaining alerts ([GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) vite path traversal, [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) esbuild dev-server CORS) as upstream-blocked by the vitepress `1.6.4 → vite ^5 → esbuild ^0.21.3` chain — `npm overrides` cannot force esbuild past the vite peer contract, and no `vitepress@2.x` is on npm yet. Both advisories are dev-only (excluded from the published tarball by the `files` whitelist) and only reachable while a local dev server is running; tracked for upgrade in [issue #109](https://github.com/sefaertunc/Worclaude/issues/109). No runtime change for worclaude consumers.
