@@ -4,6 +4,18 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.6.2] — 2026-04-22
+
+Dev-dependency security bump. Adds an npm `overrides` entry pinning `brace-expansion` to `^1.1.13` to clear [GHSA-f886-m6hf-6m8v](https://github.com/advisories/GHSA-f886-m6hf-6m8v) — a moderate regex-DoS advisory against the 1.1.12 pulled transitively by `eslint → minimatch`. Post-override the lockfile resolves `brace-expansion@1.1.14` and `npm audit` drops from four moderate advisories to three. `SECURITY.md` is extended with a "Dev-only transitive advisories pending upstream fixes" section documenting the two remaining alerts ([GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) vite path traversal, [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) esbuild dev-server CORS) as upstream-blocked by the vitepress `1.6.4 → vite ^5 → esbuild ^0.21.3` chain — `npm overrides` cannot force esbuild past the vite peer contract, and no `vitepress@2.x` is on npm yet. Both advisories are dev-only (excluded from the published tarball by the `files` whitelist) and only reachable while a local dev server is running; tracked for upgrade in [issue #109](https://github.com/sefaertunc/Worclaude/issues/109). No runtime change for worclaude consumers.
+
+### Fixed
+
+- **`brace-expansion` regex DoS** (PR #110) — `"overrides": { "brace-expansion": "^1.1.13" }` added to `package.json`; lockfile now resolves `brace-expansion@1.1.14` under `eslint 9.39.4 → minimatch 3.1.5`. Clears GHSA-f886-m6hf-6m8v.
+
+### Docs
+
+- **SECURITY.md — "Dev-only transitive advisories pending upstream fixes"** (PR #110) documents GHSA-4w7w-66w2-5vf9 and GHSA-67mh-4wv8-2f99 as accepted risk pending a `vitepress` release on `vite >=6.4.2`. Rationale: both are devDeps only, excluded from the npm tarball, and only reachable while `npm run docs:dev` is running. Tracking issue #109.
+
 ## [2.6.1] — 2026-04-22
 
 Supply-chain scanner hygiene. Adds a `socket.yml` at the repo root so Socket (and any tool honoring the same schema) stops treating `tests/fixtures/scanner/**` manifests as real worclaude dependencies. The fixtures pin intentionally-outdated packages (`next@14.2.3`, `vitest@1.4.0`, `prisma@5.10.0`, etc.) as deterministic inputs to the Part A detectors — they are never installed (not referenced from root `package.json`), never shipped (`tests/` is excluded by the npm `files` whitelist), and never executed. Without the ignore, fixture deps surface on PR reviews as critical CVEs (CVE-2025-29927 Next.js middleware auth bypass, Vitest 1.4.0 RCE) that do not apply to worclaude. `SECURITY.md` is expanded with a "Supply Chain Scanner Findings" section documenting the fixture rationale, the real seven-package runtime dependency list, and the by-design `filesystemAccess` capability disclosure on `fs-extra`-heavy scaffolding code.

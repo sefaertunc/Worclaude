@@ -66,3 +66,44 @@ settings.json merges, timestamped backups under `.claude-backup-*/`, and
 an opt-in `workflow-meta.json`. The `fs-extra`-based filesystem capability
 flag is a disclosure, not a vulnerability — removing it would delete the
 tool's core function.
+
+### Dev-only transitive advisories pending upstream fixes
+
+Two advisories sit deep in the dev-dependency tree and cannot currently be
+resolved without either forking `vitepress` or waiting for its next release:
+
+- **[GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9)** —
+  `vite@5.4.21` path traversal in optimized-deps handling. Fixed in
+  `vite@>=6.4.2`.
+- **[GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)** —
+  `esbuild@0.21.5` dev-server CORS misconfiguration. Fixed in
+  `esbuild@>=0.25.0`.
+
+Both are pulled through `vitepress@1.6.4` (the current latest on npm),
+which pins `vite` at `^5.0.0`, which in turn pins `esbuild` at `^0.21.3`.
+`npm overrides` cannot force newer major versions without breaking the
+vite peer contract.
+
+Why these do not block a release:
+
+- Both packages are in `devDependencies` only. The `files` whitelist in
+  `package.json` does not include `tests/` or any dev tooling; end users
+  installing `worclaude` via npm do not get these packages.
+- Both advisories require an **active local dev server** to exploit. The
+  vite/vitest attack surface only exists while `npm run docs:dev` is
+  running and the operator browses to a hostile origin in the same
+  session. `npm test`, `npm run lint`, `npm run docs:build`, and CI
+  runs do not start a server.
+- Worclaude's CI does not run `docs:dev`; it runs `test`, `lint`, and
+  `docs:build` only.
+
+Tracking: a GitHub issue is opened to bump `vitepress` once a release
+using `vite@>=6.4.2` lands upstream. Until then the scanner will continue
+to flag these, and we accept the dev-only risk.
+
+### brace-expansion DoS (fixed via override)
+
+[GHSA-f886-m6hf-6m8v](https://github.com/advisories/GHSA-f886-m6hf-6m8v) —
+`brace-expansion@<1.1.13` zero-step sequence. Fixed in 1.1.13; enforced
+via `"overrides": { "brace-expansion": "^1.1.13" }` in `package.json`
+since v2.6.2. Pulled by `eslint@9.x → minimatch@3.x`.

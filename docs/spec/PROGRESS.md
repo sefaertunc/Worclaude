@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.6.1
+**Version:** 2.6.2
 **Last Updated:** 2026-04-22
 
 ## Completed
@@ -499,6 +499,13 @@
   - [x] Verified locally with Socket CLI v1.1.85 on the free plan (`socket scan create --report` against the feature branch): manifests discovered dropped 21 → 6, scan verdict went from unhealthy (2 critical + many high/medium false positives) to `healthy: true, alerts: 0` at warn level. Scan ID `18114d21-5d64-4919-b653-54e02a33bf67`.
   - [x] **PR #106 (socket-security bot autopatch) closed without merging.** The bot offered a `postinstall` script applying a Socket-hosted patch for the fixture `next@14.2.3`; merging it would have (a) mutated the scanner test fixture (breaking its purpose as a reproducible detector input), (b) added a runtime dependency on Socket's infrastructure to every downstream `npm install worclaude` (breaking `npm ci` determinism and air-gapped CI), and (c) targeted `main` directly, bypassing the develop-first branching policy.
   - [x] Release group: **PR #107** (`Version bump: patch`). Only PR since v2.6.0. v2.6.0 → v2.6.1. No missing declarations.
+
+- [x] v2.6.2 — devDep security bump + accepted-risk documentation (2026-04-22)
+  - [x] **PR #110** — Added `"overrides": { "brace-expansion": "^1.1.13" }` to `package.json` to clear GHSA-f886-m6hf-6m8v (moderate regex DoS). The vulnerable 1.1.12 was pulled transitively via `eslint 9.39.4 → minimatch 3.1.5`; post-override the lockfile resolves `brace-expansion@1.1.14` and `npm audit` drops from 4 moderate advisories to 3. Override is intentionally narrow — it only bumps the one transitive and leaves the rest of the dep tree untouched.
+  - [x] `SECURITY.md` extended with a "Dev-only transitive advisories pending upstream fixes" section documenting the remaining two alerts (GHSA-4w7w-66w2-5vf9 vite path traversal; GHSA-67mh-4wv8-2f99 esbuild dev-server CORS) as upstream-blocked. The chain is `vitepress@1.6.4 → vite ^5.0.0 → esbuild ^0.21.3`: npm overrides cannot force esbuild past the vite peer contract, and no `vitepress@2.x` exists on npm yet. Both advisories are (a) devDeps only, (b) excluded from the published tarball by the `files` whitelist, and (c) only reachable while a local dev server is running. Short "brace-expansion DoS (fixed via override)" paragraph added for completeness.
+  - [x] Tracking [issue #109](https://github.com/sefaertunc/Worclaude/issues/109) opened for the eventual `vitepress` bump: close when upstream ships a release declaring `vite: ^6.4.2 || ^7` peer.
+  - [x] Verified: `npm test` 729/729 pass, `npm run lint` clean, `npm run docs:build` clean (3.59s).
+  - [x] Release group: **PR #110** (`Version bump: patch`). Only PR since v2.6.1. v2.6.1 → v2.6.2. No missing declarations.
 
 ## Stats
 
