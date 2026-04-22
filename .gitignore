@@ -45,3 +45,6 @@ docs/.vitepress/cache
 .claude-backup-*/
 .claude/learnings/
 .claude/.stop-hook-active
+
+# Worclaude (generated workflow files)
+.claude/cache/
