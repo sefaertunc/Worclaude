@@ -10,6 +10,8 @@ import { restoreCommand } from './commands/restore.js';
 import { diffCommand } from './commands/diff.js';
 import { deleteCommand } from './commands/delete.js';
 import { doctorCommand } from './commands/doctor.js';
+import { scanCommand } from './commands/scan.js';
+import { setupStateCommand } from './commands/setup-state.js';
 
 const program = new Command();
 
@@ -61,5 +63,42 @@ program
   .description('Validate workflow installation health')
   .option('--json', 'Output results as JSON')
   .action((options) => doctorCommand(options));
+
+program
+  .command('scan')
+  .description('Scan project for detectable facts (writes .claude/cache/detection-report.json)')
+  .option('--path <dir>', 'Project root to scan', process.cwd())
+  .option('--json', 'Print the detection report as JSON to stdout')
+  .option('--quiet', 'Suppress human-readable summary (still writes the report file)')
+  .action((options) => scanCommand(options));
+
+const setupState = program
+  .command('setup-state')
+  .description('Inspect or mutate the /setup state file (.claude/cache/setup-state.json)');
+
+setupState
+  .command('show')
+  .description('Print the state file as JSON, or "no state" if absent')
+  .option('--path <dir>', 'Project root', process.cwd())
+  .action((options) => setupStateCommand('show', options));
+
+setupState
+  .command('save')
+  .description('Read a JSON state from stdin, validate, and persist')
+  .option('--stdin', 'Read JSON from stdin (required)')
+  .option('--path <dir>', 'Project root', process.cwd())
+  .action((options) => setupStateCommand('save', options));
+
+setupState
+  .command('reset')
+  .description('Delete the state file (idempotent)')
+  .option('--path <dir>', 'Project root', process.cwd())
+  .action((options) => setupStateCommand('reset', options));
+
+setupState
+  .command('resume-info')
+  .description('Print state/age/staleness summary, or "no state" if absent')
+  .option('--path <dir>', 'Project root', process.cwd())
+  .action((options) => setupStateCommand('resume-info', options));
 
 program.parse();

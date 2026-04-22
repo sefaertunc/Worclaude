@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.5.1
-**Last Updated:** 2026-04-21
+**Version:** 2.6.0
+**Last Updated:** 2026-04-22
 
 ## Completed
 
@@ -488,9 +488,14 @@
   - [x] End-to-end dogfood: scratch project with drifted v2.4.12 install + 3 customized files + 2 legacy `.workflow-ref.md` siblings + 50 session files. After `worclaude upgrade --yes`: `.claude/commands/` and `.claude/agents/` contained 0 leaked refs, `.claude/workflow-ref/` contained exactly 4 expected files (3 conflicts + memory sidecar), 50 session files untouched, `worclaude status` surfaced all 4 refs as pending review.
   - [x] Release group: **PR #101** (`Version bump: patch`). Only PR since v2.5.0 sync commit. v2.5.0 → v2.5.1. No missing declarations.
 
+- [x] v2.6.0 — Diagnose-first `/setup`: scanner (Part A) + state machine (Part B)
+  - [x] **PR #103 (Part A):** `worclaude scan` subcommand + 14 Tier 1 detectors under `src/core/project-scanner/` (package-manager, language, frameworks, testing, linting, orm, deployment, ci, scripts, env-variables, external-apis, readme, spec-docs, monorepo). Scanner writes `.claude/cache/detection-report.json`; detectors registered by directory scan; each runs in parallel with a 5-second timeout; failures recorded in a `report.errors` array without aborting. `pyproject.toml` dep flattening across all five PEP/Poetry locations. Runtime deps: `smol-toml`, `yaml`. 107 new tests + 8 fixtures.
+  - [x] **PR #104 (Part B):** `/setup` rewritten as a 12-state state machine (INIT → SCAN → CONFIRM_HIGH → CONFIRM_MEDIUM → 6× INTERVIEW → WRITE → DONE). `src/core/setup-state.js` schema-validating persistence module. `worclaude setup-state` CLI (`show` / `save --stdin` / `reset` / `resume-info`) — `save --stdin` is the sole persistence mechanism used by `setup.md` (rule #5 whitelist forbids direct `Write` on `setup-state.json`). 22-ID QuestionId enumeration + 14-field `<state>.unchecked.<field>` prefix routing table as the load-bearing `interviewAnswers` key contract. CRITICAL EXECUTION RULES block pinned at top of `setup.md`: sequential advance only; no backward advance within an invocation; off-topic input triggers a restate; cancel regex `/^(cancel|stop|abort)( setup)?[.!?\s]*$/i` preserves state; scoped tool whitelist between SCAN and WRITE (scanner + `setup-state` CLI + two cache reads) relaxed at WRITE to permit the six target files; no memory pre-fill; prompts render verbatim in fenced code blocks. WRITE merge is conservative: `CLAUDE.md` Tech Stack + Commands sections replaced by ATX heading; SPEC/SKILL files rewritten only when template-only (CRLF-normalized SHA-256 match against `workflow-meta.json`); PROGRESS.md append-only. Precondition: `.claude/workflow-meta.json` must exist. 47 new tests (24 core + 23 CLI, one end-to-end spawn test, rest in-process via `inputStream` injection seam).
+  - [x] Release group: **PR #103** (`Version bump: minor`) + **PR #104** (`Version bump: minor`). Highest bump: minor. v2.5.1 → v2.6.0. No missing declarations.
+
 ## Stats
 
-- 8 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor
+- 10 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state
 - 6 universal agents + 20 optional agents (6 categories)
 - 18 slash commands
 - 12 universal skills + 3 template skills + 1 generated skill (agent-routing)
@@ -498,7 +503,8 @@
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
-- 575 tests across 34 test files
+- 14 Tier 1 project-scanner detectors
+- 729 tests across 53 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

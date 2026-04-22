@@ -12,16 +12,18 @@
 
 ## Core Commands
 
-| Command                                                 | Purpose                                              |
-| ------------------------------------------------------- | ---------------------------------------------------- |
-| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing) |
-| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift           |
-| `worclaude status`                                      | Show current workflow state, version, customizations |
-| `worclaude backup`                                      | Manual backup of current Claude setup                |
-| `worclaude restore`                                     | Restore from a backup                                |
-| `worclaude diff`                                        | Compare current setup vs latest workflow version     |
-| `worclaude delete`                                      | Remove worclaude workflow from project               |
-| `worclaude doctor`                                      | Check installation health and file integrity         |
+| Command                                                 | Purpose                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing)                                 |
+| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift                                           |
+| `worclaude status`                                      | Show current workflow state, version, customizations                                 |
+| `worclaude backup`                                      | Manual backup of current Claude setup                                                |
+| `worclaude restore`                                     | Restore from a backup                                                                |
+| `worclaude diff`                                        | Compare current setup vs latest workflow version                                     |
+| `worclaude delete`                                      | Remove worclaude workflow from project                                               |
+| `worclaude doctor`                                      | Check installation health and file integrity                                         |
+| `worclaude scan [--path] [--json] [--quiet]`            | Detect project facts; write `.claude/cache/detection-report.json`                    |
+| `worclaude setup-state <sub> [--path]`                  | Inspect/persist `/setup` state file (`show`, `save --stdin`, `reset`, `resume-info`) |
 
 ---
 
@@ -1199,13 +1201,45 @@ Critical Rules section. Show the diff before applying.
 ### /setup (setup.md)
 
 ```markdown
-Conversational interview to fill in project-specific files with real content.
-Asks 7 sections: Project Story, Architecture, Tech Stack Details, Core Features,
-Development Workflow, Coding Conventions, and Verification Strategy.
+Diagnose-first project setup with a 12-state state machine. Runs:
 
-After the interview, writes/updates: CLAUDE.md, SPEC.md, backend-conventions.md,
-frontend-design-system.md, project-patterns.md, and PROGRESS.md with real,
-project-specific content from the interview answers.
+INIT (precondition check: .claude/workflow-meta.json must exist; resume
+prompt if an unexpired state file is present)
+→ SCAN (invokes `worclaude scan --path .`, reads detection report)
+→ CONFIRM_HIGH (user confirms high-confidence detections via numbered
+checklist; unchecks become interview queue entries)
+→ CONFIRM_MEDIUM (per-item numbered choice for medium-confidence items;
+supports candidates[] alternatives from the scanner)
+→ INTERVIEW_STORY, INTERVIEW_ARCH, INTERVIEW_FEATURES,
+INTERVIEW_WORKFLOW, INTERVIEW_CONVENTIONS, INTERVIEW_VERIFICATION
+(conversational residuals, per-question resume granularity)
+→ WRITE (merge-write six files, preserving user content via
+ATX-heading-scoped replace or append-if-authored)
+→ DONE (clears state, summarizes).
+
+State persistence: .claude/cache/setup-state.json. 24-hour staleness
+window after which INIT offers to discard and restart. Every mutation
+persisted via `worclaude setup-state save --stdin` BEFORE rendering
+the next prompt. Interruption at any point is recoverable by
+re-running /setup.
+
+Anti-drift rules (pinned at top of setup.md, override contextual
+judgment): sequential state advance only; no backward advance within
+an invocation; off-topic input triggers a restate, never an answer;
+`cancel setup` matches regex `/^(cancel|stop|abort)( setup)?[.!?\s]*$/i`
+and preserves state; tool use is whitelisted (scanner + setup-state
+CLI + cache reads between SCAN and WRITE; the six target file
+reads/writes only at WRITE); no memory pre-fill from prior sessions;
+prompts render verbatim in fenced code blocks.
+
+Output files (unchanged from prior /setup): CLAUDE.md, docs/spec/SPEC.md,
+three SKILL.md files (backend-conventions, frontend-design-system,
+project-patterns), docs/spec/PROGRESS.md. Merge strategy is
+conservative: CLAUDE.md replaces only Tech Stack + Commands sections
+by ATX heading; SPEC.md and SKILL.md files are fully rewritten when
+template-only (CRLF-normalized SHA-256 matches workflow-meta.json),
+otherwise append a "## Additions from /setup (<date>)" section;
+PROGRESS.md only ever appends a "## Setup notes (<date>)" block.
 ```
 
 ### /sync (sync.md)
@@ -1443,14 +1477,21 @@ worclaude/
 │   │   ├── restore.js
 │   │   ├── diff.js
 │   │   ├── delete.js
-│   │   └── doctor.js
+│   │   ├── doctor.js
+│   │   ├── scan.js                 # Project-fact detection (worclaude scan)
+│   │   └── setup-state.js          # `/setup` state inspection + persistence CLI
 │   ├── core/
 │   │   ├── detector.js             # Scenario A/B/C detection
 │   │   ├── merger.js               # Tiered merge logic
 │   │   ├── scaffolder.js           # Template → project file creation
 │   │   ├── backup.js               # Backup/restore logic
 │   │   ├── config.js               # workflow-meta.json management
-│   │   └── file-categorizer.js     # Hash maps + file categorization for upgrade/diff
+│   │   ├── file-categorizer.js     # Hash maps + file categorization for upgrade/diff
+│   │   ├── setup-state.js          # /setup state machine persistence (schema + load/save)
+│   │   └── project-scanner/        # Detection engine for `worclaude scan`
+│   │       ├── index.js            # scanProject, writeDetectionReport
+│   │       ├── manifests.js        # Shared package.json / pyproject.toml parsing
+│   │       └── detectors/          # 14 Tier 1 detectors (one file per detector)
 │   ├── prompts/
 │   │   ├── project-type.js
 │   │   ├── agent-selection.js
@@ -1503,8 +1544,9 @@ worclaude/
 │       ├── universal/ (12 files, installed as skill-name/SKILL.md)
 │       └── templates/ (3 files, installed as skill-name/SKILL.md)
 └── tests/
-    ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor)
-    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles, migration)
+    ├── commands/ (init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state)
+    ├── core/ (detector, merger, scaffolder, backup, file-categorizer, hook-profiles, migration, setup-state, project-scanner/)
+    ├── fixtures/scanner/ (minimal project fixtures for scanner tests)
     ├── generators/ (agent-routing)
     ├── prompts/ (claude-md-merge)
     └── utils/ (display, file, hash, time)
