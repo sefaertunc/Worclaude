@@ -7,6 +7,7 @@ import {
   mergeSettings,
   readTemplate,
   scaffoldFile,
+  scaffoldAgentsMd,
   getTemplatesDir,
   updateGitignore,
   slugifyPluginName,
@@ -106,6 +107,40 @@ describe('scaffoldFile', () => {
     const content = await fs.readFile(path.join(tmpDir, 'SPEC.md'), 'utf-8');
     expect(content).toContain('TestProj');
     expect(content).toContain('A test');
+  });
+});
+
+describe('scaffoldAgentsMd', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) {
+      await fs.remove(tmpDir);
+      tmpDir = null;
+    }
+  });
+
+  it('writes AGENTS.md and returns "created" when none exists', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-agents-md-create-'));
+    const result = await scaffoldAgentsMd(tmpDir, { project_name: 'p', description: 'd' });
+    expect(result).toBe('created');
+    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+    const refPath = path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md');
+    expect(await fs.pathExists(refPath)).toBe(false);
+  });
+
+  it('preserves pre-existing AGENTS.md and returns "preserved-with-ref"', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-agents-md-preserve-'));
+    const original = '# Cursor AGENTS.md\n- user content\n';
+    await fs.writeFile(path.join(tmpDir, 'AGENTS.md'), original);
+
+    const result = await scaffoldAgentsMd(tmpDir, { project_name: 'p', description: 'd' });
+
+    expect(result).toBe('preserved-with-ref');
+    const preserved = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(preserved).toBe(original);
+    const refPath = path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md');
+    expect(await fs.pathExists(refPath)).toBe(true);
   });
 });
 

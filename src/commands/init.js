@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import {
   scaffoldFile,
+  scaffoldAgentsMd,
   updateGitignore,
   scaffoldHooks,
   scaffoldPluginJson,
@@ -16,7 +17,6 @@ import {
   writeWorkflowMeta,
 } from '../core/config.js';
 import { fileExists, writeFile } from '../utils/file.js';
-import { workflowRefRelPath } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 import { promptProjectType } from '../prompts/project-type.js';
 import { promptTechStack } from '../prompts/tech-stack.js';
@@ -298,22 +298,13 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
     spinner.text = 'Created CLAUDE.md';
 
-    // Gate AGENTS.md write on existence — "fresh" means no .claude/workflow-meta.json,
-    // but the user may still have an AGENTS.md from Cursor/Codex/another tool.
-    // Preserve it and save our template alongside in .claude/workflow-ref/.
-    const agentsMdPath = path.join(projectRoot, 'AGENTS.md');
-    if (await fileExists(agentsMdPath)) {
-      await scaffoldFile(
-        'core/agents-md.md',
-        workflowRefRelPath('root/AGENTS.md'),
-        variables,
-        projectRoot
-      );
-      spinner.text = 'Preserved existing AGENTS.md (template saved to workflow-ref)';
-    } else {
-      await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
-      spinner.text = 'Created AGENTS.md';
-    }
+    // "Fresh" means no .claude/workflow-meta.json, but the user may still have
+    // an AGENTS.md from Cursor/Codex/another tool. The helper preserves it.
+    const agentsMdResult = await scaffoldAgentsMd(projectRoot, variables);
+    spinner.text =
+      agentsMdResult === 'preserved-with-ref'
+        ? 'Preserved existing AGENTS.md (template saved to workflow-ref)'
+        : 'Created AGENTS.md';
 
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
     spinner.text = 'Created .claude/settings.json';
