@@ -16,6 +16,7 @@ import {
   writeWorkflowMeta,
 } from '../core/config.js';
 import { fileExists, writeFile } from '../utils/file.js';
+import { workflowRefRelPath } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 import { promptProjectType } from '../prompts/project-type.js';
 import { promptTechStack } from '../prompts/tech-stack.js';
@@ -297,8 +298,22 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
     spinner.text = 'Created CLAUDE.md';
 
-    await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
-    spinner.text = 'Created AGENTS.md';
+    // Gate AGENTS.md write on existence — "fresh" means no .claude/workflow-meta.json,
+    // but the user may still have an AGENTS.md from Cursor/Codex/another tool.
+    // Preserve it and save our template alongside in .claude/workflow-ref/.
+    const agentsMdPath = path.join(projectRoot, 'AGENTS.md');
+    if (await fileExists(agentsMdPath)) {
+      await scaffoldFile(
+        'core/agents-md.md',
+        workflowRefRelPath('root/AGENTS.md'),
+        variables,
+        projectRoot
+      );
+      spinner.text = 'Preserved existing AGENTS.md (template saved to workflow-ref)';
+    } else {
+      await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
+      spinner.text = 'Created AGENTS.md';
+    }
 
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
     spinner.text = 'Created .claude/settings.json';
