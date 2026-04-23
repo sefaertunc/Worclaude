@@ -230,7 +230,12 @@ async function mergeCommands(projectRoot, existingScan, report) {
   }
 }
 
-export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, report) {
+export async function mergeSettingsPermissionsAndHooks(
+  projectRoot,
+  workflowSettings,
+  report,
+  options = {}
+) {
   const existingRaw = await readFile(path.join(projectRoot, '.claude', 'settings.json'));
   const existing = parseUserJson(existingRaw, '.claude/settings.json');
 
@@ -277,8 +282,10 @@ export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSett
       if (conflictCandidate) {
         matched.add(conflictCandidate);
 
-        // Tier 3: conflict — ask user
-        const resolution = await promptHookConflict(category, conflictCandidate, workflowEntry);
+        // Tier 3: conflict — ask user (or auto-keep if --yes)
+        const resolution = await promptHookConflict(category, conflictCandidate, workflowEntry, {
+          yes: options.yes,
+        });
 
         if (resolution === 'replace') {
           const idx = existingEntries.indexOf(conflictCandidate);

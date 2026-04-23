@@ -521,7 +521,9 @@ export async function upgradeCommand(options = {}) {
       const useDocker = meta.useDocker || false;
       const { settingsObject: workflowSettings } = await buildSettingsJson(techStack, useDocker);
       const settingsReport = { added: { permissions: 0, hooks: 0 }, hookConflicts: [] };
-      await mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, settingsReport);
+      await mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, settingsReport, {
+        yes,
+      });
       spinner.text = 'Settings merged...';
     }
 
