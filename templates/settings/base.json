@@ -14,6 +14,11 @@
       "Bash(git:*)",
       "Bash(gh:*)",
 
+      "// -- Worclaude Self --",
+      "Bash(worclaude:*)",
+      "Bash(worclaude scan:*)",
+      "Bash(worclaude setup-state:*)",
+
       "// -- Common Dev Tools --",
       "Bash(echo:*)", "Bash(mkdir:*)", "Bash(touch:*)",
       "Bash(cp:*)", "Bash(mv:*)",

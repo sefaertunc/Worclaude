@@ -84,8 +84,9 @@ setupState
 
 setupState
   .command('save')
-  .description('Read a JSON state from stdin, validate, and persist')
-  .option('--stdin', 'Read JSON from stdin (required)')
+  .description('Read a JSON state from stdin or a file, validate, and persist')
+  .option('--stdin', 'Read JSON from stdin')
+  .option('--from-file <path>', 'Read JSON from a file path')
   .option('--path <dir>', 'Project root', process.cwd())
   .action((options) => setupStateCommand('save', options));
 

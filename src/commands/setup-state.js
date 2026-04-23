@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { text } from 'node:stream/consumers';
 import {
   loadSetupState,
@@ -42,27 +43,47 @@ async function showSubcommand(projectRoot) {
 }
 
 async function saveSubcommand(projectRoot, options) {
-  if (!options.stdin) {
-    console.error('Error: save requires --stdin');
+  const hasStdin = Boolean(options.stdin);
+  const hasFromFile = Boolean(options.fromFile);
+
+  if (hasStdin && hasFromFile) {
+    console.error('Error: --stdin and --from-file are mutually exclusive');
+    process.exitCode = 2;
+    return;
+  }
+  if (!hasStdin && !hasFromFile) {
+    console.error('Error: save requires --stdin or --from-file <path>');
     process.exitCode = 2;
     return;
   }
 
-  const inputStream = options.inputStream || process.stdin;
   let raw;
-  try {
-    raw = await text(inputStream);
-  } catch (err) {
-    console.error(`Error reading stdin: ${err.message}`);
-    process.exitCode = 1;
-    return;
+  if (hasFromFile) {
+    const filePath = path.resolve(options.fromFile);
+    try {
+      raw = await readFile(filePath, 'utf-8');
+    } catch (err) {
+      console.error(`Error reading ${filePath}: ${err.message}`);
+      process.exitCode = 1;
+      return;
+    }
+  } else {
+    const inputStream = options.inputStream || process.stdin;
+    try {
+      raw = await text(inputStream);
+    } catch (err) {
+      console.error(`Error reading stdin: ${err.message}`);
+      process.exitCode = 1;
+      return;
+    }
   }
 
   let parsed;
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    console.error(`Error: invalid JSON on stdin: ${err.message}`);
+    const source = hasFromFile ? options.fromFile : 'stdin';
+    console.error(`Error: invalid JSON on ${source}: ${err.message}`);
     process.exitCode = 1;
     return;
   }
