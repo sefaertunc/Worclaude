@@ -4,6 +4,44 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.7.0] — 2026-04-23
+
+`/setup` hardening + UX revamp release. PR #115 closes 8 backend bug clusters surfaced by the v2.6.3 manual test matrix (upgrade-flow correctness, downgrade guard, doctor ghost detection, scaffolder exec bits, Commander routing). PR #116 fixes four `/setup` template failure modes — missing `schemaVersion` in SCAN state, `readme` object-shape mismatch in CONFIRM_MEDIUM, all-22-questions-asked despite detection, accept-off-topic-as-answer — and adds a `--from-file` flag to `worclaude setup-state save` plus `Bash(worclaude:*)` permissions so `/setup` runs without approval-prompt interruption. PR #117 adopts Claude Code's `AskUserQuestion` tool for 10 enumerable interview questions (arrow-key selection instead of free-text), redesigns CONFIRM prompts with a "Will be saved as" consequence sub-line and `?` / `help` command, and drops the 80-char readme truncation so users can read the full description before accepting. Dogfood-relevant: `.claude/commands/setup.md` auto-updates on `worclaude upgrade` to pick up the new template.
+
+### Added
+
+- **`worclaude setup-state save --from-file <path>`** (PR #116) — new CLI flag reading JSON state from a file path, mutually exclusive with `--stdin`. `/setup` now uses `Write` → `.claude/cache/setup-state.draft.json` → `--from-file` instead of heredoc-piped `--stdin`, eliminating the shell-interpolation safety prompts that interrupted every state transition.
+- **`Bash(worclaude:*)` permission entries in `templates/settings/base.json`** (PR #116) — scoped for `worclaude`, `worclaude scan`, and `worclaude setup-state`. Freshly init'd projects run `/setup` end-to-end without approval prompts.
+- **`/setup` Interaction mode contract** (PR #117) — four modes: `selectable` (`AskUserQuestion` single-choice), `multi-selectable` (`AskUserQuestion` multi-choice with `None` + `Other`), `hybrid` (detection pre-fill + accept/edit/replace), and `free-text`. Ten interview questions get non-default modes: `arch.classification`, `conventions.errors` / `logging` / `api_format`, `verification.staging` (selectable); `arch.external_apis`, `verification.required_checks` (multi-selectable); `features.core` / `nice_to_have` / `non_goals` (hybrid). Fallback to numbered-list parsing for Claude Code versions without `AskUserQuestion`.
+- **`/setup` Field-help table** (PR #117) — single-source-of-truth reference listing all 14 detection fields + 22 questionIds with plain-English description, target output file/section, and example answer. Drives both the CONFIRM "→ Will be saved as: <target>" consequence line and the `?` / `help` command output.
+- **`/setup` Detection-skip matrix** (PR #116) — auto-fills four questionIds with `"[auto-filled from <field>]"` when the scanner already answered them: `story.problem` (via readme), `arch.classification` (via monorepo), `arch.external_apis` (via externalApis), `workflow.new_dev_steps` (via scripts + readme).
+
+### Changed
+
+- **`/setup` CONFIRM prompts** (PR #117) — `readme` render is no longer truncated to 80 chars + `…` (verbatim, 100-char soft-wrap); every detected item shows `→ Will be saved as: <target>` sub-line; `?` / `help` response produces the Field-help block without advancing state.
+- **`/setup` INTERVIEW reply handling** (PR #116) — explicit classifier step with Answer / Skip / Cancel / Back / OFF-TOPIC buckets. OFF-TOPIC MUST restate, MUST NOT record, MUST NOT advance, MUST NOT persist. "Prefer off-topic when uncertain" guidance makes the rule less discretionary.
+- **`/setup` SCAN state** (PR #116) — explicit `schemaVersion: 1` in a worked JSON example. Persist step uses `--from-file` with a `.claude/cache/setup-state.draft.json` staging path.
+- **`/setup` CONFIRM_MEDIUM Storage rule** (PR #116) — `mediumResolved[field]` MUST be a string (never the raw `item.value` object). Applies to `readme` specifically, where the detector returns `{projectDescription, setupInstructions, fullPath}`.
+- **`worclaude setup-state` validator error** (PR #116) — `mediumResolved.<field> must be a string` message now includes the received type and points at the CONFIRM_MEDIUM Storage rule.
+- **`worclaude upgrade` preview** (PR #115) — new "Deleted (removed in current version)" section shows phantom hash entries (`categories.missingUntracked`) that the upgrade will prune. Previously silent.
+- **`scaffoldAgentsMd` helper** (PR #115) — shared between `init.js scaffoldFresh` and `merger.js mergeAgentsMd`. Both call sites preserve pre-existing AGENTS.md and write the template alongside under `.claude/workflow-ref/AGENTS.md`.
+- **`.claude/settings.json`** (PR #116, dogfood) — this repo's own install merges in `Bash(worclaude:*)` permissions so the dev-repo's Claude Code session doesn't hit approval prompts.
+
+### Fixed
+
+- **Legacy `*.workflow-ref.md` siblings stranded on version match** (PR #115) — `migrateWorkflowRefLocation` is now called before `upgrade.js`'s version-match early-exit and inside `runRepairOnlyFlow`. Projects with leftover siblings on the current version self-heal on the next `worclaude upgrade`.
+- **Silent future-version downgrade via `worclaude upgrade --yes`** (PR #115) — new `semverGreaterThan` helper refuses downgrades with an actionable message (`Refusing to downgrade: installed vX.Y.Z is newer than CLI vA.B.C`) instead of rewriting meta to an older version with a success banner.
+- **`doctor` missed ghost learnings files** (PR #115) — the `.claude/learnings/` check now warns on `.md` files present on disk but missing from `index.json`. Orphan detection (reverse direction) was already working.
+- **`worclaude upgrade --yes` crashed on hook-conflict prompt** (PR #115) — discovered while scripting real-old-CLI upgrades during the v2.6.3 test cycle. `--yes` now threads into `promptHookConflict` and returns `'keep'` (safest default: never clobbers user customizations). Scripted upgrades across hook-template boundaries no longer require manual answers.
+- **Fresh `worclaude init` silently overwrote existing AGENTS.md** (PR #115) — `scaffoldFresh` gates the write on `fileExists(AGENTS.md)` just like the merge path does. User-authored Cursor/Codex AGENTS.md is preserved byte-for-byte; template goes to `.claude/workflow-ref/AGENTS.md`.
+- **Hook `.cjs` files had inconsistent exec bits post-scaffold** (PR #115) — `scaffoldHooks` now runs `fs.chmod(destPath, 0o755)` after each copy (POSIX-guarded). Previously dependent on template source mode; some files landed as `755`, some as `644`.
+- **`worclaude setup-state <unknown>` exited with Commander's default code 1** (PR #115) — `setupState.on('command:*', ...)` listener emits the spec-matching `Error: unknown setup-state subcommand: <x> (expected one of show, save, reset, resume-info)` and sets `process.exitCode = 2`, aligning with the exit-2 convention `setup-state.js` already uses for bad arguments.
+
+### Docs
+
+- **`docs/spec/SPEC.md` `/setup` section** (this /sync) — rewritten to reflect the v2.7.0 surface: `--from-file` persistence path, Detection-skip matrix, Interaction mode contract, Field-help table, OFF-TOPIC classifier, `?` / `help` command, `AskUserQuestion` whitelisted at INTERVIEW states only.
+- **`docs/spec/PROGRESS.md`** (this /sync) — new v2.6.3 and v2.7.0 release entries; Stats refreshed (729 → 782 tests, 53 → 57 test files).
+
 ## [2.6.3] — 2026-04-22
 
 Second supply-chain scanner mirrored after Socket. Adds a `.snyk` policy file at the repo root with `exclude.global: [tests/fixtures/**]` so Snyk Open Source — whether invoked via the Snyk CLI, the `snyk/actions/node` GitHub Action, or any future integration — skips the intentionally-outdated fixture manifests under `tests/fixtures/scanner/**` that exist solely as deterministic inputs to the Part A project-scanner detectors (`next@14.2.3`, `vitest@1.4.0`, `prisma@5.10.0`, etc.). The fixtures are never installed (not referenced from root `package.json`), never shipped (excluded from the npm tarball by the `files` whitelist), and never executed. `SECURITY.md` is updated to name `.snyk` alongside `socket.yml` in the fixture-exclusion paragraph. The installed Snyk GitHub App only imports root `package.json` today, so the most immediate effect is keeping local `snyk test` runs honest; the file is also load-bearing for any future workflow that fails the build on high-severity findings. No runtime change for worclaude consumers.
