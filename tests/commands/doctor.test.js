@@ -487,6 +487,39 @@ describe('doctor command', () => {
     expect(output).toContain('Learnings: 0 entries captured');
   });
 
+  it('warns about ghost learnings files (on disk but not indexed)', async () => {
+    await scaffoldProject(tmpDir, {
+      learningsIndex: { learnings: [] },
+    });
+    const learningsDir = path.join(tmpDir, '.claude', 'learnings');
+    await fs.writeFile(
+      path.join(learningsDir, 'forgotten-rule.md'),
+      '---\ncategory: forgotten\n---\n\n**Rule:** untracked'
+    );
+
+    await doctorCommand();
+
+    const output = getOutput();
+    expect(output).toContain('Learnings ghost file: forgotten-rule.md');
+    expect(output).toContain('not referenced by index.json');
+  });
+
+  it('reports orphans AND ghosts together when both are present', async () => {
+    await scaffoldProject(tmpDir, {
+      learningsIndex: {
+        learnings: [{ file: 'orphan.md', category: 'orphan', created: '2026-01-01' }],
+      },
+    });
+    const learningsDir = path.join(tmpDir, '.claude', 'learnings');
+    await fs.writeFile(path.join(learningsDir, 'ghost.md'), '# ghost');
+
+    await doctorCommand();
+
+    const output = getOutput();
+    expect(output).toContain("Entry references missing file 'orphan.md'");
+    expect(output).toContain('Learnings ghost file: ghost.md');
+  });
+
   // Gitignore (Task 10) — tmpdir is not a git repo, so spawn returns status 128
   it('emits gitignore WARN when not in a git repo', async () => {
     await scaffoldProject(tmpDir);

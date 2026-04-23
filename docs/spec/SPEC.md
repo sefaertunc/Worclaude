@@ -12,18 +12,18 @@
 
 ## Core Commands
 
-| Command                                                 | Purpose                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing)                                 |
-| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift                                           |
-| `worclaude status`                                      | Show current workflow state, version, customizations                                 |
-| `worclaude backup`                                      | Manual backup of current Claude setup                                                |
-| `worclaude restore`                                     | Restore from a backup                                                                |
-| `worclaude diff`                                        | Compare current setup vs latest workflow version                                     |
-| `worclaude delete`                                      | Remove worclaude workflow from project                                               |
-| `worclaude doctor`                                      | Check installation health and file integrity                                         |
-| `worclaude scan [--path] [--json] [--quiet]`            | Detect project facts; write `.claude/cache/detection-report.json`                    |
-| `worclaude setup-state <sub> [--path]`                  | Inspect/persist `/setup` state file (`show`, `save --stdin`, `reset`, `resume-info`) |
+| Command                                                 | Purpose                                                                                           |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `worclaude init`                                        | Scaffold workflow into a project (fresh or existing)                                              |
+| `worclaude upgrade [--dry-run] [--yes] [--repair-only]` | Update components and repair on-disk drift                                                        |
+| `worclaude status`                                      | Show current workflow state, version, customizations                                              |
+| `worclaude backup`                                      | Manual backup of current Claude setup                                                             |
+| `worclaude restore`                                     | Restore from a backup                                                                             |
+| `worclaude diff`                                        | Compare current setup vs latest workflow version                                                  |
+| `worclaude delete`                                      | Remove worclaude workflow from project                                                            |
+| `worclaude doctor`                                      | Check installation health and file integrity                                                      |
+| `worclaude scan [--path] [--json] [--quiet]`            | Detect project facts; write `.claude/cache/detection-report.json`                                 |
+| `worclaude setup-state <sub> [--path]`                  | Inspect/persist `/setup` state file (`show`, `save --stdin\|--from-file`, `reset`, `resume-info`) |
 
 ---
 
@@ -1219,18 +1219,42 @@ ATX-heading-scoped replace or append-if-authored)
 
 State persistence: .claude/cache/setup-state.json. 24-hour staleness
 window after which INIT offers to discard and restart. Every mutation
-persisted via `worclaude setup-state save --stdin` BEFORE rendering
+persisted via `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json`
+(the `--stdin` form remains supported for scripting) BEFORE rendering
 the next prompt. Interruption at any point is recoverable by
 re-running /setup.
 
 Anti-drift rules (pinned at top of setup.md, override contextual
 judgment): sequential state advance only; no backward advance within
-an invocation; off-topic input triggers a restate, never an answer;
-`cancel setup` matches regex `/^(cancel|stop|abort)( setup)?[.!?\s]*$/i`
+an invocation; off-topic input triggers a restate, never an answer —
+INTERVIEW states classify every reply as Answer / Skip / Cancel /
+Back / OFF-TOPIC with an explicit "prefer off-topic when uncertain"
+default; `cancel setup` matches regex `/^(cancel|stop|abort)( setup)?[.!?\s]*$/i`
 and preserves state; tool use is whitelisted (scanner + setup-state
-CLI + cache reads between SCAN and WRITE; the six target file
-reads/writes only at WRITE); no memory pre-fill from prior sessions;
-prompts render verbatim in fenced code blocks.
+CLI + cache reads between SCAN and WRITE; `AskUserQuestion` at
+INTERVIEW states only; the six target file reads/writes only at
+WRITE); no memory pre-fill from prior sessions; prompts render verbatim
+in fenced code blocks at CONFIRM stages.
+
+Detection-skip matrix auto-fills four questionIds when the scanner
+already answered them: `story.problem` (via readme), `arch.classification`
+(via monorepo), `arch.external_apis` (via externalApis), and
+`workflow.new_dev_steps` (via scripts + readme). Recorded as
+`"[auto-filled from <field>]"` before the already-answered skip-list
+is evaluated.
+
+Interaction mode contract governs how each interview question is
+collected: `selectable` / `multi-selectable` (invoke `AskUserQuestion`),
+`hybrid` (detection pre-fill + accept/edit/replace), or `free-text`
+(default). Ten questions have non-default modes — 5 selectable, 2
+multi-selectable, 3 hybrid. Fallback to numbered-list parsing when
+`AskUserQuestion` is unavailable.
+
+CONFIRM prompts show "→ Will be saved as: <target>" under each detected
+item and handle `?` / `help` by rendering a Field-help block (plain-
+English description, target file/section, example answer) without
+advancing state. The Field-help table lives next to the QuestionId
+enumeration and covers all 14 detection fields + 22 questionIds.
 
 Output files (unchanged from prior /setup): CLAUDE.md, docs/spec/SPEC.md,
 three SKILL.md files (backend-conventions, frontend-design-system,

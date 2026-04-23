@@ -770,11 +770,27 @@ async function checkLearnings(projectRoot) {
       orphans.push(entry.file);
     }
   }
-  if (orphans.length > 0) {
-    return orphans.map((f) =>
-      result(WARN, `Learnings entry: ${f}`, `Entry references missing file '${f}'`)
+
+  const indexedFiles = new Set(entries.map((e) => e?.file).filter(Boolean));
+  const diskFiles = (await fs.readdir(learningsDir)).filter(
+    (f) => f.endsWith('.md') && f !== '.gitkeep'
+  );
+  const ghosts = diskFiles.filter((f) => !indexedFiles.has(f));
+
+  const findings = [];
+  for (const f of orphans) {
+    findings.push(result(WARN, `Learnings entry: ${f}`, `Entry references missing file '${f}'`));
+  }
+  for (const f of ghosts) {
+    findings.push(
+      result(
+        WARN,
+        `Learnings ghost file: ${f}`,
+        `File exists but not referenced by index.json — run /learn to capture or delete manually`
+      )
     );
   }
+  if (findings.length > 0) return findings;
   return [result(PASS, `Learnings: ${entries.length} entries captured`, null)];
 }
 

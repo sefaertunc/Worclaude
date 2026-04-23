@@ -54,12 +54,22 @@ normally apply.
 
    - Shell: `worclaude scan --path .` (SCAN only)
    - Shell: `worclaude setup-state show --path .`
-   - Shell: `worclaude setup-state save --stdin --path .` (pipe the
-     updated state JSON via stdin — the ONLY way state is persisted)
+   - Shell: `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+     — the ONLY way state is persisted. Use `Write` to produce the
+     draft JSON first, then invoke the CLI against that path. This
+     avoids Claude Code's shell-interpolation safety layer that
+     triggers on heredoc-with-variable-expansion patterns.
    - Shell: `worclaude setup-state reset --path .`
    - Shell: `worclaude setup-state resume-info --path .`
    - Read: `.claude/cache/detection-report.json`
    - Read: `.claude/cache/setup-state.json`
+   - Write: `.claude/cache/setup-state.draft.json` (state-save staging
+     only — overwritten each save).
+   - Tool: `AskUserQuestion` (INTERVIEW states only, per the
+     Interaction mode contract — `selectable` / `multi-selectable`
+     questions). Not permitted at CONFIRM_HIGH / CONFIRM_MEDIUM:
+     those render VERBATIM per rule #7 so the text-parser contract
+     stays stable.
 
    At WRITE state the whitelist RELAXES to additionally permit:
 
@@ -183,10 +193,27 @@ ENTRY:
     - ...
   ```
 
-- State file mutation: write a fresh state with `currentState: "SCAN"`,
-  `startedAt` and `updatedAt` set to now, `detectionReportPath:
-".claude/cache/detection-report.json"`, empty arrays/objects for the
-  remaining fields. Persist via `worclaude setup-state save --stdin`.
+- State file mutation: write a fresh state with EXACTLY these fields.
+  `schemaVersion: 1` is REQUIRED — the validator rejects anything else
+  with `Unsupported schemaVersion: undefined`.
+
+  ```json
+  {
+    "schemaVersion": 1,
+    "currentState": "SCAN",
+    "startedAt": "<ISO timestamp, now>",
+    "updatedAt": "<ISO timestamp, now>",
+    "detectionReportPath": ".claude/cache/detection-report.json",
+    "highConfirmedAccepted": [],
+    "highConfirmedRejected": [],
+    "mediumResolved": {},
+    "interviewAnswers": {}
+  }
+  ```
+
+  Persist via `Write` → `.claude/cache/setup-state.draft.json` →
+  `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+  (see rule #5).
 
 EXIT: advance to CONFIRM_HIGH.
 
@@ -201,21 +228,26 @@ ENTRY:
   `highConfirmedRejected: []`, and transition to CONFIRM_MEDIUM
   (trivial exit per rule #1).
 - Otherwise render VERBATIM (wrapped in a triple-backtick fenced code
-  block):
+  block). Below every item add a dim "→ Will be saved as: `<target>`"
+  line pulled from the **Field-help table** so the user knows what
+  accepting means:
 
   ```
   I scanned your project. Please confirm the high-confidence
   detections below. Reply with the numbers of any items that are
-  WRONG (e.g., "2, 5"), or reply "ok" to accept all.
+  WRONG (e.g., "2, 5"), or reply "ok" to accept all, or "?" for help.
 
     [x] 1. <formatField(item1.field)>: <renderValue(item1)> (from <item1.source>)
+           → Will be saved as: <target1>
     [x] 2. ...
+           → Will be saved as: <target2>
 
   Your response:
   ```
 
   `<formatField>` and `<renderValue>` are defined in the **Field
-  rendering table** below.
+  rendering table** below. `<target>` is pulled from the **Field-help
+  table** (also below) and must be included verbatim per the table.
 
 Response parsing (case-insensitive, whitespace trimmed):
 
@@ -225,12 +257,18 @@ Response parsing (case-insensitive, whitespace trimmed):
 - One or more integers (comma or space separated) in range 1..N →
   those items are rejected; split fields into accepted/rejected
   accordingly (in rendered order).
+- `?` | `help` → render the **Field-help** block for EACH displayed
+  field (description + target + example) without advancing state. Then
+  restate the prompt above (same text, same items). Do NOT persist a
+  mutation for the help render.
 - Anything else (including integers out of range) → rule #3 fires:
-  restate with "I need either 'ok' or numbers from 1 to `<N>` matching
-  the items above (e.g., '2, 5'). To cancel, type `cancel setup`."
+  restate with "I need either 'ok', numbers from 1 to `<N>` matching
+  the items above (e.g., '2, 5'), or `?` for help. To cancel, type
+  `cancel setup`."
 
 State file mutation: persist the updated arrays via
-`worclaude setup-state save --stdin`.
+`worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+(see rule #5).
 
 EXIT: advance to CONFIRM_MEDIUM.
 
@@ -252,9 +290,10 @@ ENTRY:
   <formatField(field)> (detected from <source>):
 
     1. <renderValue(item)>
+       → Will be saved as: <target>
     2. Other (I'll type my own)
 
-  Reply with the number of your choice (default: 1):
+  Reply with the number of your choice (default: 1), or `?` for help:
   ```
 
   **Shape B — `candidates` is a non-empty array** (emitted by
@@ -262,6 +301,7 @@ ENTRY:
 
   ```
   <formatField(field)> (detected from <source>):
+  → Will be saved as: <target>
 
     1. <candidates[0]>
     2. <candidates[1]>
@@ -269,21 +309,39 @@ ENTRY:
     N. <candidates[N-1]>
     N+1. Other (I'll type my own)
 
-  Reply with the number of your choice (default: 1):
+  Reply with the number of your choice (default: 1), or `?` for help:
   ```
+
+  `<target>` comes from the **Field-help table** below. Render it
+  verbatim per the table.
 
   `candidates[0]` equals `item.value` — default-1 accepts the detected
   value.
 
+**Storage rule:** `mediumResolved[field]` MUST be a string. Store the
+exact `renderValue(item)` that was shown to the user on option 1, or
+the user's trimmed free-text on "Other", or `candidates[k-1]` (shape
+B) for a numbered pick. **NEVER store the raw `item.value` object** —
+for fields like `readme` whose detected value is an object
+(`{projectDescription, setupInstructions, fullPath}`) the validator
+will reject the mutation with `state.mediumResolved.<field> must be a
+string`.
+
 Response parsing (per item):
 
-- `""` | `1` | `default` → accept item 1 (the detected value).
+- `""` | `1` | `default` → accept item 1; store `renderValue(item)`
+  as a string per the Storage rule above.
 - The final "Other" number (`2` in shape A, `N+1` in shape B) →
   follow-up free-text prompt: "Go ahead — what's the value you'd like
-  to use?". Record the trimmed reply as the answer.
-- Integer in range `2..N` (shape B only) → accept `candidates[k-1]`.
-- Anything else → restate with "I need a number from 1 to `<max>`, or
-  empty for the default. To cancel, type `cancel setup`."
+  to use?". Store the trimmed reply.
+- Integer in range `2..N` (shape B only) → store `candidates[k-1]`.
+- `?` | `help` → render the **Field-help** block for this field
+  (description + target + example) without advancing state. Then
+  restate the prompt above. Do NOT persist a mutation for the help
+  render.
+- Anything else → restate with "I need a number from 1 to `<max>`,
+  empty for the default, or `?` for help. To cancel, type
+  `cancel setup`."
 
 State file mutation: after EACH item is resolved (not batched),
 append to `mediumResolved` and persist.
@@ -298,14 +356,49 @@ Shared ENTRY protocol for each INTERVIEW state:
   **QuestionId enumeration** below plus any rejected fields routed to
   this state from CONFIRM_HIGH (per the **Rejected-field re-ask
   routing** table).
-- Skip any `questionId` already present in `interviewAnswers`.
+- Apply the **Detection-skip matrix** (below the enumeration): for
+  each `questionId` whose skip-field is present in
+  `highConfirmedAccepted`, record
+  `interviewAnswers[<questionId>] = "[auto-filled from <field>]"` and
+  persist (same Storage rule applies — the value is always a string)
+  BEFORE evaluating the already-answered skip-list.
+- Skip any `questionId` already present in `interviewAnswers`
+  (including auto-filled ones).
 - Resume preamble (only if ANY questionId is already answered AND at
   least one remains): "Resuming `<STATE_NAME>`. Already have:
   `<comma-list>`. Next: `<next questionId>`."
 - If ALL `questionId`s for this state are present, trivially-exit:
   persist a state update (only `currentState` and `updatedAt` change)
   and advance.
-- Ask remaining questions conversationally, in enumeration order.
+- Ask remaining questions in enumeration order. For each question,
+  look up its `interactionMode` in the **Per-question interaction
+  table** below and use the matching tool:
+  - `selectable` / `multi-selectable` → `AskUserQuestion`
+  - `hybrid` → pre-fill from the listed detection source, then offer
+    accept / edit / replace
+  - `free-text` → ordinary text prompt
+  The Storage rule (`interviewAnswers[<questionId>]` must be a string)
+  applies uniformly — no object shapes regardless of mode.
+- **Reply classification** — before recording a reply as
+  `interviewAnswers[<questionId>]`, classify it:
+  - **Answer**: a response that plausibly fits the semantic scope of
+    `<questionId>` (e.g., `arch.classification` expects one of the
+    enum values or a short phrase about system shape; `story.audience`
+    expects a description of people/roles). Record and advance.
+  - **Skip trigger**: `skip` or `skip all` — rules below apply.
+  - **Cancel trigger**: matches rule #4's regex — rule #4 applies.
+  - **Back trigger**: starts with `back` — rule below applies.
+  - **Everything else → OFF-TOPIC.** Apply rule #3: restate the
+    pending question with the off-topic prefix. You MUST NOT record
+    the reply in `interviewAnswers`. You MUST NOT advance
+    `currentState` or the question pointer. Do NOT persist a mutation
+    for this exchange. A topic-mismatched reply is not an answer just
+    because it is a sentence — if the reply would land in a different
+    section of SPEC.md than the one tied to this `<questionId>`, it is
+    off-topic.
+
+  Prefer off-topic when uncertain. An unnecessary restate costs one
+  turn; a mis-filed answer corrupts the state file.
 - `skip` on a question → record `interviewAnswers[<questionId>] =
 "[skipped]"`, advance to the next question in this state.
 - `skip all` → record every remaining `questionId` as `[skipped]`,
@@ -313,13 +406,11 @@ Shared ENTRY protocol for each INTERVIEW state:
 - `back` → restate the current question with the prefix "I can't go
   back within a single setup run. Finish this run and edit the output
   files afterward." (rule #2).
-- Rule #3 applies within interview states: off-topic replies trigger
-  a restatement of the pending question, not an answer to the
-  off-topic question.
 
 State file mutation: after EACH question is answered or skipped,
-persist via `worclaude setup-state save --stdin` BEFORE rendering the
-next prompt. Resume granularity is per-question.
+persist via `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+(see rule #5) BEFORE rendering the next prompt. Resume granularity is
+per-question.
 
 EXIT: advance to the next state; INTERVIEW_VERIFICATION exits to
 WRITE.
@@ -430,6 +521,78 @@ detection):
 - `verification.staging` — staging/preview environment.
 - `verification.required_checks` — CI required checks.
 
+### Interaction mode
+
+Each interview question is asked in ONE of four modes. The mode lives
+next to the question in the table below. This controls which tool you
+use to collect the answer — text input, menu, checklist, or hybrid.
+
+- `selectable` — invoke the `AskUserQuestion` tool with the listed
+  choices, `multiSelect: false`. The user gets arrow-key navigation.
+  If the user picks "Other (I'll type my own)", follow up with a
+  free-text prompt: "Go ahead — what's the value you'd like to use?".
+- `multi-selectable` — invoke `AskUserQuestion` with `multiSelect:
+  true` and the listed choices. Always prepend `None` as the first
+  choice and append "Other (I'll type my own)" as the last. On
+  "Other", follow up with free-text. The stored value joins selections
+  with `, ` (e.g. `"REST, GraphQL"`). Selecting `None` alone stores
+  `"none"`.
+- `hybrid` — pre-fill a bullet list from detection (see the question
+  row for which detection field feeds it) and ask: "I pre-filled this
+  from your README/scan. Accept, edit, or replace?". `accept` stores
+  the pre-filled text verbatim; `edit` offers free-text with the
+  pre-fill visible; `replace` starts from empty.
+- `free-text` — ordinary text prompt (default). No `AskUserQuestion`.
+
+Regardless of mode, `interviewAnswers[<questionId>]` MUST be a string
+per the Storage rule. For `multi-selectable`, join with `, `. For
+`hybrid`, store the final accepted or edited text.
+
+**Fallback.** If `AskUserQuestion` is unavailable in the current
+Claude Code version (or the tool call fails), degrade to a
+numbered-list free-text prompt using CONFIRM_HIGH-style parsing:
+
+```
+<question-label>:
+
+  1. <choice 1>
+  2. <choice 2>
+  ...
+  N+1. Other (I'll type my own)
+
+Reply with the number of your choice, or type your own answer:
+```
+
+### Per-question interaction table
+
+| questionId                     | Mode             | Choices (or pre-fill source)                                              |
+| ------------------------------ | ---------------- | ------------------------------------------------------------------------- |
+| `story.audience`               | free-text        | —                                                                         |
+| `story.problem`                | free-text        | —                                                                         |
+| `story.analogs`                | free-text        | —                                                                         |
+| `arch.classification`          | selectable       | monolith, modular monolith, microservices, serverless, library, CLI, other |
+| `arch.modules`                 | free-text        | —                                                                         |
+| `arch.entities`                | free-text        | —                                                                         |
+| `arch.external_apis`           | multi-selectable | `<detected externalApis>` + None + Other                                  |
+| `arch.stack_rationale`         | free-text        | —                                                                         |
+| `features.core`                | hybrid           | pre-fill from readme bullets (projectDescription / headings)              |
+| `features.nice_to_have`        | hybrid           | pre-fill from readme bullets                                              |
+| `features.non_goals`           | hybrid           | empty pre-fill (always edit from scratch unless user picks `accept`)      |
+| `workflow.new_dev_steps`       | free-text        | —                                                                         |
+| `workflow.env_values`          | free-text        | —                                                                         |
+| `conventions.patterns`         | free-text        | —                                                                         |
+| `conventions.errors`           | selectable       | throw, Result<T,E>, null, silent catch, mixed, other                      |
+| `conventions.logging`          | selectable       | console, structured JSON, dedicated logger, none, other                   |
+| `conventions.api_format`       | selectable       | REST, GraphQL, gRPC, none, other                                          |
+| `conventions.naming`           | free-text        | —                                                                         |
+| `conventions.rules`            | free-text        | —                                                                         |
+| `verification.manual`          | free-text        | —                                                                         |
+| `verification.staging`         | selectable       | yes, no                                                                   |
+| `verification.required_checks` | multi-selectable | `<detected ci.workflows>` + None + Other                                  |
+
+10 non-default entries: 5 `selectable`, 2 `multi-selectable`, 3
+`hybrid`. The other 12 questions stay `free-text`.
+
 ### Rejected-field re-ask routing
 
 Fields in `highConfirmedRejected` are re-asked as one sub-question
@@ -449,6 +612,94 @@ each in the INTERVIEW state that matches the field's natural section.
 enumeration that `saveSetupState` accepts, matched by prefix. The
 `<field>` segment must exactly match a known detector field name AND
 the routing table must map that field to that state prefix.
+
+### Detection-skip matrix
+
+A question in this table is **auto-skipped** when the listed detection
+field is in `highConfirmedAccepted` (i.e., accepted at CONFIRM_HIGH
+and not rejected). Record the skipped answer in `interviewAnswers` as
+`"[auto-filled from <field>]"` BEFORE evaluating the already-answered
+skip-list. This prevents the interview from re-asking questions the
+scanner already answered.
+
+| questionId              | Skip when in `highConfirmedAccepted`           | Notes                                    |
+| ----------------------- | ---------------------------------------------- | ---------------------------------------- |
+| `story.problem`         | `readme` (medium) with non-empty description  | README already describes the problem.    |
+| `arch.classification`   | `monorepo` (high)                              | Pre-fill `"monorepo"`.                   |
+| `arch.external_apis`    | `externalApis` (high)                          | Direct mapping.                          |
+| `workflow.new_dev_steps`| `scripts` (high) AND `readme` (medium)         | Both must be present.                    |
+
+All OTHER `questionId`s are always asked — the scanner cannot infer
+them (audience, rationale, conventions, features, etc. are user
+knowledge the detector has no access to).
+
+### Field-help table
+
+Drives the `?` / `help` command (CONFIRM_HIGH, CONFIRM_MEDIUM, and
+INTERVIEW states) AND the "→ Will be saved as: `<target>`" line on
+every CONFIRM prompt. Keep the `<target>` column stable — parsers
+downstream don't match on it, but users read it for orientation.
+
+Detection fields (used at CONFIRM_HIGH and CONFIRM_MEDIUM):
+
+| Field            | Plain-English description                                     | `<target>` (where accepting lands)                          | Example answer                            |
+| ---------------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------- |
+| `ci`             | Which CI provider + workflow files run on push/PR             | `## Verification` section of `docs/spec/SPEC.md`            | `GitHub Actions, 2 workflows`             |
+| `deployment`     | Where the app gets deployed                                   | `## Architecture` section of `docs/spec/SPEC.md`            | `Vercel`                                  |
+| `envVariables`   | Names of env variables the project reads                      | `## Workflow` section of `docs/spec/SPEC.md`                | `DATABASE_URL, STRIPE_SECRET_KEY`         |
+| `externalApis`   | Third-party APIs / SDKs the project integrates with           | `backend-conventions/SKILL.md` External APIs section        | `Stripe, Sentry`                          |
+| `frameworks`     | Application frameworks the project uses                       | `## Tech Stack` section of `CLAUDE.md`                      | `Next.js 14.2.3, React 18.2.0`            |
+| `language`       | Primary source language                                       | `## Tech Stack` section of `CLAUDE.md`                      | `TypeScript`                              |
+| `linting`        | Linters + formatters the project runs                         | `## Tech Stack` section of `CLAUDE.md`                      | `ESLint, Prettier`                        |
+| `monorepo`       | Whether the repo is a monorepo + which tool                   | `## Architecture` section of `docs/spec/SPEC.md`            | `pnpm (3 packages)`                       |
+| `orm`            | Database ORM / schema driver                                  | `## Tech Stack` of `CLAUDE.md` + backend-conventions/SKILL  | `Prisma`                                  |
+| `packageManager` | How you install dependencies                                  | `## Tech Stack` of `CLAUDE.md` + `## Commands`              | `pnpm`                                    |
+| `readme`         | Project description pulled from `README.md`                   | `## Overview` section of `docs/spec/SPEC.md`                | a paragraph of text                       |
+| `scripts`        | dev / test / build / lint script names                        | `## Commands` section of `CLAUDE.md`                        | `dev=dev test=test build=build lint=lint` |
+| `specDocs`       | Spec / design docs already present in the repo                | `## Overview` of `docs/spec/SPEC.md` (referenced, not copied) | `2 docs`                                  |
+| `testing`        | Test framework + config file                                  | `## Verification` of `docs/spec/SPEC.md`                    | `vitest (vitest.config.ts)`               |
+
+Interview questions (used at INTERVIEW states):
+
+| `questionId`                   | Plain-English description                                 | `<target>`                                                     | Example answer                                |
+| ------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| `story.audience`               | Who is this project for?                                  | `## Overview` of `docs/spec/SPEC.md`                           | `internal developers maintaining our CLI`     |
+| `story.problem`                | What problem does it solve?                               | `## Overview` of `docs/spec/SPEC.md`                           | `scaffolds a worclaude workflow into any repo` |
+| `story.analogs`                | Similar products / projects you're modeling after         | `## Overview` of `docs/spec/SPEC.md`                           | `create-react-app, but for Claude workflows`  |
+| `arch.classification`          | System shape: monolith / services / library / CLI / etc.  | `## Architecture` of `docs/spec/SPEC.md`                       | `modular monolith`                            |
+| `arch.modules`                 | Directory purposes and in-house packages                  | `## Architecture` of `docs/spec/SPEC.md`                       | `src/commands — CLI entry points`             |
+| `arch.entities`                | Core database entities (if applicable)                    | `## Architecture` of `docs/spec/SPEC.md`                       | `User, Project, Session`                      |
+| `arch.external_apis`           | External APIs beyond SDK detection                        | `## Architecture` of `docs/spec/SPEC.md`                       | `Stripe, Sentry`                              |
+| `arch.stack_rationale`         | Why these framework/stack choices                         | `## Architecture` of `docs/spec/SPEC.md`                       | `pnpm for workspace perf`                     |
+| `features.core`                | Must-have features                                        | `## Features` of `docs/spec/SPEC.md`                           | `init / upgrade / doctor / scan`              |
+| `features.nice_to_have`        | Nice-to-have features                                     | `## Features` of `docs/spec/SPEC.md`                           | `plugin.json generation`                      |
+| `features.non_goals`           | Explicit non-goals                                        | `## Features` of `docs/spec/SPEC.md`                           | `no Windows-specific path handling`           |
+| `workflow.new_dev_steps`       | Dev setup steps beyond README                             | `## Workflow` of `docs/spec/SPEC.md`                           | `copy .env.example → .env then fill secrets`  |
+| `workflow.env_values`          | Guidance for env var values                               | `## Workflow` of `docs/spec/SPEC.md`                           | `DATABASE_URL: local Postgres on :5432`       |
+| `conventions.patterns`         | Code patterns the project uses                            | `project-patterns/SKILL.md`                                    | `Result<T, E> for fallible ops`               |
+| `conventions.errors`           | Error-handling approach                                   | `backend-conventions/SKILL.md`                                 | `throw / Result<T,E> / silent catch`          |
+| `conventions.logging`          | Logging approach                                          | `backend-conventions/SKILL.md`                                 | `pino structured logger`                      |
+| `conventions.api_format`       | API response shape                                        | `backend-conventions/SKILL.md`                                 | `REST JSON: {data, error}`                    |
+| `conventions.naming`           | Naming conventions (vars, files, branches)                | `project-patterns/SKILL.md`                                    | `camelCase TS / snake_case Python / kebab branches` |
+| `conventions.rules`            | Never / always project rules                              | `project-patterns/SKILL.md`                                    | `never push to main`                          |
+| `verification.manual`          | Manual verification steps                                 | `## Verification` of `docs/spec/SPEC.md`                       | `run /init against tmp/ and eyeball output`   |
+| `verification.staging`         | Whether there's a staging / preview env                   | `## Verification` of `docs/spec/SPEC.md`                       | `yes — Vercel preview per PR`                 |
+| `verification.required_checks` | CI required checks gating merge                           | `## Verification` of `docs/spec/SPEC.md`                       | `tests, lint, type-check`                     |
+
+Help-render format when the user types `?` at a CONFIRM or INTERVIEW
+prompt — render in a fenced code block:
+
+```
+Help — <formatField(field) or questionId>
+
+  What it is: <description>
+  Will be saved as: <target>
+  Example answer: <example>
+```
+
+For CONFIRM_HIGH (multiple fields on one prompt), render one Help
+block per item. After rendering help, restate the original prompt
+verbatim without advancing.
 
 ---
 
@@ -470,7 +721,7 @@ CONFIRM_HIGH and CONFIRM_MEDIUM to render `<renderValue(item)>`.
 | `scripts`        | `{dev, test, build, lint, ...}`                | `dev=<dev.key> test=<test.key> build=<build.key> lint=<lint.key>` — omit null slots; all null → `(no standard scripts)` |
 | `envVariables`   | `{names: string[], inferredServices: [...]}`   | `<N> variable(s)` (singular when `N === 1`; 0 → omit)                |
 | `externalApis`   | `string[]`                                     | joined by `, ` (empty → omit)                                        |
-| `readme`         | `{projectDescription, ...}`                    | `<projectDescription>` truncated to 80 chars with `…` suffix          |
+| `readme`         | `{projectDescription, ...}`                    | `<projectDescription>` rendered verbatim; soft-wrap at 100 chars per line for display only (no `…` truncation — user needs the full text to decide whether to accept) |
 | `specDocs`       | `[{path, firstHeading}, ...]`                  | `<N> doc(s)` (empty → omit)                                          |
 | `monorepo`       | `{tool, packagePaths, ...}`                    | `<tool> (<N> packages)`                                              |
 | fallback scalar  | string / number / boolean                      | `String(value)`                                                      |

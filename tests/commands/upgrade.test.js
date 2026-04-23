@@ -596,6 +596,92 @@ describe('upgrade command', () => {
     expect(updatedAgent).toContain('description:');
   });
 
+  it('refuses when installed version is newer than CLI (downgrade guard)', async () => {
+    const meta = {
+      version: '99.0.0',
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: [],
+      techStack: [],
+      universalAgents: [],
+      optionalAgents: [],
+      fileHashes: {},
+    };
+    await fs.ensureDir(path.join(tmpDir, '.claude'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+
+    await upgradeCommand({ yes: true });
+
+    const updatedMeta = JSON.parse(
+      await fs.readFile(path.join(tmpDir, '.claude', 'workflow-meta.json'), 'utf-8')
+    );
+    expect(updatedMeta.version).toBe('99.0.0');
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Refusing to downgrade');
+    expect(output).toContain('99.0.0');
+  });
+
+  it('relocates legacy workflow-ref siblings even when versions match', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const legacyPath = path.join(tmpDir, '.claude', 'commands', 'start.workflow-ref.md');
+    await fs.writeFile(legacyPath, '# legacy sibling — must relocate');
+
+    await upgradeCommand({ yes: true });
+
+    expect(await fs.pathExists(legacyPath)).toBe(false);
+    const relocated = path.join(tmpDir, '.claude', 'workflow-ref', 'commands', 'start.md');
+    expect(await fs.pathExists(relocated)).toBe(true);
+  });
+
+  it('relocates legacy workflow-ref siblings in repair-only flow', async () => {
+    const currentVersion = await readPackageVersion();
+    await seedCompleteInstall(tmpDir, currentVersion);
+    const hookPath = path.join(tmpDir, '.claude', 'hooks', 'learn-capture.cjs');
+    await fs.remove(hookPath);
+    const legacyPath = path.join(tmpDir, '.claude', 'agents', 'bug-fixer.workflow-ref.md');
+    await fs.writeFile(legacyPath, '# legacy agent ref');
+
+    await upgradeCommand({ yes: true });
+
+    expect(await fs.pathExists(hookPath)).toBe(true);
+    expect(await fs.pathExists(legacyPath)).toBe(false);
+    const relocated = path.join(tmpDir, '.claude', 'workflow-ref', 'agents', 'bug-fixer.md');
+    expect(await fs.pathExists(relocated)).toBe(true);
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Relocated');
+  });
+
+  it('renders "Deleted" section when meta has a hash for a file no longer in templates', async () => {
+    const meta = {
+      version: '0.9.0',
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: [],
+      techStack: [],
+      universalAgents: [],
+      optionalAgents: [],
+      useDocker: false,
+      fileHashes: {
+        'agents/removed-in-current-version.md': 'a'.repeat(64),
+      },
+    };
+    await fs.ensureDir(path.join(tmpDir, '.claude'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+
+    await upgradeCommand({ dryRun: true });
+
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('Deleted (removed in current version)');
+    expect(output).toContain('agents/removed-in-current-version.md');
+  });
+
   it('cancels when user declines', async () => {
     const meta = {
       version: '0.9.0',

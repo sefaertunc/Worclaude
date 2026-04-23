@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.6.3
-**Last Updated:** 2026-04-22
+**Version:** 2.7.0
+**Last Updated:** 2026-04-23
 
 ## Completed
 
@@ -507,6 +507,16 @@
   - [x] Verified: `npm test` 729/729 pass, `npm run lint` clean, `npm run docs:build` clean (3.59s).
   - [x] Release group: **PR #110** (`Version bump: patch`). Only PR since v2.6.1. v2.6.1 → v2.6.2. No missing declarations.
 
+- [x] v2.6.3 — Dogfood upgrade (2026-04-22)
+  - [x] **PR #114** — Ran `worclaude upgrade` against this repo's own `.claude/` install. Picked up the v2.6.0 state-machine `/setup` template (overwrote the old prompt-style `setup.md`) and the new `.claude/cache/` gitignore entry. `.claude/workflow-ref/` safety copies left behind by the upgrade detector were verified as byte-identical to the new templates (CRLF-hash quirk) for `commands/commit-push-pr.md` and `commands/sync.md`; `skills/git-conventions/SKILL.md` had a real diff (the new template drops the always-bump-on-merge rule, kept for project policy) and was preserved. Removed `.claude/workflow-ref/` after confirming none of it was load-bearing.
+  - [x] Release group: **PR #114** (`Version bump: none`). But the sync commit (`f8e7f2f chore: sync progress, spec, and version to 2.6.3`) rolled a patch bump to pick up prior unreleased work. v2.6.2 → v2.6.3.
+
+- [x] v2.7.0 — /setup hardening + UX revamp (2026-04-23)
+  - [x] **PR #115** (`Version bump: patch`) — 8 backend fixes surfaced by the v2.6.3 manual test matrix: migrateWorkflowRefLocation hoisted before upgrade early-exit so version-match projects with leftover legacy siblings self-heal (fixes B-12/C-21); semverGreaterThan guard refuses silent downgrades via `worclaude upgrade --yes` (fixes C-10/D-02); new "Deleted (removed in current version)" preview section for `categories.missingUntracked` (fixes C-20); doctor detects ghost learnings files on disk not referenced by index.json (fixes D-05); `--yes` flag threads through `promptHookConflict` to safely default to 'keep' in non-interactive runs (fixes secondary crash during C-03/C-05); `scaffoldFresh` gates AGENTS.md write on existence preserving Cursor/Codex authored files (fixes B-10); explicit `chmod 0o755` on scaffolded hook scripts (fixes C-04); unknown `setup-state` subcommand routes through Commander `command:*` listener with exit 2 + spec-matching message (fixes S-31). Plus `scaffoldAgentsMd` helper extraction consolidating init+merger duplication. +22 regression tests.
+  - [x] **PR #116** (`Version bump: patch`) — `/setup` template correctness. SCAN state spells out `schemaVersion: 1` in a worked JSON example (fixes S-14 schemaVersion omission); CONFIRM_MEDIUM Storage rule forbids raw `item.value` objects and validator error message points at it (fixes S-14 readme object shape); new `### Detection-skip matrix` auto-skips 4 questionIds when scanner already answered them (`story.problem`, `arch.classification`, `arch.external_apis`, `workflow.new_dev_steps`) — fixes S-17 all-22-questions-asked; new `--from-file <path>` flag on `worclaude setup-state save` (mutually exclusive with `--stdin`); template switches every save to `Write`→draft→`--from-file` pattern, eliminating shell-interpolation safety prompts (fixes S-25); `Bash(worclaude:*)` permissions added to `templates/settings/base.json`; INTERVIEW ENTRY Reply classification step with explicit Answer/Skip/Cancel/Back/OFF-TOPIC buckets — "Prefer off-topic when uncertain" — fixes S-23. +19 regression tests.
+  - [x] **PR #117** (`Version bump: minor`) — UX1 + UX4 on `/setup` template. New `### Interaction mode` contract with four modes (`selectable` / `multi-selectable` / `hybrid` / `free-text`) and a per-question table assigning 10 non-default entries: 5 selectable (`arch.classification`, `conventions.errors`/`logging`/`api_format`, `verification.staging`), 2 multi-selectable (`arch.external_apis`, `verification.required_checks`), 3 hybrid (`features.core`/`nice_to_have`/`non_goals`). Fallback to numbered-list for Claude Code versions without `AskUserQuestion`. Rule #5 whitelist extended to permit `AskUserQuestion` at INTERVIEW states only. CONFIRM prompt redesign: no more 80-char readme truncation, `→ Will be saved as: <target>` sub-line on every detected item, `?`/`help` command with Field-help block. New `### Field-help table` lists all 14 detection fields + 22 questionIds with plain-English description, target output file/section, and example answer — single source of truth for consequence-line rendering and `?` help command. +12 regression tests.
+  - [x] Release group: **PR #115** (`Version bump: patch`) + **PR #116** (`Version bump: patch`) + **PR #117** (`Version bump: minor`) + **PR #114** (`Version bump: none`). Highest bump: minor. v2.6.3 → v2.7.0. No missing declarations.
+
 ## Stats
 
 - 10 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state
@@ -518,7 +528,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 729 tests across 53 test files
+- 782 tests across 57 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

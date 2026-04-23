@@ -5,6 +5,7 @@ import {
   readTemplate,
   substituteVariables,
   scaffoldFile,
+  scaffoldAgentsMd,
   mergeSettings,
   scaffoldHooks,
   scaffoldPluginJson,
@@ -230,7 +231,12 @@ async function mergeCommands(projectRoot, existingScan, report) {
   }
 }
 
-export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSettings, report) {
+export async function mergeSettingsPermissionsAndHooks(
+  projectRoot,
+  workflowSettings,
+  report,
+  options = {}
+) {
   const existingRaw = await readFile(path.join(projectRoot, '.claude', 'settings.json'));
   const existing = parseUserJson(existingRaw, '.claude/settings.json');
 
@@ -277,8 +283,10 @@ export async function mergeSettingsPermissionsAndHooks(projectRoot, workflowSett
       if (conflictCandidate) {
         matched.add(conflictCandidate);
 
-        // Tier 3: conflict — ask user
-        const resolution = await promptHookConflict(category, conflictCandidate, workflowEntry);
+        // Tier 3: conflict — ask user (or auto-keep if --yes)
+        const resolution = await promptHookConflict(category, conflictCandidate, workflowEntry, {
+          yes: options.yes,
+        });
 
         if (resolution === 'replace') {
           const idx = existingEntries.indexOf(conflictCandidate);
@@ -428,19 +436,10 @@ async function handleClaudeMd(projectRoot, existingScan, variables, selections, 
   }
 }
 
-async function mergeAgentsMd(projectRoot, existingScan, variables, report) {
-  if (!existingScan.hasAgentsMd) {
-    await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
-    report.agentsMdHandling = 'created';
-  } else {
-    await scaffoldFile(
-      'core/agents-md.md',
-      workflowRefRelPath('root/AGENTS.md'),
-      variables,
-      projectRoot
-    );
-    report.agentsMdHandling = 'saved-alongside';
-  }
+async function mergeAgentsMd(projectRoot, variables, report) {
+  const result = await scaffoldAgentsMd(projectRoot, variables);
+  // Preserve the existing report-field vocabulary for downstream observability.
+  report.agentsMdHandling = result === 'created' ? 'created' : 'saved-alongside';
 }
 
 // --- Main merge function ---
@@ -498,7 +497,7 @@ export async function performMerge(
   // Stop spinner before CLAUDE.md merge — interactive prompts for section selection
   if (spinner) spinner.stop();
   await handleClaudeMd(projectRoot, existingScan, variables, selections, report);
-  await mergeAgentsMd(projectRoot, existingScan, variables, report);
+  await mergeAgentsMd(projectRoot, variables, report);
   if (spinner) spinner.start();
 
   return report;

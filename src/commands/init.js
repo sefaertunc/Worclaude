@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import {
   scaffoldFile,
+  scaffoldAgentsMd,
   updateGitignore,
   scaffoldHooks,
   scaffoldPluginJson,
@@ -297,8 +298,13 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await scaffoldFile('core/claude-md.md', 'CLAUDE.md', variables, projectRoot);
     spinner.text = 'Created CLAUDE.md';
 
-    await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
-    spinner.text = 'Created AGENTS.md';
+    // "Fresh" means no .claude/workflow-meta.json, but the user may still have
+    // an AGENTS.md from Cursor/Codex/another tool. The helper preserves it.
+    const agentsMdResult = await scaffoldAgentsMd(projectRoot, variables);
+    spinner.text =
+      agentsMdResult === 'preserved-with-ref'
+        ? 'Preserved existing AGENTS.md (template saved to workflow-ref)'
+        : 'Created AGENTS.md';
 
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
     spinner.text = 'Created .claude/settings.json';

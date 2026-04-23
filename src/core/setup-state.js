@@ -114,7 +114,10 @@ function validateState(state) {
   }
   for (const [k, v] of Object.entries(state.mediumResolved)) {
     if (typeof v !== 'string') {
-      throw new Error(`state.mediumResolved.${k} must be a string`);
+      throw new Error(
+        `state.mediumResolved.${k} must be a string (got ${typeof v}; ` +
+          `stringify the rendered value per the CONFIRM_MEDIUM Storage rule)`
+      );
     }
   }
   if (!state.interviewAnswers || typeof state.interviewAnswers !== 'object') {

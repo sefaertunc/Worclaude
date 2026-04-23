@@ -7,6 +7,7 @@ import {
   mergeSettings,
   readTemplate,
   scaffoldFile,
+  scaffoldAgentsMd,
   getTemplatesDir,
   updateGitignore,
   slugifyPluginName,
@@ -106,6 +107,40 @@ describe('scaffoldFile', () => {
     const content = await fs.readFile(path.join(tmpDir, 'SPEC.md'), 'utf-8');
     expect(content).toContain('TestProj');
     expect(content).toContain('A test');
+  });
+});
+
+describe('scaffoldAgentsMd', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) {
+      await fs.remove(tmpDir);
+      tmpDir = null;
+    }
+  });
+
+  it('writes AGENTS.md and returns "created" when none exists', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-agents-md-create-'));
+    const result = await scaffoldAgentsMd(tmpDir, { project_name: 'p', description: 'd' });
+    expect(result).toBe('created');
+    expect(await fs.pathExists(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+    const refPath = path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md');
+    expect(await fs.pathExists(refPath)).toBe(false);
+  });
+
+  it('preserves pre-existing AGENTS.md and returns "preserved-with-ref"', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-agents-md-preserve-'));
+    const original = '# Cursor AGENTS.md\n- user content\n';
+    await fs.writeFile(path.join(tmpDir, 'AGENTS.md'), original);
+
+    const result = await scaffoldAgentsMd(tmpDir, { project_name: 'p', description: 'd' });
+
+    expect(result).toBe('preserved-with-ref');
+    const preserved = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(preserved).toBe(original);
+    const refPath = path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md');
+    expect(await fs.pathExists(refPath)).toBe(true);
   });
 });
 
@@ -467,4 +502,22 @@ describe('scaffoldHooks filters non-script files', () => {
     expect(entries).toContain('skill-hint.cjs');
     expect(entries).toContain('pre-compact-save.cjs');
   });
+
+  it.skipIf(process.platform === 'win32')(
+    'sets 0o755 on every copied hook script (POSIX)',
+    async () => {
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-hooks-chmod-'));
+      await scaffoldHooks(tmpDir);
+      const hooksDir = path.join(tmpDir, '.claude', 'hooks');
+      const entries = (await fs.readdir(hooksDir)).filter(
+        (f) => f.endsWith('.cjs') || f.endsWith('.js')
+      );
+      expect(entries.length).toBeGreaterThan(0);
+      for (const entry of entries) {
+        const stat = await fs.stat(path.join(hooksDir, entry));
+        // At least one exec bit set across user/group/other (0o111 mask).
+        expect(stat.mode & 0o111).not.toBe(0);
+      }
+    }
+  );
 });

@@ -24,6 +24,10 @@ export function semverLessThan(a, b) {
   return false;
 }
 
+export function semverGreaterThan(a, b) {
+  return semverLessThan(b, a);
+}
+
 // --- Agent description lookup ---
 
 const UNIVERSAL_AGENT_DESCRIPTIONS = {

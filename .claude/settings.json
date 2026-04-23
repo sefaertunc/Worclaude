@@ -87,7 +87,11 @@
       "Edit(.eslintrc*)",
       "Edit(vite.config.*)",
       "Edit(next.config.*)",
-      "Edit(webpack.config.*)"
+      "Edit(webpack.config.*)",
+      "// -- Worclaude Self --",
+      "Bash(worclaude:*)",
+      "Bash(worclaude scan:*)",
+      "Bash(worclaude setup-state:*)"
     ]
   },
   "hooks": {
