@@ -390,7 +390,7 @@ export async function upgradeCommand(options = {}) {
   // v2.5.1 migration: relocate legacy ref files. Runs before any early-exit
   // so version-match projects with leftover legacy siblings still self-heal.
   // Idempotent (skips already-migrated files).
-  const preEarlyExitRefReport = await migrateWorkflowRefLocation(projectRoot);
+  const refRelocationReport = await migrateWorkflowRefLocation(projectRoot);
 
   const categories = await categorizeFiles(projectRoot, meta);
   const claudeMdContent = await readClaudeMd(projectRoot);
@@ -398,7 +398,7 @@ export async function upgradeCommand(options = {}) {
 
   const repairWork = hasRepairWork(plan);
   const templateWork = hasTemplateWork(categories, plan);
-  const refWork = preEarlyExitRefReport.moved > 0;
+  const refWork = refRelocationReport.moved > 0;
 
   // Version match + no repair + no template work + no ref relocation → up to date.
   if (versionMatch && !repairWork && !templateWork && !refWork) {
@@ -417,7 +417,7 @@ export async function upgradeCommand(options = {}) {
       variables,
       dryRun,
       yes,
-      refRelocationReport: preEarlyExitRefReport,
+      refRelocationReport,
     });
     return;
   }
@@ -487,9 +487,7 @@ export async function upgradeCommand(options = {}) {
       spinner.start('Applying updates...');
     }
 
-    // v2.5.1 migration ran before the early-exit check; reuse its report so
-    // we don't re-scan the legacy subdirs unnecessarily.
-    const refRelocationReport = preEarlyExitRefReport;
+    // v2.5.1 migration already ran before the early-exit check (above).
     if (refRelocationReport.moved > 0) {
       spinner.text = `Relocated ${refRelocationReport.moved} legacy ref file(s)...`;
     }
