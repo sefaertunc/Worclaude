@@ -163,6 +163,17 @@ describe('setup-state module', () => {
       ).rejects.toThrow();
     });
 
+    it('rejects object values in mediumResolved with an actionable error', async () => {
+      const stateWithObject = makeValidState({
+        mediumResolved: {
+          readme: { projectDescription: 'x', fullPath: 'README.md' },
+        },
+      });
+      await expect(saveSetupState(tmpRoot, stateWithObject)).rejects.toThrow(
+        /state\.mediumResolved\.readme must be a string .*got object.*CONFIRM_MEDIUM Storage rule/
+      );
+    });
+
     it('accepts <state>.unchecked.<field> keys per the routing table', async () => {
       const state = makeValidState({
         interviewAnswers: {
