@@ -65,6 +65,11 @@ normally apply.
    - Read: `.claude/cache/setup-state.json`
    - Write: `.claude/cache/setup-state.draft.json` (state-save staging
      only — overwritten each save).
+   - Tool: `AskUserQuestion` (INTERVIEW states only, per the
+     Interaction mode contract — `selectable` / `multi-selectable`
+     questions). Not permitted at CONFIRM_HIGH / CONFIRM_MEDIUM:
+     those render VERBATIM per rule #7 so the text-parser contract
+     stays stable.
 
    At WRITE state the whitelist RELAXES to additionally permit:
 
@@ -223,21 +228,26 @@ ENTRY:
   `highConfirmedRejected: []`, and transition to CONFIRM_MEDIUM
   (trivial exit per rule #1).
 - Otherwise render VERBATIM (wrapped in a triple-backtick fenced code
-  block):
+  block). Below every item add a dim "→ Will be saved as: `<target>`"
+  line pulled from the **Field-help table** so the user knows what
+  accepting means:
 
   ```
   I scanned your project. Please confirm the high-confidence
   detections below. Reply with the numbers of any items that are
-  WRONG (e.g., "2, 5"), or reply "ok" to accept all.
+  WRONG (e.g., "2, 5"), or reply "ok" to accept all, or "?" for help.
 
     [x] 1. <formatField(item1.field)>: <renderValue(item1)> (from <item1.source>)
+           → Will be saved as: <target1>
     [x] 2. ...
+           → Will be saved as: <target2>
 
   Your response:
   ```
 
   `<formatField>` and `<renderValue>` are defined in the **Field
-  rendering table** below.
+  rendering table** below. `<target>` is pulled from the **Field-help
+  table** (also below) and must be included verbatim per the table.
 
 Response parsing (case-insensitive, whitespace trimmed):
 
@@ -247,9 +257,14 @@ Response parsing (case-insensitive, whitespace trimmed):
 - One or more integers (comma or space separated) in range 1..N →
   those items are rejected; split fields into accepted/rejected
   accordingly (in rendered order).
+- `?` | `help` → render the **Field-help** block for EACH displayed
+  field (description + target + example) without advancing state. Then
+  restate the prompt above (same text, same items). Do NOT persist a
+  mutation for the help render.
 - Anything else (including integers out of range) → rule #3 fires:
-  restate with "I need either 'ok' or numbers from 1 to `<N>` matching
-  the items above (e.g., '2, 5'). To cancel, type `cancel setup`."
+  restate with "I need either 'ok', numbers from 1 to `<N>` matching
+  the items above (e.g., '2, 5'), or `?` for help. To cancel, type
+  `cancel setup`."
 
 State file mutation: persist the updated arrays via
 `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
@@ -275,9 +290,10 @@ ENTRY:
   <formatField(field)> (detected from <source>):
 
     1. <renderValue(item)>
+       → Will be saved as: <target>
     2. Other (I'll type my own)
 
-  Reply with the number of your choice (default: 1):
+  Reply with the number of your choice (default: 1), or `?` for help:
   ```
 
   **Shape B — `candidates` is a non-empty array** (emitted by
@@ -285,6 +301,7 @@ ENTRY:
 
   ```
   <formatField(field)> (detected from <source>):
+  → Will be saved as: <target>
 
     1. <candidates[0]>
     2. <candidates[1]>
@@ -292,8 +309,11 @@ ENTRY:
     N. <candidates[N-1]>
     N+1. Other (I'll type my own)
 
-  Reply with the number of your choice (default: 1):
+  Reply with the number of your choice (default: 1), or `?` for help:
   ```
+
+  `<target>` comes from the **Field-help table** below. Render it
+  verbatim per the table.
 
   `candidates[0]` equals `item.value` — default-1 accepts the detected
   value.
@@ -315,8 +335,13 @@ Response parsing (per item):
   follow-up free-text prompt: "Go ahead — what's the value you'd like
   to use?". Store the trimmed reply.
 - Integer in range `2..N` (shape B only) → store `candidates[k-1]`.
-- Anything else → restate with "I need a number from 1 to `<max>`, or
-  empty for the default. To cancel, type `cancel setup`."
+- `?` | `help` → render the **Field-help** block for this field
+  (description + target + example) without advancing state. Then
+  restate the prompt above. Do NOT persist a mutation for the help
+  render.
+- Anything else → restate with "I need a number from 1 to `<max>`,
+  empty for the default, or `?` for help. To cancel, type
+  `cancel setup`."
 
 State file mutation: after EACH item is resolved (not batched),
 append to `mediumResolved` and persist.
@@ -345,7 +370,15 @@ Shared ENTRY protocol for each INTERVIEW state:
 - If ALL `questionId`s for this state are present, trivially-exit:
   persist a state update (only `currentState` and `updatedAt` change)
   and advance.
-- Ask remaining questions conversationally, in enumeration order.
+- Ask remaining questions in enumeration order. For each question,
+  look up its `interactionMode` in the **Per-question interaction
+  table** below and use the matching tool:
+  - `selectable` / `multi-selectable` → `AskUserQuestion`
+  - `hybrid` → pre-fill from the listed detection source, then offer
+    accept / edit / replace
+  - `free-text` → ordinary text prompt
+  The Storage rule (`interviewAnswers[<questionId>]` must be a string)
+  applies uniformly — no object shapes regardless of mode.
 - **Reply classification** — before recording a reply as
   `interviewAnswers[<questionId>]`, classify it:
   - **Answer**: a response that plausibly fits the semantic scope of
@@ -488,6 +521,78 @@ detection):
 - `verification.staging` — staging/preview environment.
 - `verification.required_checks` — CI required checks.
 
+### Interaction mode
+
+Each interview question is asked in ONE of four modes. The mode lives
+next to the question in the table below. This controls which tool you
+use to collect the answer — text input, menu, checklist, or hybrid.
+
+- `selectable` — invoke the `AskUserQuestion` tool with the listed
+  choices, `multiSelect: false`. The user gets arrow-key navigation.
+  If the user picks "Other (I'll type my own)", follow up with a
+  free-text prompt: "Go ahead — what's the value you'd like to use?".
+- `multi-selectable` — invoke `AskUserQuestion` with `multiSelect:
+  true` and the listed choices. Always prepend `None` as the first
+  choice and append "Other (I'll type my own)" as the last. On
+  "Other", follow up with free-text. The stored value joins selections
+  with `, ` (e.g. `"REST, GraphQL"`). Selecting `None` alone stores
+  `"none"`.
+- `hybrid` — pre-fill a bullet list from detection (see the question
+  row for which detection field feeds it) and ask: "I pre-filled this
+  from your README/scan. Accept, edit, or replace?". `accept` stores
+  the pre-filled text verbatim; `edit` offers free-text with the
+  pre-fill visible; `replace` starts from empty.
+- `free-text` — ordinary text prompt (default). No `AskUserQuestion`.
+
+Regardless of mode, `interviewAnswers[<questionId>]` MUST be a string
+per the Storage rule. For `multi-selectable`, join with `, `. For
+`hybrid`, store the final accepted or edited text.
+
+**Fallback.** If `AskUserQuestion` is unavailable in the current
+Claude Code version (or the tool call fails), degrade to a
+numbered-list free-text prompt using CONFIRM_HIGH-style parsing:
+
+```
+<question-label>:
+
+  1. <choice 1>
+  2. <choice 2>
+  ...
+  N+1. Other (I'll type my own)
+
+Reply with the number of your choice, or type your own answer:
+```
+
+### Per-question interaction table
+
+| questionId                     | Mode             | Choices (or pre-fill source)                                              |
+| ------------------------------ | ---------------- | ------------------------------------------------------------------------- |
+| `story.audience`               | free-text        | —                                                                         |
+| `story.problem`                | free-text        | —                                                                         |
+| `story.analogs`                | free-text        | —                                                                         |
+| `arch.classification`          | selectable       | monolith, modular monolith, microservices, serverless, library, CLI, other |
+| `arch.modules`                 | free-text        | —                                                                         |
+| `arch.entities`                | free-text        | —                                                                         |
+| `arch.external_apis`           | multi-selectable | `<detected externalApis>` + None + Other                                  |
+| `arch.stack_rationale`         | free-text        | —                                                                         |
+| `features.core`                | hybrid           | pre-fill from readme bullets (projectDescription / headings)              |
+| `features.nice_to_have`        | hybrid           | pre-fill from readme bullets                                              |
+| `features.non_goals`           | hybrid           | empty pre-fill (always edit from scratch unless user picks `accept`)      |
+| `workflow.new_dev_steps`       | free-text        | —                                                                         |
+| `workflow.env_values`          | free-text        | —                                                                         |
+| `conventions.patterns`         | free-text        | —                                                                         |
+| `conventions.errors`           | selectable       | throw, Result<T,E>, null, silent catch, mixed, other                      |
+| `conventions.logging`          | selectable       | console, structured JSON, dedicated logger, none, other                   |
+| `conventions.api_format`       | selectable       | REST, GraphQL, gRPC, none, other                                          |
+| `conventions.naming`           | free-text        | —                                                                         |
+| `conventions.rules`            | free-text        | —                                                                         |
+| `verification.manual`          | free-text        | —                                                                         |
+| `verification.staging`         | selectable       | yes, no                                                                   |
+| `verification.required_checks` | multi-selectable | `<detected ci.workflows>` + None + Other                                  |
+
+10 non-default entries: 5 `selectable`, 2 `multi-selectable`, 3
+`hybrid`. The other 12 questions stay `free-text`.
+
 ### Rejected-field re-ask routing
 
 Fields in `highConfirmedRejected` are re-asked as one sub-question
@@ -528,6 +633,74 @@ All OTHER `questionId`s are always asked — the scanner cannot infer
 them (audience, rationale, conventions, features, etc. are user
 knowledge the detector has no access to).
 
+### Field-help table
+
+Drives the `?` / `help` command (CONFIRM_HIGH, CONFIRM_MEDIUM, and
+INTERVIEW states) AND the "→ Will be saved as: `<target>`" line on
+every CONFIRM prompt. Keep the `<target>` column stable — parsers
+downstream don't match on it, but users read it for orientation.
+
+Detection fields (used at CONFIRM_HIGH and CONFIRM_MEDIUM):
+
+| Field            | Plain-English description                                     | `<target>` (where accepting lands)                          | Example answer                            |
+| ---------------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------- |
+| `ci`             | Which CI provider + workflow files run on push/PR             | `## Verification` section of `docs/spec/SPEC.md`            | `GitHub Actions, 2 workflows`             |
+| `deployment`     | Where the app gets deployed                                   | `## Architecture` section of `docs/spec/SPEC.md`            | `Vercel`                                  |
+| `envVariables`   | Names of env variables the project reads                      | `## Workflow` section of `docs/spec/SPEC.md`                | `DATABASE_URL, STRIPE_SECRET_KEY`         |
+| `externalApis`   | Third-party APIs / SDKs the project integrates with           | `backend-conventions/SKILL.md` External APIs section        | `Stripe, Sentry`                          |
+| `frameworks`     | Application frameworks the project uses                       | `## Tech Stack` section of `CLAUDE.md`                      | `Next.js 14.2.3, React 18.2.0`            |
+| `language`       | Primary source language                                       | `## Tech Stack` section of `CLAUDE.md`                      | `TypeScript`                              |
+| `linting`        | Linters + formatters the project runs                         | `## Tech Stack` section of `CLAUDE.md`                      | `ESLint, Prettier`                        |
+| `monorepo`       | Whether the repo is a monorepo + which tool                   | `## Architecture` section of `docs/spec/SPEC.md`            | `pnpm (3 packages)`                       |
+| `orm`            | Database ORM / schema driver                                  | `## Tech Stack` of `CLAUDE.md` + backend-conventions/SKILL  | `Prisma`                                  |
+| `packageManager` | How you install dependencies                                  | `## Tech Stack` of `CLAUDE.md` + `## Commands`              | `pnpm`                                    |
+| `readme`         | Project description pulled from `README.md`                   | `## Overview` section of `docs/spec/SPEC.md`                | a paragraph of text                       |
+| `scripts`        | dev / test / build / lint script names                        | `## Commands` section of `CLAUDE.md`                        | `dev=dev test=test build=build lint=lint` |
+| `specDocs`       | Spec / design docs already present in the repo                | `## Overview` of `docs/spec/SPEC.md` (referenced, not copied) | `2 docs`                                  |
+| `testing`        | Test framework + config file                                  | `## Verification` of `docs/spec/SPEC.md`                    | `vitest (vitest.config.ts)`               |
+
+Interview questions (used at INTERVIEW states):
+
+| `questionId`                   | Plain-English description                                 | `<target>`                                                     | Example answer                                |
+| ------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| `story.audience`               | Who is this project for?                                  | `## Overview` of `docs/spec/SPEC.md`                           | `internal developers maintaining our CLI`     |
+| `story.problem`                | What problem does it solve?                               | `## Overview` of `docs/spec/SPEC.md`                           | `scaffolds a worclaude workflow into any repo` |
+| `story.analogs`                | Similar products / projects you're modeling after         | `## Overview` of `docs/spec/SPEC.md`                           | `create-react-app, but for Claude workflows`  |
+| `arch.classification`          | System shape: monolith / services / library / CLI / etc.  | `## Architecture` of `docs/spec/SPEC.md`                       | `modular monolith`                            |
+| `arch.modules`                 | Directory purposes and in-house packages                  | `## Architecture` of `docs/spec/SPEC.md`                       | `src/commands — CLI entry points`             |
+| `arch.entities`                | Core database entities (if applicable)                    | `## Architecture` of `docs/spec/SPEC.md`                       | `User, Project, Session`                      |
+| `arch.external_apis`           | External APIs beyond SDK detection                        | `## Architecture` of `docs/spec/SPEC.md`                       | `Stripe, Sentry`                              |
+| `arch.stack_rationale`         | Why these framework/stack choices                         | `## Architecture` of `docs/spec/SPEC.md`                       | `pnpm for workspace perf`                     |
+| `features.core`                | Must-have features                                        | `## Features` of `docs/spec/SPEC.md`                           | `init / upgrade / doctor / scan`              |
+| `features.nice_to_have`        | Nice-to-have features                                     | `## Features` of `docs/spec/SPEC.md`                           | `plugin.json generation`                      |
+| `features.non_goals`           | Explicit non-goals                                        | `## Features` of `docs/spec/SPEC.md`                           | `no Windows-specific path handling`           |
+| `workflow.new_dev_steps`       | Dev setup steps beyond README                             | `## Workflow` of `docs/spec/SPEC.md`                           | `copy .env.example → .env then fill secrets`  |
+| `workflow.env_values`          | Guidance for env var values                               | `## Workflow` of `docs/spec/SPEC.md`                           | `DATABASE_URL: local Postgres on :5432`       |
+| `conventions.patterns`         | Code patterns the project uses                            | `project-patterns/SKILL.md`                                    | `Result<T, E> for fallible ops`               |
+| `conventions.errors`           | Error-handling approach                                   | `backend-conventions/SKILL.md`                                 | `throw / Result<T,E> / silent catch`          |
+| `conventions.logging`          | Logging approach                                          | `backend-conventions/SKILL.md`                                 | `pino structured logger`                      |
+| `conventions.api_format`       | API response shape                                        | `backend-conventions/SKILL.md`                                 | `REST JSON: {data, error}`                    |
+| `conventions.naming`           | Naming conventions (vars, files, branches)                | `project-patterns/SKILL.md`                                    | `camelCase TS / snake_case Python / kebab branches` |
+| `conventions.rules`            | Never / always project rules                              | `project-patterns/SKILL.md`                                    | `never push to main`                          |
+| `verification.manual`          | Manual verification steps                                 | `## Verification` of `docs/spec/SPEC.md`                       | `run /init against tmp/ and eyeball output`   |
+| `verification.staging`         | Whether there's a staging / preview env                   | `## Verification` of `docs/spec/SPEC.md`                       | `yes — Vercel preview per PR`                 |
+| `verification.required_checks` | CI required checks gating merge                           | `## Verification` of `docs/spec/SPEC.md`                       | `tests, lint, type-check`                     |
+
+Help-render format when the user types `?` at a CONFIRM or INTERVIEW
+prompt — render in a fenced code block:
+
+```
+Help — <formatField(field) or questionId>
+
+  What it is: <description>
+  Will be saved as: <target>
+  Example answer: <example>
+```
+
+For CONFIRM_HIGH (multiple fields on one prompt), render one Help
+block per item. After rendering help, restate the original prompt
+verbatim without advancing.
+
 ---
 
 ## Field rendering table
@@ -548,7 +721,7 @@ CONFIRM_HIGH and CONFIRM_MEDIUM to render `<renderValue(item)>`.
 | `scripts`        | `{dev, test, build, lint, ...}`                | `dev=<dev.key> test=<test.key> build=<build.key> lint=<lint.key>` — omit null slots; all null → `(no standard scripts)` |
 | `envVariables`   | `{names: string[], inferredServices: [...]}`   | `<N> variable(s)` (singular when `N === 1`; 0 → omit)                |
 | `externalApis`   | `string[]`                                     | joined by `, ` (empty → omit)                                        |
-| `readme`         | `{projectDescription, ...}`                    | `<projectDescription>` truncated to 80 chars with `…` suffix          |
+| `readme`         | `{projectDescription, ...}`                    | `<projectDescription>` rendered verbatim; soft-wrap at 100 chars per line for display only (no `…` truncation — user needs the full text to decide whether to accept) |
 | `specDocs`       | `[{path, firstHeading}, ...]`                  | `<N> doc(s)` (empty → omit)                                          |
 | `monorepo`       | `{tool, packagePaths, ...}`                    | `<tool> (<N> packages)`                                              |
 | fallback scalar  | string / number / boolean                      | `String(value)`                                                      |
