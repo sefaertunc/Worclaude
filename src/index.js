@@ -101,4 +101,14 @@ setupState
   .option('--path <dir>', 'Project root', process.cwd())
   .action((options) => setupStateCommand('resume-info', options));
 
+// Catch unknown setup-state subcommands with the spec-matching exit code 2.
+// Commander's default would exit 1, but setup-state's own arg-error contract
+// (see src/commands/setup-state.js) is exit 2 for bad inputs.
+setupState.on('command:*', (operands) => {
+  console.error(
+    `Error: unknown setup-state subcommand: ${operands[0]} (expected one of show, save, reset, resume-info)`
+  );
+  process.exitCode = 2;
+});
+
 program.parse();

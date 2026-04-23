@@ -242,6 +242,31 @@ describe('init command', () => {
     expect(content).not.toContain('/setup');
   });
 
+  it('preserves a pre-existing AGENTS.md (Cursor-style) and saves template alongside', async () => {
+    const cursorContent = [
+      '# AGENTS.md',
+      '',
+      'From Cursor.',
+      '',
+      '## Agents',
+      '- agent_one: does thing',
+    ].join('\n');
+    await fs.writeFile(path.join(tmpDir, 'AGENTS.md'), cursorContent);
+
+    await initCommand();
+
+    // Original content preserved byte-for-byte
+    const preserved = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(preserved).toBe(cursorContent);
+
+    // Worclaude's template lands directly under .claude/workflow-ref/AGENTS.md
+    // (root-level files are stored without the 'root/' prefix per workflowRefRelPath).
+    const refPath = path.join(tmpDir, '.claude', 'workflow-ref', 'AGENTS.md');
+    expect(await fs.pathExists(refPath)).toBe(true);
+    const refContent = await fs.readFile(refPath, 'utf-8');
+    expect(refContent).toContain('test-project');
+  });
+
   it('CLAUDE.md stays under 200 lines after interpolation', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');

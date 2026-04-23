@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'fs-extra';
 import { fileExists, readFile, writeFile } from '../utils/file.js';
+import { workflowRefRelPath } from './file-categorizer.js';
 import { UNIVERSAL_AGENTS } from '../data/agents.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,25 @@ export async function scaffoldFile(templateRelativePath, destRelativePath, varia
   const content = substituteVariables(template, variables);
   const destPath = path.join(root, destRelativePath);
   await writeFile(destPath, content);
+}
+
+// Scaffold AGENTS.md at the project root, preserving any pre-existing file.
+// When AGENTS.md exists (user-authored, Cursor/Codex/etc.), the template lands
+// under .claude/workflow-ref/AGENTS.md so the user can diff + merge.
+// Returns 'created' on fresh write or 'preserved-with-ref' when skipping.
+export async function scaffoldAgentsMd(projectRoot, variables) {
+  const agentsMdPath = path.join(projectRoot, 'AGENTS.md');
+  if (await fileExists(agentsMdPath)) {
+    await scaffoldFile(
+      'core/agents-md.md',
+      workflowRefRelPath('root/AGENTS.md'),
+      variables,
+      projectRoot
+    );
+    return 'preserved-with-ref';
+  }
+  await scaffoldFile('core/agents-md.md', 'AGENTS.md', variables, projectRoot);
+  return 'created';
 }
 
 export async function scaffoldDirectory(templateDir, destDir, variables, projectRoot) {
@@ -98,10 +118,21 @@ export async function scaffoldHooks(projectRoot) {
   const entries = await fs.readdir(hooksTemplateDir);
   for (const entry of entries) {
     if (!entry.endsWith('.cjs') && !entry.endsWith('.js')) continue;
-    await fs.copy(path.join(hooksTemplateDir, entry), path.join(destDir, entry), {
+    const destPath = path.join(destDir, entry);
+    await fs.copy(path.join(hooksTemplateDir, entry), destPath, {
       overwrite: false,
       errorOnExist: false,
     });
+    // Ensure consistent exec bits on POSIX. Windows has no chmod semantics
+    // worth enforcing; node+fs-extra no-ops there anyway, but guard to keep
+    // the intent obvious.
+    if (process.platform !== 'win32') {
+      try {
+        await fs.chmod(destPath, 0o755);
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+    }
   }
 }
 
