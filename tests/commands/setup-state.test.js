@@ -157,6 +157,71 @@ describe('setupStateCommand', () => {
     });
   });
 
+  describe('save --from-file', () => {
+    it('reads valid JSON from a file path, writes it, and exits 0', async () => {
+      const state = makeValidSetupState({ currentState: 'INTERVIEW_FEATURES' });
+      const inputPath = path.join(tmpRoot, 'input.json');
+      await fs.writeFile(inputPath, JSON.stringify(state));
+
+      await setupStateCommand('save', { path: tmpRoot, fromFile: inputPath });
+
+      expect(process.exitCode).toBe(0);
+      const onDisk = JSON.parse(await fs.readFile(getStateFilePath(tmpRoot), 'utf-8'));
+      expect(onDisk.currentState).toBe('INTERVIEW_FEATURES');
+    });
+
+    it('exits 1 with path in error when the file does not exist', async () => {
+      await setupStateCommand('save', {
+        path: tmpRoot,
+        fromFile: path.join(tmpRoot, 'does-not-exist.json'),
+      });
+      expect(process.exitCode).toBe(1);
+      const errOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(errOutput).toMatch(/Error reading/);
+      expect(errOutput).toMatch(/does-not-exist\.json/);
+    });
+
+    it('exits 1 with file name in JSON-parse error', async () => {
+      const inputPath = path.join(tmpRoot, 'malformed.json');
+      await fs.writeFile(inputPath, '{ not valid json');
+
+      await setupStateCommand('save', { path: tmpRoot, fromFile: inputPath });
+
+      expect(process.exitCode).toBe(1);
+      const errOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(errOutput).toMatch(/invalid JSON on/);
+      expect(errOutput).toMatch(/malformed\.json/);
+    });
+
+    it('rejects --stdin and --from-file together with exit 2', async () => {
+      const inputPath = path.join(tmpRoot, 'input.json');
+      await fs.writeFile(inputPath, '{}');
+
+      await setupStateCommand('save', {
+        path: tmpRoot,
+        stdin: true,
+        fromFile: inputPath,
+        inputStream: Readable.from(['{}']),
+      });
+
+      expect(process.exitCode).toBe(2);
+      const errOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect(errOutput).toMatch(/mutually exclusive/);
+    });
+
+    it('end-to-end via the real CLI binary with --from-file', () => {
+      const inputPath = path.join(tmpRoot, 'input.json');
+      fs.writeFileSync(inputPath, JSON.stringify(makeValidSetupState()));
+      const result = spawnSync(
+        'node',
+        [CLI_ENTRY, 'setup-state', 'save', '--from-file', inputPath, '--path', tmpRoot],
+        { encoding: 'utf-8', timeout: 10000 }
+      );
+      expect(result.status).toBe(0);
+      expect(fs.pathExistsSync(getStateFilePath(tmpRoot))).toBe(true);
+    });
+  });
+
   describe('reset', () => {
     it('deletes the state file and exits 0', async () => {
       await saveSetupState(tmpRoot, makeValidSetupState());

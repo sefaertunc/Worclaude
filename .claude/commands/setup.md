@@ -54,12 +54,17 @@ normally apply.
 
    - Shell: `worclaude scan --path .` (SCAN only)
    - Shell: `worclaude setup-state show --path .`
-   - Shell: `worclaude setup-state save --stdin --path .` (pipe the
-     updated state JSON via stdin — the ONLY way state is persisted)
+   - Shell: `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+     — the ONLY way state is persisted. Use `Write` to produce the
+     draft JSON first, then invoke the CLI against that path. This
+     avoids Claude Code's shell-interpolation safety layer that
+     triggers on heredoc-with-variable-expansion patterns.
    - Shell: `worclaude setup-state reset --path .`
    - Shell: `worclaude setup-state resume-info --path .`
    - Read: `.claude/cache/detection-report.json`
    - Read: `.claude/cache/setup-state.json`
+   - Write: `.claude/cache/setup-state.draft.json` (state-save staging
+     only — overwritten each save).
 
    At WRITE state the whitelist RELAXES to additionally permit:
 
@@ -183,10 +188,27 @@ ENTRY:
     - ...
   ```
 
-- State file mutation: write a fresh state with `currentState: "SCAN"`,
-  `startedAt` and `updatedAt` set to now, `detectionReportPath:
-".claude/cache/detection-report.json"`, empty arrays/objects for the
-  remaining fields. Persist via `worclaude setup-state save --stdin`.
+- State file mutation: write a fresh state with EXACTLY these fields.
+  `schemaVersion: 1` is REQUIRED — the validator rejects anything else
+  with `Unsupported schemaVersion: undefined`.
+
+  ```json
+  {
+    "schemaVersion": 1,
+    "currentState": "SCAN",
+    "startedAt": "<ISO timestamp, now>",
+    "updatedAt": "<ISO timestamp, now>",
+    "detectionReportPath": ".claude/cache/detection-report.json",
+    "highConfirmedAccepted": [],
+    "highConfirmedRejected": [],
+    "mediumResolved": {},
+    "interviewAnswers": {}
+  }
+  ```
+
+  Persist via `Write` → `.claude/cache/setup-state.draft.json` →
+  `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+  (see rule #5).
 
 EXIT: advance to CONFIRM_HIGH.
 
@@ -230,7 +252,8 @@ Response parsing (case-insensitive, whitespace trimmed):
   the items above (e.g., '2, 5'). To cancel, type `cancel setup`."
 
 State file mutation: persist the updated arrays via
-`worclaude setup-state save --stdin`.
+`worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+(see rule #5).
 
 EXIT: advance to CONFIRM_MEDIUM.
 
@@ -275,13 +298,23 @@ ENTRY:
   `candidates[0]` equals `item.value` — default-1 accepts the detected
   value.
 
+**Storage rule:** `mediumResolved[field]` MUST be a string. Store the
+exact `renderValue(item)` that was shown to the user on option 1, or
+the user's trimmed free-text on "Other", or `candidates[k-1]` (shape
+B) for a numbered pick. **NEVER store the raw `item.value` object** —
+for fields like `readme` whose detected value is an object
+(`{projectDescription, setupInstructions, fullPath}`) the validator
+will reject the mutation with `state.mediumResolved.<field> must be a
+string`.
+
 Response parsing (per item):
 
-- `""` | `1` | `default` → accept item 1 (the detected value).
+- `""` | `1` | `default` → accept item 1; store `renderValue(item)`
+  as a string per the Storage rule above.
 - The final "Other" number (`2` in shape A, `N+1` in shape B) →
   follow-up free-text prompt: "Go ahead — what's the value you'd like
-  to use?". Record the trimmed reply as the answer.
-- Integer in range `2..N` (shape B only) → accept `candidates[k-1]`.
+  to use?". Store the trimmed reply.
+- Integer in range `2..N` (shape B only) → store `candidates[k-1]`.
 - Anything else → restate with "I need a number from 1 to `<max>`, or
   empty for the default. To cancel, type `cancel setup`."
 
@@ -298,7 +331,14 @@ Shared ENTRY protocol for each INTERVIEW state:
   **QuestionId enumeration** below plus any rejected fields routed to
   this state from CONFIRM_HIGH (per the **Rejected-field re-ask
   routing** table).
-- Skip any `questionId` already present in `interviewAnswers`.
+- Apply the **Detection-skip matrix** (below the enumeration): for
+  each `questionId` whose skip-field is present in
+  `highConfirmedAccepted`, record
+  `interviewAnswers[<questionId>] = "[auto-filled from <field>]"` and
+  persist (same Storage rule applies — the value is always a string)
+  BEFORE evaluating the already-answered skip-list.
+- Skip any `questionId` already present in `interviewAnswers`
+  (including auto-filled ones).
 - Resume preamble (only if ANY questionId is already answered AND at
   least one remains): "Resuming `<STATE_NAME>`. Already have:
   `<comma-list>`. Next: `<next questionId>`."
@@ -306,6 +346,26 @@ Shared ENTRY protocol for each INTERVIEW state:
   persist a state update (only `currentState` and `updatedAt` change)
   and advance.
 - Ask remaining questions conversationally, in enumeration order.
+- **Reply classification** — before recording a reply as
+  `interviewAnswers[<questionId>]`, classify it:
+  - **Answer**: a response that plausibly fits the semantic scope of
+    `<questionId>` (e.g., `arch.classification` expects one of the
+    enum values or a short phrase about system shape; `story.audience`
+    expects a description of people/roles). Record and advance.
+  - **Skip trigger**: `skip` or `skip all` — rules below apply.
+  - **Cancel trigger**: matches rule #4's regex — rule #4 applies.
+  - **Back trigger**: starts with `back` — rule below applies.
+  - **Everything else → OFF-TOPIC.** Apply rule #3: restate the
+    pending question with the off-topic prefix. You MUST NOT record
+    the reply in `interviewAnswers`. You MUST NOT advance
+    `currentState` or the question pointer. Do NOT persist a mutation
+    for this exchange. A topic-mismatched reply is not an answer just
+    because it is a sentence — if the reply would land in a different
+    section of SPEC.md than the one tied to this `<questionId>`, it is
+    off-topic.
+
+  Prefer off-topic when uncertain. An unnecessary restate costs one
+  turn; a mis-filed answer corrupts the state file.
 - `skip` on a question → record `interviewAnswers[<questionId>] =
 "[skipped]"`, advance to the next question in this state.
 - `skip all` → record every remaining `questionId` as `[skipped]`,
@@ -313,13 +373,11 @@ Shared ENTRY protocol for each INTERVIEW state:
 - `back` → restate the current question with the prefix "I can't go
   back within a single setup run. Finish this run and edit the output
   files afterward." (rule #2).
-- Rule #3 applies within interview states: off-topic replies trigger
-  a restatement of the pending question, not an answer to the
-  off-topic question.
 
 State file mutation: after EACH question is answered or skipped,
-persist via `worclaude setup-state save --stdin` BEFORE rendering the
-next prompt. Resume granularity is per-question.
+persist via `worclaude setup-state save --from-file .claude/cache/setup-state.draft.json --path .`
+(see rule #5) BEFORE rendering the next prompt. Resume granularity is
+per-question.
 
 EXIT: advance to the next state; INTERVIEW_VERIFICATION exits to
 WRITE.
@@ -449,6 +507,26 @@ each in the INTERVIEW state that matches the field's natural section.
 enumeration that `saveSetupState` accepts, matched by prefix. The
 `<field>` segment must exactly match a known detector field name AND
 the routing table must map that field to that state prefix.
+
+### Detection-skip matrix
+
+A question in this table is **auto-skipped** when the listed detection
+field is in `highConfirmedAccepted` (i.e., accepted at CONFIRM_HIGH
+and not rejected). Record the skipped answer in `interviewAnswers` as
+`"[auto-filled from <field>]"` BEFORE evaluating the already-answered
+skip-list. This prevents the interview from re-asking questions the
+scanner already answered.
+
+| questionId              | Skip when in `highConfirmedAccepted`           | Notes                                    |
+| ----------------------- | ---------------------------------------------- | ---------------------------------------- |
+| `story.problem`         | `readme` (medium) with non-empty description  | README already describes the problem.    |
+| `arch.classification`   | `monorepo` (high)                              | Pre-fill `"monorepo"`.                   |
+| `arch.external_apis`    | `externalApis` (high)                          | Direct mapping.                          |
+| `workflow.new_dev_steps`| `scripts` (high) AND `readme` (medium)         | Both must be present.                    |
+
+All OTHER `questionId`s are always asked — the scanner cannot infer
+them (audience, rationale, conventions, features, etc. are user
+knowledge the detector has no access to).
 
 ---
 
