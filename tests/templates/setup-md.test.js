@@ -88,4 +88,105 @@ describe('templates/commands/setup.md — contract tests', () => {
       expect(section).toMatch(/[Pp]refer off-topic when uncertain/);
     });
   });
+
+  describe('UX1: AskUserQuestion selectable prompts', () => {
+    it('declares an Interaction mode contract', () => {
+      expect(setupMd).toMatch(/### Interaction mode/);
+      expect(setupMd).toMatch(/`selectable`/);
+      expect(setupMd).toMatch(/`multi-selectable`/);
+      expect(setupMd).toMatch(/`hybrid`/);
+      expect(setupMd).toMatch(/`free-text`/);
+    });
+
+    it('declares a per-question interaction table covering all 10 non-default entries', () => {
+      const section = setupMd.split('### Per-question interaction table')[1].split('###')[0];
+      // selectable (5 entries)
+      expect(section).toMatch(/`arch\.classification`\s*\|\s*selectable/);
+      expect(section).toMatch(/`conventions\.errors`\s*\|\s*selectable/);
+      expect(section).toMatch(/`conventions\.logging`\s*\|\s*selectable/);
+      expect(section).toMatch(/`conventions\.api_format`\s*\|\s*selectable/);
+      expect(section).toMatch(/`verification\.staging`\s*\|\s*selectable/);
+      // multi-selectable (2 entries)
+      expect(section).toMatch(/`arch\.external_apis`\s*\|\s*multi-selectable/);
+      expect(section).toMatch(/`verification\.required_checks`\s*\|\s*multi-selectable/);
+      // hybrid (3 entries)
+      expect(section).toMatch(/`features\.core`\s*\|\s*hybrid/);
+      expect(section).toMatch(/`features\.nice_to_have`\s*\|\s*hybrid/);
+      expect(section).toMatch(/`features\.non_goals`\s*\|\s*hybrid/);
+    });
+
+    it('includes a fallback paragraph for Claude Code versions without AskUserQuestion', () => {
+      const section = setupMd.split('### Interaction mode')[1].split('### Per-question')[0];
+      expect(section).toMatch(/Fallback/);
+      expect(section).toMatch(/numbered-list/);
+    });
+
+    it('INTERVIEW ENTRY protocol routes to AskUserQuestion for selectable modes', () => {
+      const section = setupMd.split('Shared ENTRY protocol for each INTERVIEW state:')[1];
+      expect(section).toMatch(/`interactionMode`/);
+      expect(section).toMatch(/AskUserQuestion/);
+    });
+
+    it('rule #5 whitelist permits AskUserQuestion for INTERVIEW states only', () => {
+      const rule5 = setupMd.split('SCOPED TOOL WHITELIST')[1].split('NO MEMORY PRE-FILL')[0];
+      expect(rule5).toMatch(/AskUserQuestion/);
+      expect(rule5).toMatch(/INTERVIEW states only/);
+    });
+  });
+
+  describe('UX4: CONFIRM prompt redesign — consequence + help + no truncation', () => {
+    it('CONFIRM_HIGH prompt template shows the "Will be saved as" sub-line per item', () => {
+      const section = setupMd.split('### State 2 — CONFIRM_HIGH')[1].split('### State 3')[0];
+      expect(section).toMatch(/→ Will be saved as: <target1>/);
+      expect(section).toMatch(/→ Will be saved as: <target2>/);
+    });
+
+    it('CONFIRM_HIGH prompt offers ? / help and response parsing handles it', () => {
+      const section = setupMd.split('### State 2 — CONFIRM_HIGH')[1].split('### State 3')[0];
+      expect(section).toMatch(/or "\?" for help/);
+      expect(section).toMatch(/`\?` \| `help`/);
+      expect(section).toMatch(/without advancing state/);
+    });
+
+    it('CONFIRM_MEDIUM shape A includes the "Will be saved as" sub-line on option 1', () => {
+      const section = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('###')[0];
+      // Shape A: item 1 has the consequence line
+      expect(section).toMatch(/1\. <renderValue\(item\)>\s*\n\s*→ Will be saved as: <target>/);
+    });
+
+    it('CONFIRM_MEDIUM response parsing handles ? / help', () => {
+      const section = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('###')[0];
+      expect(section).toMatch(/`\?` \| `help`/);
+    });
+
+    it('Field rendering table no longer truncates readme to 80 chars', () => {
+      const section = setupMd.split('## Field rendering table')[1].split('##')[0];
+      expect(section).toMatch(/readme/);
+      expect(section).toMatch(/rendered verbatim/);
+      expect(section).not.toMatch(/truncated to 80 chars/);
+    });
+
+    it('declares a Field-help table covering detection fields and questionIds', () => {
+      expect(setupMd).toMatch(/### Field-help table/);
+      const section = setupMd
+        .split('### Field-help table')[1]
+        .split('## Field rendering table')[0];
+      // Detection fields — spot check
+      expect(section).toMatch(/`packageManager`/);
+      expect(section).toMatch(/`readme`/);
+      expect(section).toMatch(/`testing`/);
+      // QuestionIds — spot check
+      expect(section).toMatch(/`story\.audience`/);
+      expect(section).toMatch(/`conventions\.errors`/);
+      expect(section).toMatch(/`verification\.required_checks`/);
+    });
+
+    it('Field-help table specifies the help-render format', () => {
+      const section = setupMd.split('### Field-help table')[1].split('## Field rendering table')[0];
+      expect(section).toMatch(/Help — <formatField/);
+      expect(section).toMatch(/What it is:/);
+      expect(section).toMatch(/Will be saved as:/);
+      expect(section).toMatch(/Example answer:/);
+    });
+  });
 });
