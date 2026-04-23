@@ -467,4 +467,22 @@ describe('scaffoldHooks filters non-script files', () => {
     expect(entries).toContain('skill-hint.cjs');
     expect(entries).toContain('pre-compact-save.cjs');
   });
+
+  it.skipIf(process.platform === 'win32')(
+    'sets 0o755 on every copied hook script (POSIX)',
+    async () => {
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-hooks-chmod-'));
+      await scaffoldHooks(tmpDir);
+      const hooksDir = path.join(tmpDir, '.claude', 'hooks');
+      const entries = (await fs.readdir(hooksDir)).filter(
+        (f) => f.endsWith('.cjs') || f.endsWith('.js')
+      );
+      expect(entries.length).toBeGreaterThan(0);
+      for (const entry of entries) {
+        const stat = await fs.stat(path.join(hooksDir, entry));
+        // At least one exec bit set across user/group/other (0o111 mask).
+        expect(stat.mode & 0o111).not.toBe(0);
+      }
+    }
+  );
 });

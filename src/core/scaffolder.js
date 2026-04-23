@@ -98,10 +98,21 @@ export async function scaffoldHooks(projectRoot) {
   const entries = await fs.readdir(hooksTemplateDir);
   for (const entry of entries) {
     if (!entry.endsWith('.cjs') && !entry.endsWith('.js')) continue;
-    await fs.copy(path.join(hooksTemplateDir, entry), path.join(destDir, entry), {
+    const destPath = path.join(destDir, entry);
+    await fs.copy(path.join(hooksTemplateDir, entry), destPath, {
       overwrite: false,
       errorOnExist: false,
     });
+    // Ensure consistent exec bits on POSIX. Windows has no chmod semantics
+    // worth enforcing; node+fs-extra no-ops there anyway, but guard to keep
+    // the intent obvious.
+    if (process.platform !== 'win32') {
+      try {
+        await fs.chmod(destPath, 0o755);
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+    }
   }
 }
 
