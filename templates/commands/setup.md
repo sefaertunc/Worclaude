@@ -235,7 +235,7 @@ ENTRY:
   ```
   I scanned your project. Please confirm the high-confidence
   detections below. Reply with the numbers of any items that are
-  WRONG (e.g., "2, 5"), or reply "ok" to accept all, or "?" for help.
+  WRONG (e.g., "2, 5"), or reply "ok" to accept all, or type "help".
 
     [x] 1. <formatField(item1.field)>: <renderValue(item1)> (from <item1.source>)
            → Will be saved as: <target1>
@@ -257,13 +257,15 @@ Response parsing (case-insensitive, whitespace trimmed):
 - One or more integers (comma or space separated) in range 1..N →
   those items are rejected; split fields into accepted/rejected
   accordingly (in rendered order).
-- `?` | `help` → render the **Field-help** block for EACH displayed
-  field (description + target + example) without advancing state. Then
+- `help` → render the **Field-help** block for EACH displayed field
+  (description + target + example) without advancing state. Then
   restate the prompt above (same text, same items). Do NOT persist a
-  mutation for the help render.
+  mutation for the help render. (`?` is intentionally NOT a trigger —
+  Claude Code binds it to a keyboard-shortcut overlay that intercepts
+  the keystroke before /setup sees it.)
 - Anything else (including integers out of range) → rule #3 fires:
   restate with "I need either 'ok', numbers from 1 to `<N>` matching
-  the items above (e.g., '2, 5'), or `?` for help. To cancel, type
+  the items above (e.g., '2, 5'), or type `help`. To cancel, type
   `cancel setup`."
 
 State file mutation: persist the updated arrays via
@@ -293,7 +295,7 @@ ENTRY:
        → Will be saved as: <target>
     2. Other (I'll type my own)
 
-  Reply with the number of your choice (default: 1), or `?` for help:
+  Reply with the number of your choice (default: 1), or type `help`:
   ```
 
   **Shape B — `candidates` is a non-empty array** (emitted by
@@ -309,7 +311,7 @@ ENTRY:
     N. <candidates[N-1]>
     N+1. Other (I'll type my own)
 
-  Reply with the number of your choice (default: 1), or `?` for help:
+  Reply with the number of your choice (default: 1), or type `help`:
   ```
 
   `<target>` comes from the **Field-help table** below. Render it
@@ -335,12 +337,13 @@ Response parsing (per item):
   follow-up free-text prompt: "Go ahead — what's the value you'd like
   to use?". Store the trimmed reply.
 - Integer in range `2..N` (shape B only) → store `candidates[k-1]`.
-- `?` | `help` → render the **Field-help** block for this field
+- `help` → render the **Field-help** block for this field
   (description + target + example) without advancing state. Then
   restate the prompt above. Do NOT persist a mutation for the help
-  render.
+  render. (`?` is intentionally NOT a trigger — Claude Code binds it
+  to a keyboard-shortcut overlay that intercepts the keystroke.)
 - Anything else → restate with "I need a number from 1 to `<max>`,
-  empty for the default, or `?` for help. To cancel, type
+  empty for the default, or type `help`. To cancel, type
   `cancel setup`."
 
 State file mutation: after EACH item is resolved (not batched),
@@ -635,7 +638,7 @@ knowledge the detector has no access to).
 
 ### Field-help table
 
-Drives the `?` / `help` command (CONFIRM_HIGH, CONFIRM_MEDIUM, and
+Drives the `help` command (CONFIRM_HIGH, CONFIRM_MEDIUM, and
 INTERVIEW states) AND the "→ Will be saved as: `<target>`" line on
 every CONFIRM prompt. Keep the `<target>` column stable — parsers
 downstream don't match on it, but users read it for orientation.
@@ -686,7 +689,7 @@ Interview questions (used at INTERVIEW states):
 | `verification.staging`         | Whether there's a staging / preview env                   | `## Verification` of `docs/spec/SPEC.md`                       | `yes — Vercel preview per PR`                 |
 | `verification.required_checks` | CI required checks gating merge                           | `## Verification` of `docs/spec/SPEC.md`                       | `tests, lint, type-check`                     |
 
-Help-render format when the user types `?` at a CONFIRM or INTERVIEW
+Help-render format when the user types `help` at a CONFIRM or INTERVIEW
 prompt — render in a fenced code block:
 
 ```

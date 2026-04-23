@@ -141,11 +141,14 @@ describe('templates/commands/setup.md — contract tests', () => {
       expect(section).toMatch(/→ Will be saved as: <target2>/);
     });
 
-    it('CONFIRM_HIGH prompt offers ? / help and response parsing handles it', () => {
+    it('CONFIRM_HIGH prompt offers `help` keyword and response parsing handles it', () => {
       const section = setupMd.split('### State 2 — CONFIRM_HIGH')[1].split('### State 3')[0];
-      expect(section).toMatch(/or "\?" for help/);
-      expect(section).toMatch(/`\?` \| `help`/);
+      // `help` is the sole trigger; `?` is reserved by Claude Code's shortcut overlay
+      expect(section).toMatch(/type "help"/);
+      expect(section).toMatch(/^- `help` →/m);
       expect(section).toMatch(/without advancing state/);
+      expect(section).not.toMatch(/`\?`\s*\|\s*`help`/);
+      expect(section).not.toMatch(/"\?" for help/);
     });
 
     it('CONFIRM_MEDIUM shape A includes the "Will be saved as" sub-line on option 1', () => {
@@ -154,9 +157,10 @@ describe('templates/commands/setup.md — contract tests', () => {
       expect(section).toMatch(/1\. <renderValue\(item\)>\s*\n\s*→ Will be saved as: <target>/);
     });
 
-    it('CONFIRM_MEDIUM response parsing handles ? / help', () => {
+    it('CONFIRM_MEDIUM response parsing handles `help` keyword (not `?`)', () => {
       const section = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('###')[0];
-      expect(section).toMatch(/`\?` \| `help`/);
+      expect(section).toMatch(/^- `help` →/m);
+      expect(section).not.toMatch(/`\?`\s*\|\s*`help`/);
     });
 
     it('Field rendering table no longer truncates readme to 80 chars', () => {
