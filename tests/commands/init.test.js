@@ -383,6 +383,31 @@ describe('init command', () => {
     expect(content).toContain('test-project');
   });
 
+  it('renders the plugin.json and gtd-memory prompts as arrow-key lists (not y/N confirms)', async () => {
+    await initCommand();
+
+    // Find the single inquirer.prompt call that contains both optional-extras questions.
+    const optionalExtrasCall = inquirer.prompt.mock.calls.find((call) => {
+      const specs = Array.isArray(call[0]) ? call[0] : [];
+      return (
+        specs.length === 2 &&
+        specs[0]?.name === 'generatePluginJson' &&
+        specs[1]?.name === 'scaffoldGtdMemory'
+      );
+    });
+
+    expect(optionalExtrasCall).toBeDefined();
+    const [pluginPrompt, gtdPrompt] = optionalExtrasCall[0];
+    // Both must be `list` type (arrow-key) — matches every other yes/no prompt in init.
+    expect(pluginPrompt.type).toBe('list');
+    expect(gtdPrompt.type).toBe('list');
+    // Each must offer exactly Yes/No with boolean values.
+    for (const prompt of [pluginPrompt, gtdPrompt]) {
+      const values = prompt.choices.map((c) => c.value);
+      expect(values).toEqual([true, false]);
+    }
+  });
+
   it('detects Scenario C and shows upgrade message', async () => {
     await fs.ensureDir(path.join(tmpDir, '.claude'));
     await fs.writeFile(
