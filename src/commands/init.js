@@ -77,16 +77,24 @@ async function runAgents(selections) {
 async function runOptionalExtras(selections) {
   const { generatePluginJson, scaffoldGtdMemory } = await inquirer.prompt([
     {
-      type: 'confirm',
+      type: 'list',
       name: 'generatePluginJson',
       message: 'Generate .claude-plugin/plugin.json for marketplace compatibility?',
-      default: selections.generatePluginJson || false,
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+      default: selections.generatePluginJson === true ? 0 : 1,
     },
     {
-      type: 'confirm',
+      type: 'list',
       name: 'scaffoldGtdMemory',
       message: 'Scaffold structured memory files (decisions.md, preferences.md)?',
-      default: selections.scaffoldGtdMemory || false,
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+      default: selections.scaffoldGtdMemory === true ? 0 : 1,
     },
   ]);
   return { ...selections, generatePluginJson, scaffoldGtdMemory };

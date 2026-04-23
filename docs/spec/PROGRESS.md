@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.7.0
-**Last Updated:** 2026-04-23
+**Version:** 2.7.1
+**Last Updated:** 2026-04-24
 
 ## Completed
 
@@ -517,6 +517,14 @@
   - [x] **PR #117** (`Version bump: minor`) — UX1 + UX4 on `/setup` template. New `### Interaction mode` contract with four modes (`selectable` / `multi-selectable` / `hybrid` / `free-text`) and a per-question table assigning 10 non-default entries: 5 selectable (`arch.classification`, `conventions.errors`/`logging`/`api_format`, `verification.staging`), 2 multi-selectable (`arch.external_apis`, `verification.required_checks`), 3 hybrid (`features.core`/`nice_to_have`/`non_goals`). Fallback to numbered-list for Claude Code versions without `AskUserQuestion`. Rule #5 whitelist extended to permit `AskUserQuestion` at INTERVIEW states only. CONFIRM prompt redesign: no more 80-char readme truncation, `→ Will be saved as: <target>` sub-line on every detected item, `?`/`help` command with Field-help block. New `### Field-help table` lists all 14 detection fields + 22 questionIds with plain-English description, target output file/section, and example answer — single source of truth for consequence-line rendering and `?` help command. +12 regression tests.
   - [x] Release group: **PR #115** (`Version bump: patch`) + **PR #116** (`Version bump: patch`) + **PR #117** (`Version bump: minor`) + **PR #114** (`Version bump: none`). Highest bump: minor. v2.6.3 → v2.7.0. No missing declarations.
 
+- [x] v2.7.1 — /setup UX follow-ups from v2.7.0 confirmation testing (2026-04-24)
+  - [x] **PR #119** (`Version bump: patch`) — three fixes in one PR.
+    1. **`?` → `help` keyword** across CONFIRM_HIGH + CONFIRM_MEDIUM prompt templates, response-parsing bullets, error restates, and Field-help table intro (9 occurrences). Discovered during v2.7.0 confirmation: `?` is a reserved Claude Code keyboard shortcut — pressing it opens the built-in shortcut overlay (bash mode / commands / file paths panel) before /setup's parser sees the keystroke. `\?` escaped works but no real user discovers that. Switched to the `help` keyword (no collision). Explanatory notes added inline so future maintainers don't re-add `?`.
+    2. **`worclaude init` prompt-type consistency** in `src/commands/init.js`'s `runOptionalExtras` — both "Generate .claude-plugin/plugin.json?" and "Scaffold structured memory files?" were `type: 'confirm'` (renders as `(y/N)` text input), the only place in init still doing that. Every other yes/no in init uses `type: 'list'` (arrow-key Yes/No). Converted both to `type: 'list'` with boolean-valued choices. +1 regression test asserts the prompt spec directly via `inquirer.prompt.mock.calls`.
+    3. **CONFIRM_MEDIUM as AskUserQuestion when option count ≤ 4** — State 3 split into Path 1 (AskUserQuestion, option count ≤ 4, consequence info carried in each option's `description` field) and Path 2 (verbatim text fallback, option count > 4, uses the new `help` keyword). Rule #5 widened to permit `AskUserQuestion` at CONFIRM_MEDIUM. Rule #7 gains an explicit EXCEPTION paragraph. Storage rule from v2.6.5 (`mediumResolved[field]` must be a string) applies across both paths. CONFIRM_HIGH stays text-parse — detection lists routinely exceed the `maxItems: 4` schema cap (12+ detections in realistic projects); CONFIRM_HIGH + AskUserQuestion deferred to v2.8.0 pending a design for chunked prompts or an "Accept all / Review" two-step gate.
+  - [x] +6 regression tests (1 for init prompt type, 5 for CONFIRM_MEDIUM Path 1 / Path 2 split + Storage rule cross-path + rule widenings). Dogfood upgrade auto-applied new setup.md template to `.claude/commands/setup.md`.
+  - [x] Release group: **PR #119** (`Version bump: patch`). Only PR since v2.7.0. v2.7.0 → v2.7.1. No missing declarations.
+
 ## Stats
 
 - 10 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state
@@ -528,7 +536,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 782 tests across 57 test files
+- 788 tests across 57 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

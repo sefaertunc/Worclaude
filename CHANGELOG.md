@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.7.1] — 2026-04-24
+
+Three `/setup` UX follow-ups from v2.7.0 confirmation testing, shipped as a single patch PR. The `?` / `help` trigger introduced in v2.7.0 turned out to collide with Claude Code's built-in keyboard-shortcut overlay (pressing `?` opens the shortcut panel before /setup's parser sees the keystroke); switched to the `help` keyword only. `worclaude init`'s `runOptionalExtras` was the only place in the init flow still using `inquirer type: 'confirm'` (rendered as `(y/N)`) — converted to `type: 'list'` arrow-key menus so every yes/no in init behaves consistently. CONFIRM_MEDIUM now invokes `AskUserQuestion` directly when the per-item option count fits the tool's `maxItems: 4` schema cap, with the consequence info ("Will be saved as") carried inside each option's `description` field; falls back to the verbatim text prompt (using `help` instead of `?`) when the count exceeds 4. CONFIRM_HIGH stays text-parse — detection lists routinely exceed 4 items. No consumer-visible schema or CLI surface additions.
+
+### Fixed
+
+- **`/setup` `?` help trigger → `help` keyword** (PR #119) — 9 occurrences across CONFIRM_HIGH + CONFIRM_MEDIUM prompt templates, response-parsing bullets, error restates, and the Field-help table intro. Explanatory notes added so future maintainers don't re-add `?`.
+- **`worclaude init` prompt-type consistency** (PR #119) — `runOptionalExtras` (src/commands/init.js:77-93) converted the plugin.json and gtd-memory prompts from `type: 'confirm'` (the only `(y/N)` text inputs in init) to `type: 'list'` with boolean-valued Yes/No choices. Regression test inspects `inquirer.prompt.mock.calls` directly.
+
+### Changed
+
+- **`/setup` CONFIRM_MEDIUM (≤4 options) uses `AskUserQuestion`** (PR #119) — State 3 split into Path 1 (AskUserQuestion path) and Path 2 (verbatim text fallback, >4 options). Rule #5 widens the AskUserQuestion permit to include CONFIRM_MEDIUM. Rule #7 picks up an explicit EXCEPTION paragraph. Storage rule from v2.6.5 (`mediumResolved[field]` must be a string) applies uniformly across both paths.
+
+### Docs
+
+- **`docs/spec/SPEC.md` `/setup` section** (this /sync) — reflects the `help`-keyword-only trigger and the CONFIRM_MEDIUM ≤4-option AskUserQuestion path.
+- **`docs/spec/PROGRESS.md`** (this /sync) — new v2.7.1 release entry; Stats refreshed (782 → 788 tests).
+
 ## [2.7.0] — 2026-04-23
 
 `/setup` hardening + UX revamp release. PR #115 closes 8 backend bug clusters surfaced by the v2.6.3 manual test matrix (upgrade-flow correctness, downgrade guard, doctor ghost detection, scaffolder exec bits, Commander routing). PR #116 fixes four `/setup` template failure modes — missing `schemaVersion` in SCAN state, `readme` object-shape mismatch in CONFIRM_MEDIUM, all-22-questions-asked despite detection, accept-off-topic-as-answer — and adds a `--from-file` flag to `worclaude setup-state save` plus `Bash(worclaude:*)` permissions so `/setup` runs without approval-prompt interruption. PR #117 adopts Claude Code's `AskUserQuestion` tool for 10 enumerable interview questions (arrow-key selection instead of free-text), redesigns CONFIRM prompts with a "Will be saved as" consequence sub-line and `?` / `help` command, and drops the 80-char readme truncation so users can read the full description before accepting. Dogfood-relevant: `.claude/commands/setup.md` auto-updates on `worclaude upgrade` to pick up the new template.
