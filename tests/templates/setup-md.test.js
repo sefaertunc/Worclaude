@@ -25,7 +25,11 @@ describe('templates/commands/setup.md — contract tests', () => {
     });
 
     it('CONFIRM_MEDIUM has an explicit "Storage rule" that forbids raw object values', () => {
-      const mediumSection = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('###')[0];
+      // v2.7.1 split State 3 into Path 1 / Path 2 / Storage rule (h4 headings);
+      // split on the next h3 (States 4–9) rather than the first h3-prefix match.
+      const mediumSection = setupMd
+        .split('### State 3 — CONFIRM_MEDIUM')[1]
+        .split('### States 4')[0];
       expect(mediumSection).toMatch(/Storage rule/);
       expect(mediumSection).toMatch(/MUST be a string/);
       expect(mediumSection).toMatch(/NEVER store the raw `item\.value` object/);
@@ -127,10 +131,12 @@ describe('templates/commands/setup.md — contract tests', () => {
       expect(section).toMatch(/AskUserQuestion/);
     });
 
-    it('rule #5 whitelist permits AskUserQuestion for INTERVIEW states only', () => {
+    it('rule #5 whitelist permits AskUserQuestion for INTERVIEW states', () => {
+      // v2.7.1 widened this permit to also include CONFIRM_MEDIUM (≤4 options).
+      // The CONFIRM_MEDIUM widening is covered by the v2.7.1 test block below.
       const rule5 = setupMd.split('SCOPED TOOL WHITELIST')[1].split('NO MEMORY PRE-FILL')[0];
       expect(rule5).toMatch(/AskUserQuestion/);
-      expect(rule5).toMatch(/INTERVIEW states only/);
+      expect(rule5).toMatch(/INTERVIEW states/);
     });
   });
 
@@ -151,16 +157,20 @@ describe('templates/commands/setup.md — contract tests', () => {
       expect(section).not.toMatch(/"\?" for help/);
     });
 
-    it('CONFIRM_MEDIUM shape A includes the "Will be saved as" sub-line on option 1', () => {
-      const section = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('###')[0];
-      // Shape A: item 1 has the consequence line
-      expect(section).toMatch(/1\. <renderValue\(item\)>\s*\n\s*→ Will be saved as: <target>/);
+    it('CONFIRM_MEDIUM Path 2 (text fallback) shape A includes the "Will be saved as" sub-line', () => {
+      // Shape A lives under Path 2 (verbatim text path) after the v2.7.1 split.
+      const path2 = setupMd
+        .split('#### Path 2 — Verbatim text prompt (option count > 4)')[1]
+        .split('#### Storage rule')[0];
+      expect(path2).toMatch(/1\. <renderValue\(item\)>\s*\n\s*→ Will be saved as: <target>/);
     });
 
-    it('CONFIRM_MEDIUM response parsing handles `help` keyword (not `?`)', () => {
-      const section = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('###')[0];
-      expect(section).toMatch(/^- `help` →/m);
-      expect(section).not.toMatch(/`\?`\s*\|\s*`help`/);
+    it('CONFIRM_MEDIUM Path 2 response parsing handles `help` keyword (not `?`)', () => {
+      const path2 = setupMd
+        .split('#### Path 2 — Verbatim text prompt (option count > 4)')[1]
+        .split('#### Storage rule')[0];
+      expect(path2).toMatch(/^- `help` →/m);
+      expect(path2).not.toMatch(/`\?`\s*\|\s*`help`/);
     });
 
     it('Field rendering table no longer truncates readme to 80 chars', () => {
@@ -191,6 +201,53 @@ describe('templates/commands/setup.md — contract tests', () => {
       expect(section).toMatch(/What it is:/);
       expect(section).toMatch(/Will be saved as:/);
       expect(section).toMatch(/Example answer:/);
+    });
+  });
+
+  describe('v2.7.1: CONFIRM_MEDIUM AskUserQuestion path (bounded to 4 options)', () => {
+    it('State 3 declares the ≤4-option / >4-option split as Path 1 / Path 2', () => {
+      const state3 = setupMd.split('### State 3 — CONFIRM_MEDIUM')[1].split('### States 4')[0];
+      expect(state3).toMatch(/#### Path 1 — AskUserQuestion \(option count ≤ 4\)/);
+      expect(state3).toMatch(/#### Path 2 — Verbatim text prompt \(option count > 4\)/);
+      // The 4-option cap explicitly references AskUserQuestion's schema limit
+      expect(state3).toMatch(/maxItems: 4/);
+    });
+
+    it('Path 1 documents the AskUserQuestion invocation shape', () => {
+      const path1 = setupMd
+        .split('#### Path 1 — AskUserQuestion (option count ≤ 4)')[1]
+        .split('#### Path 2')[0];
+      expect(path1).toMatch(/`question`:/);
+      expect(path1).toMatch(/`header`:/);
+      expect(path1).toMatch(/`multiSelect`:\s*`false`/);
+      expect(path1).toMatch(/`options`:/);
+      // Description carries the consequence info (moved off inline sub-line)
+      expect(path1).toMatch(/Will be saved as <target>/);
+      // "Other" option is always present
+      expect(path1).toMatch(/Other \(I'll type my own\)/);
+    });
+
+    it('Storage rule still applies across both paths', () => {
+      const storage = setupMd
+        .split('#### Storage rule (both paths)')[1]
+        .split('State file mutation:')[0];
+      expect(storage).toMatch(/MUST be a string/);
+      expect(storage).toMatch(/NEVER store the raw `item\.value` object/);
+    });
+
+    it('rule #5 widens AskUserQuestion permit to include CONFIRM_MEDIUM', () => {
+      const rule5 = setupMd.split('SCOPED TOOL WHITELIST')[1].split('NO MEMORY PRE-FILL')[0];
+      expect(rule5).toMatch(/AskUserQuestion/);
+      expect(rule5).toMatch(/CONFIRM_MEDIUM when the per-item option count/);
+      expect(rule5).toMatch(/≤ 4/);
+      // CONFIRM_HIGH stays out of AskUserQuestion scope
+      expect(rule5).toMatch(/Not permitted at CONFIRM_HIGH/);
+    });
+
+    it('rule #7 documents the CONFIRM_MEDIUM AskUserQuestion exception', () => {
+      const rule7 = setupMd.split('RENDER PROMPTS VERBATIM')[1].split(/^\d\./m)[0];
+      expect(rule7).toMatch(/EXCEPTION — CONFIRM_MEDIUM via AskUserQuestion/);
+      expect(rule7).toMatch(/option count is ≤ 4/);
     });
   });
 });

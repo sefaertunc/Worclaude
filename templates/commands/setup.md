@@ -65,11 +65,16 @@ normally apply.
    - Read: `.claude/cache/setup-state.json`
    - Write: `.claude/cache/setup-state.draft.json` (state-save staging
      only — overwritten each save).
-   - Tool: `AskUserQuestion` (INTERVIEW states only, per the
-     Interaction mode contract — `selectable` / `multi-selectable`
-     questions). Not permitted at CONFIRM_HIGH / CONFIRM_MEDIUM:
-     those render VERBATIM per rule #7 so the text-parser contract
-     stays stable.
+   - Tool: `AskUserQuestion` permitted at:
+     - INTERVIEW states, per the Interaction mode contract
+       (`selectable` / `multi-selectable` / `hybrid` questions).
+     - CONFIRM_MEDIUM when the per-item option count (candidates + 1
+       for "Other") is ≤ 4 — AskUserQuestion's own `maxItems: 4`
+       schema cap. When the count exceeds 4, fall back to the verbatim
+       text-parse rendering defined in State 3 below.
+     Not permitted at CONFIRM_HIGH: the detection list routinely has
+     12+ items in real projects, which exceeds the 4-option schema cap.
+     CONFIRM_HIGH renders VERBATIM per rule #7.
 
    At WRITE state the whitelist RELAXES to additionally permit:
 
@@ -92,14 +97,22 @@ normally apply.
    project only. Only use information the user provides during THIS
    interview and the detection report for THIS project.
 
-7. **RENDER PROMPTS VERBATIM.** Where a state specifies a prompt format
-   with `[x] 1. ...` syntax or other structured output, render it
-   EXACTLY as specified AND wrap it in a triple-backtick fenced code
-   block so Markdown rendering does not reformat checkboxes or
-   renumber lines. The format is part of the contract with the
+7. **RENDER PROMPTS VERBATIM.** Where a state specifies a text-parse
+   prompt format with `[x] 1. ...` syntax or other structured output,
+   render it EXACTLY as specified AND wrap it in a triple-backtick
+   fenced code block so Markdown rendering does not reformat checkboxes
+   or renumber lines. The format is part of the contract with the
    user-response parser — paraphrasing or reformatting breaks parsing.
    You MAY add a brief conversational sentence before or after a
    verbatim prompt, but NOT within it.
+
+   EXCEPTION — CONFIRM_MEDIUM via AskUserQuestion: when the per-item
+   option count is ≤ 4 (candidates + "Other"), State 3 uses the
+   `AskUserQuestion` tool path instead of the verbatim text prompt
+   (see rule #5 and State 3). The verbatim-rendering requirement does
+   not apply to tool invocations. When the count exceeds 4, the text
+   fallback kicks in and this rule applies as written. CONFIRM_HIGH
+   never uses AskUserQuestion (detection lists routinely exceed 4).
 
    KNOWN FAILURE MODES: reformatting `[x] 1. X: Y` as `- [x] X: Y`
    (loses numbering); paraphrasing labels; collapsing items onto one
@@ -282,57 +295,93 @@ ENTRY:
   report.
 - If there are zero medium-confidence items: persist
   `mediumResolved: {}`, transition to INTERVIEW_STORY.
-- Otherwise iterate in report order. For each medium item, render ONE
-  prompt VERBATIM in a fenced code block. The prompt shape depends on
-  `item.candidates`:
+- Otherwise iterate in report order. For each medium item, compute the
+  total option count:
+  - Shape A (`candidates === null`, emitted by `readme`):
+    `1 + 1` = 2 (detected value + "Other").
+  - Shape B (`candidates` is a non-empty array): `candidates.length + 1`.
+  If the total is ≤ 4, use the **AskUserQuestion path** (Path 1).
+  Otherwise fall back to the **verbatim text-parse path** (Path 2).
+  The threshold is the `maxItems: 4` schema cap of AskUserQuestion.
 
-  **Shape A — `candidates === null`** (emitted by `readme`):
+#### Path 1 — AskUserQuestion (option count ≤ 4)
 
-  ```
-  <formatField(field)> (detected from <source>):
+Invoke the `AskUserQuestion` tool once per medium item with exactly
+this shape:
 
-    1. <renderValue(item)>
-       → Will be saved as: <target>
-    2. Other (I'll type my own)
+- `question`: `<formatField(field)> — detected from <source>. Which
+  should I use?`
+- `header`: short label for the sidebar (≤ 12 chars) — typically
+  `formatField(field)` truncated.
+- `multiSelect`: `false`
+- `options`: built from the Shape above:
+  - Shape A: `[{ label: <renderValue(item)>, description: "Will be
+    saved as <target>. Accept the detected value." },
+    { label: "Other (I'll type my own)", description: "Supply a
+    custom value via free-text follow-up." }]`
+  - Shape B: one option per `candidates[k]` with
+    `description: "Will be saved as <target>."`; append
+    `{ label: "Other (I'll type my own)", description: "Supply a
+    custom value via free-text follow-up." }` as the final option.
 
-  Reply with the number of your choice (default: 1), or type `help`:
-  ```
+`<target>` comes from the **Field-help table** below. Render it
+verbatim per the table.
 
-  **Shape B — `candidates` is a non-empty array** (emitted by
-  `package-manager` when multiple lockfile groups disagree):
+On response:
+- User selects a candidate label → store that label string in
+  `mediumResolved[field]` (Storage rule applies).
+- User selects "Other (I'll type my own)" → follow up with a free-text
+  prompt: "Go ahead — what's the value you'd like to use?". Store the
+  trimmed reply.
 
-  ```
-  <formatField(field)> (detected from <source>):
-  → Will be saved as: <target>
+`AskUserQuestion` does not expose a `help` trigger; the per-option
+`description` text carries the equivalent content inline. The text
+fallback's `help` keyword is scoped to Path 2 only.
 
-    1. <candidates[0]>
-    2. <candidates[1]>
-    ...
-    N. <candidates[N-1]>
-    N+1. Other (I'll type my own)
+#### Path 2 — Verbatim text prompt (option count > 4)
 
-  Reply with the number of your choice (default: 1), or type `help`:
-  ```
+Render ONE prompt VERBATIM in a fenced code block. The prompt shape
+depends on `item.candidates`:
 
-  `<target>` comes from the **Field-help table** below. Render it
-  verbatim per the table.
+**Shape A — `candidates === null`** (rare in this path — only 2
+options, typically handled by Path 1 above; included here for
+completeness in case AskUserQuestion is unavailable):
 
-  `candidates[0]` equals `item.value` — default-1 accepts the detected
-  value.
+```
+<formatField(field)> (detected from <source>):
 
-**Storage rule:** `mediumResolved[field]` MUST be a string. Store the
-exact `renderValue(item)` that was shown to the user on option 1, or
-the user's trimmed free-text on "Other", or `candidates[k-1]` (shape
-B) for a numbered pick. **NEVER store the raw `item.value` object** —
-for fields like `readme` whose detected value is an object
-(`{projectDescription, setupInstructions, fullPath}`) the validator
-will reject the mutation with `state.mediumResolved.<field> must be a
-string`.
+  1. <renderValue(item)>
+     → Will be saved as: <target>
+  2. Other (I'll type my own)
 
-Response parsing (per item):
+Reply with the number of your choice (default: 1), or type `help`:
+```
+
+**Shape B — `candidates` is a non-empty array** (e.g.,
+`package-manager` when multiple lockfile groups disagree and produce
+4+ candidates):
+
+```
+<formatField(field)> (detected from <source>):
+→ Will be saved as: <target>
+
+  1. <candidates[0]>
+  2. <candidates[1]>
+  ...
+  N. <candidates[N-1]>
+  N+1. Other (I'll type my own)
+
+Reply with the number of your choice (default: 1), or type `help`:
+```
+
+`<target>` comes from the **Field-help table** below. Render it
+verbatim per the table. `candidates[0]` equals `item.value` —
+default-1 accepts the detected value.
+
+Response parsing (Path 2 only):
 
 - `""` | `1` | `default` → accept item 1; store `renderValue(item)`
-  as a string per the Storage rule above.
+  as a string per the Storage rule.
 - The final "Other" number (`2` in shape A, `N+1` in shape B) →
   follow-up free-text prompt: "Go ahead — what's the value you'd like
   to use?". Store the trimmed reply.
@@ -345,6 +394,17 @@ Response parsing (per item):
 - Anything else → restate with "I need a number from 1 to `<max>`,
   empty for the default, or type `help`. To cancel, type
   `cancel setup`."
+
+#### Storage rule (both paths)
+
+`mediumResolved[field]` MUST be a string. Store the exact label that
+was shown to the user (Path 1: `AskUserQuestion` `label`; Path 2:
+`renderValue(item)` or `candidates[k-1]`), or the user's trimmed
+free-text on "Other". **NEVER store the raw `item.value` object** —
+for fields like `readme` whose detected value is an object
+(`{projectDescription, setupInstructions, fullPath}`) the validator
+will reject the mutation with `state.mediumResolved.<field> must be a
+string`.
 
 State file mutation: after EACH item is resolved (not batched),
 append to `mediumResolved` and persist.
