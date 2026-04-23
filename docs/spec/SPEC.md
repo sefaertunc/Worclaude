@@ -1250,10 +1250,16 @@ collected: `selectable` / `multi-selectable` (invoke `AskUserQuestion`),
 multi-selectable, 3 hybrid. Fallback to numbered-list parsing when
 `AskUserQuestion` is unavailable.
 
-CONFIRM prompts show "→ Will be saved as: <target>" under each detected
-item and handle `?` / `help` by rendering a Field-help block (plain-
-English description, target file/section, example answer) without
-advancing state. The Field-help table lives next to the QuestionId
+CONFIRM_HIGH and CONFIRM_MEDIUM's text-parse fallback show "→ Will be
+saved as: <target>" under each detected item and handle the `help`
+keyword (not `?` — Claude Code binds `?` to its built-in
+keyboard-shortcut overlay) by rendering a Field-help block
+(plain-English description, target file/section, example answer)
+without advancing state. CONFIRM_MEDIUM uses the `AskUserQuestion` tool
+directly when the per-item option count is ≤ 4 (the tool's schema cap)
+— in that path the consequence info is carried inside each option's
+`description` field and no `help` trigger is needed (description text
+is inline). The Field-help table lives next to the QuestionId
 enumeration and covers all 14 detection fields + 22 questionIds.
 
 Output files (unchanged from prior /setup): CLAUDE.md, docs/spec/SPEC.md,
