@@ -5,6 +5,7 @@ import os from 'node:os';
 import { hashContent } from '../../src/utils/hash.js';
 import {
   semverLessThan,
+  semverGreaterThan,
   migrateSkillFormat,
   patchAgentDescriptions,
   migrateWorkflowRefLocation,
@@ -37,6 +38,32 @@ describe('semverLessThan', () => {
 
   it('returns false for 3.0.0 < 2.0.0', () => {
     expect(semverLessThan('3.0.0', '2.0.0')).toBe(false);
+  });
+});
+
+describe('semverGreaterThan', () => {
+  it('returns true when major is greater', () => {
+    expect(semverGreaterThan('2.0.0', '1.0.0')).toBe(true);
+  });
+
+  it('returns true when minor is greater', () => {
+    expect(semverGreaterThan('1.1.0', '1.0.0')).toBe(true);
+  });
+
+  it('returns true when patch is greater', () => {
+    expect(semverGreaterThan('1.0.1', '1.0.0')).toBe(true);
+  });
+
+  it('returns false when equal', () => {
+    expect(semverGreaterThan('2.0.0', '2.0.0')).toBe(false);
+  });
+
+  it('returns false when less', () => {
+    expect(semverGreaterThan('2.0.0', '2.0.1')).toBe(false);
+  });
+
+  it('returns true for 3.0.0 > 2.6.3 (the downgrade-refusal case)', () => {
+    expect(semverGreaterThan('3.0.0', '2.6.3')).toBe(true);
   });
 });
 

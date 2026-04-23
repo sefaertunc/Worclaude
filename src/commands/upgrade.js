@@ -21,6 +21,7 @@ import { getLatestNpmVersion } from '../utils/npm.js';
 import * as display from '../utils/display.js';
 import {
   semverLessThan,
+  semverGreaterThan,
   migrateSkillFormat,
   patchAgentDescriptions,
   migrateWorkflowRefLocation,
@@ -161,6 +162,13 @@ function renderTemplatePreview(categories, plan) {
     }
     display.newline();
   }
+  if (categories.missingUntracked.length > 0) {
+    display.barLine(`${display.red('−')} Deleted (removed in current version):`);
+    for (const { key } of categories.missingUntracked) {
+      display.barLine(`  ${display.red('−')} ${key}`);
+    }
+    display.newline();
+  }
   if (categories.unchanged.length > 0) {
     display.barLine(
       `${display.dimColor('=')} Unchanged: ${display.dimColor(`${categories.unchanged.length} files`)}`
@@ -235,11 +243,25 @@ async function promptProceed(message) {
   return proceed;
 }
 
-async function runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, yes }) {
+async function runRepairOnlyFlow({
+  projectRoot,
+  meta,
+  plan,
+  variables,
+  dryRun,
+  yes,
+  refRelocationReport = { moved: 0, names: [], skipped: [] },
+}) {
   display.sectionHeader(`WORCLAUDE REPAIR (v${meta.version})`);
   display.newline();
   display.barLine('Drift detected:');
   renderRepairPreview(plan);
+  if (refRelocationReport.moved > 0) {
+    display.barLine(
+      `${display.green('→')} Relocated ${refRelocationReport.moved} legacy ref file(s) ${display.dimColor('→ .claude/workflow-ref/')}`
+    );
+    display.newline();
+  }
 
   if (dryRun) {
     display.info('Dry run — no changes written.');
@@ -289,6 +311,11 @@ async function runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, y
     }
     if (result.sidecars.length > 0) {
       display.barLine(`Sidecar:     ${result.sidecars.length} suggestion files`);
+    }
+    if (refRelocationReport.moved > 0) {
+      display.barLine(
+        `Relocated:   ${refRelocationReport.moved} legacy ref file(s) ${display.dimColor('→ .claude/workflow-ref/')}`
+      );
     }
     display.barLine(display.dimColor(`Backup: ${path.basename(backupDir)}/`));
 
@@ -352,16 +379,29 @@ export async function upgradeCommand(options = {}) {
   const installedVersion = meta.version;
   const versionMatch = installedVersion === currentVersion;
 
+  if (semverGreaterThan(installedVersion, currentVersion)) {
+    display.error(
+      `Refusing to downgrade: installed v${installedVersion} is newer than CLI v${currentVersion}.`
+    );
+    display.info('Upgrade the CLI with `npm install -g worclaude@latest`.');
+    return;
+  }
+
+  // v2.5.1 migration: relocate legacy ref files. Runs before any early-exit
+  // so version-match projects with leftover legacy siblings still self-heal.
+  // Idempotent (skips already-migrated files).
+  const preEarlyExitRefReport = await migrateWorkflowRefLocation(projectRoot);
+
   const categories = await categorizeFiles(projectRoot, meta);
   const claudeMdContent = await readClaudeMd(projectRoot);
   const plan = await buildRepairPlan(projectRoot, categories, claudeMdContent);
 
   const repairWork = hasRepairWork(plan);
   const templateWork = hasTemplateWork(categories, plan);
+  const refWork = preEarlyExitRefReport.moved > 0;
 
-  // Version match + no repair + no template work → up to date.
-  // Early return keeps the clean-install fast path free of package.json I/O.
-  if (versionMatch && !repairWork && !templateWork) {
+  // Version match + no repair + no template work + no ref relocation → up to date.
+  if (versionMatch && !repairWork && !templateWork && !refWork) {
     display.success(`Already up to date (v${currentVersion}).`);
     return;
   }
@@ -370,7 +410,15 @@ export async function upgradeCommand(options = {}) {
 
   // Version match + repair only OR explicit --repair-only → repair-only flow
   if ((versionMatch && !templateWork) || repairOnly) {
-    await runRepairOnlyFlow({ projectRoot, meta, plan, variables, dryRun, yes });
+    await runRepairOnlyFlow({
+      projectRoot,
+      meta,
+      plan,
+      variables,
+      dryRun,
+      yes,
+      refRelocationReport: preEarlyExitRefReport,
+    });
     return;
   }
 
@@ -439,10 +487,9 @@ export async function upgradeCommand(options = {}) {
       spinner.start('Applying updates...');
     }
 
-    // v2.5.1 migration: relocate legacy ref files out of Claude-Code-scanned
-    // dirs. Runs unconditionally since it's idempotent and the fix applies
-    // to any project with legacy refs, regardless of source version.
-    const refRelocationReport = await migrateWorkflowRefLocation(projectRoot);
+    // v2.5.1 migration ran before the early-exit check; reuse its report so
+    // we don't re-scan the legacy subdirs unnecessarily.
+    const refRelocationReport = preEarlyExitRefReport;
     if (refRelocationReport.moved > 0) {
       spinner.text = `Relocated ${refRelocationReport.moved} legacy ref file(s)...`;
     }
