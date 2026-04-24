@@ -67,13 +67,26 @@ coordination overhead grows.
 Some agents use `git worktree` to make changes without affecting your working tree:
 
 How it works:
-1. Agent creates a worktree from your current branch
+1. Agent creates a worktree based on `origin/HEAD` (see gotcha below)
 2. Makes changes in the worktree (isolated from your files)
 3. Commits changes
 4. You merge or cherry-pick the results
 
 Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fixer,
 bug-fixer, refactorer, doc-writer.
+
+### Base-branch gotcha
+
+Both `claude --worktree` and the Agent `isolation: "worktree"` option create the
+worktree from `origin/HEAD`, **not** your current branch. If your working branch is
+ahead of whatever `origin/HEAD` points to (typically `origin/main`), the worktree
+will miss those commits.
+
+Run `worclaude doctor` to diagnose. Fix locally with `git remote set-head origin
+<your-branch>` (reversible via `--auto` or `main`). The bundled `bug-fixer`,
+`verify-app`, and `test-writer` agents include a freshness preamble that resets
+their worktree to match the parent's current branch automatically; other worktree
+agents do not.
 
 Benefits:
 - Agent's changes don't conflict with your uncommitted work
