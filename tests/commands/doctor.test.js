@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs-extra';
 import path from 'node:path';
 import os from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { hashContent } from '../../src/utils/hash.js';
 import {
   UNIVERSAL_AGENTS,
@@ -171,6 +172,43 @@ async function scaffoldProject(tmpDir, opts = {}) {
 
 function getOutput() {
   return console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+}
+
+function git(cwd, args) {
+  const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
+  if (r.status !== 0) {
+    throw new Error(`git ${args.join(' ')} failed: ${r.stderr || r.stdout}`);
+  }
+  return (r.stdout || '').trim();
+}
+
+async function setupGitRepoWithOriginHead(
+  tmpDir,
+  { originHeadTarget, currentBranch, aheadOfOrigin = 0 }
+) {
+  git(tmpDir, ['init', '-q', '--initial-branch=main']);
+  git(tmpDir, ['config', 'user.email', 'doctor-test@example.com']);
+  git(tmpDir, ['config', 'user.name', 'doctor-test']);
+  git(tmpDir, ['commit', '--allow-empty', '-q', '-m', 'initial']);
+  const initialSha = git(tmpDir, ['rev-parse', 'HEAD']);
+
+  git(tmpDir, ['update-ref', `refs/remotes/origin/${originHeadTarget}`, initialSha]);
+  git(tmpDir, [
+    'symbolic-ref',
+    'refs/remotes/origin/HEAD',
+    `refs/remotes/origin/${originHeadTarget}`,
+  ]);
+
+  if (currentBranch !== 'main') {
+    git(tmpDir, ['checkout', '-q', '-b', currentBranch]);
+  }
+  if (currentBranch !== originHeadTarget) {
+    git(tmpDir, ['update-ref', `refs/remotes/origin/${currentBranch}`, initialSha]);
+  }
+
+  for (let i = 0; i < aheadOfOrigin; i += 1) {
+    git(tmpDir, ['commit', '--allow-empty', '-q', '-m', `ahead-${i}`]);
+  }
 }
 
 describe('doctor command', () => {
@@ -526,6 +564,54 @@ describe('doctor command', () => {
     await doctorCommand();
     const output = getOutput();
     expect(output).toContain('git check-ignore unavailable');
+  });
+
+  // origin/HEAD base-branch check
+  it('skips origin/HEAD check when not in a git repo', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('origin/HEAD check skipped');
+    expect(output).not.toContain('ahead of origin/');
+  });
+
+  it('passes origin/HEAD when current branch matches the origin/HEAD target', async () => {
+    await scaffoldProject(tmpDir);
+    await setupGitRepoWithOriginHead(tmpDir, {
+      originHeadTarget: 'main',
+      currentBranch: 'main',
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('matches current branch');
+    expect(output).not.toContain('ahead of origin/');
+  });
+
+  it('passes origin/HEAD when current branch is not ahead of the target', async () => {
+    await scaffoldProject(tmpDir);
+    await setupGitRepoWithOriginHead(tmpDir, {
+      originHeadTarget: 'main',
+      currentBranch: 'develop',
+      aheadOfOrigin: 0,
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain("current 'develop' not ahead");
+    expect(output).not.toContain('ahead of origin/');
+  });
+
+  it('warns with set-head suggestion when current branch is ahead of origin/HEAD target', async () => {
+    await scaffoldProject(tmpDir);
+    await setupGitRepoWithOriginHead(tmpDir, {
+      originHeadTarget: 'main',
+      currentBranch: 'develop',
+      aheadOfOrigin: 2,
+    });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain("Current branch 'develop' is 2 commit(s) ahead of origin/main");
+    expect(output).toContain('git remote set-head origin develop');
+    expect(output).toContain('reversible');
   });
 
   // JSON output (Task 12)

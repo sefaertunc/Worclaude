@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.7.1
+**Version:** 2.8.0
 **Last Updated:** 2026-04-24
 
 ## Completed
@@ -525,6 +525,13 @@
   - [x] +6 regression tests (1 for init prompt type, 5 for CONFIRM_MEDIUM Path 1 / Path 2 split + Storage rule cross-path + rule widenings). Dogfood upgrade auto-applied new setup.md template to `.claude/commands/setup.md`.
   - [x] Release group: **PR #119** (`Version bump: patch`). Only PR since v2.7.0. v2.7.0 → v2.7.1. No missing declarations.
 
+- [x] v2.8.0 — agent worktree base-branch fix (2026-04-24)
+  - [x] **PR #121** (`Version bump: minor`) — fixes the worktree harness's `origin/HEAD` staleness bug: both `claude --worktree` and the `Agent` tool's `isolation: "worktree"` option base worktrees off `origin/HEAD`, which on this repo resolves to `origin/main`, so when develop is ahead of main the agent's worktree misses recent commits (the root cause of the v2.7.1-era "missing develop files in worktree" symptom that was previously misattributed to tooling flakiness). Two complementary fixes shipped together:
+    1. **`checkOriginHead()` doctor check** — new Git Integration entry in `worclaude doctor` that warns when the current branch is ahead of `origin/HEAD`'s target, naming the branch and commit count and suggesting `git remote set-head origin <branch>` (local-only, reversible via `--auto` or `main`) as the remedy. Protects every spawn path including direct `claude --worktree`. Skips silently outside git repos or when `origin/HEAD` is unset. Shared `runGit(cwd, args)` helper added for future checks to reuse the same spawn pattern.
+    2. **Freshness preamble on bundled worktree agents** — `bug-fixer`, `verify-app`, and `test-writer` templates now begin with an instruction to `git fetch origin`, detect the parent branch from `git worktree list --porcelain` (filtering out auto-named `worktree-agent-*` branches), then `git reset --hard "origin/${PARENT_BRANCH}"` before making any changes. Uses LLM-driven parsing rather than `awk`/`sed` pipelines for cross-platform portability — `/review-changes` during implementation flagged the original shell-pipeline version as a soft CLAUDE.md rule #4 violation and it was rewritten during `/refactor-clean`. Works even when the user hasn't run `set-head`.
+  - [x] Documentation: `subagent-usage` skill in both `.claude/skills/subagent-usage/SKILL.md` and the scaffold template `templates/skills/universal/subagent-usage.md` gains a "Base-branch gotcha" subsection linking to `worclaude doctor` and the `git remote set-head` remedy; the misleading "worktree from your current branch" line in the "How it works" list is corrected to "based on `origin/HEAD` (see gotcha below)". `docs/spec/SPEC.md`'s doctor section gains a new `### Git Integration` subsection documenting both the gitignore and origin/HEAD checks. +16 regression tests (4 doctor cases via a new offline git-setup helper that fabricates `refs/remotes/origin/*` without a real remote; 12 content-lock assertions on the agent preambles via a new `tests/templates/agent-preambles.test.js` file with `beforeAll`-cached reads).
+  - [x] Release group: **PR #121** (`Version bump: minor`). Only PR since v2.7.1. v2.7.1 → v2.8.0. No missing declarations.
+
 ## Stats
 
 - 10 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state
@@ -536,7 +543,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 788 tests across 57 test files
+- 804 tests across 58 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

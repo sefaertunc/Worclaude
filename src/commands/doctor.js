@@ -838,6 +838,73 @@ async function checkGitignore(projectRoot) {
   return results;
 }
 
+function runGit(projectRoot, args) {
+  try {
+    const r = spawnSync('git', args, { cwd: projectRoot, encoding: 'utf8' });
+    if (r.error) return { status: -1, stdout: '', stderr: String(r.error) };
+    return {
+      status: r.status,
+      stdout: (r.stdout || '').trim(),
+      stderr: (r.stderr || '').trim(),
+    };
+  } catch (err) {
+    return { status: -1, stdout: '', stderr: String(err) };
+  }
+}
+
+async function checkOriginHead(projectRoot) {
+  const skipped = result(PASS, 'origin/HEAD check skipped', null);
+
+  const headRef = runGit(projectRoot, ['symbolic-ref', 'refs/remotes/origin/HEAD']);
+  if (headRef.status === 128) return skipped;
+  if (headRef.status !== 0) {
+    return result(
+      WARN,
+      'origin/HEAD not set',
+      'Run `git remote set-head origin --auto` (or `git remote set-head origin <branch>`) so worktree agents have a defined base'
+    );
+  }
+
+  const defaultBranch = headRef.stdout.replace(/^refs\/remotes\/origin\//, '');
+  if (!defaultBranch) {
+    return result(WARN, 'origin/HEAD malformed', `Unexpected ref: ${headRef.stdout}`);
+  }
+
+  const currentRef = runGit(projectRoot, ['branch', '--show-current']);
+  if (currentRef.status !== 0) return skipped;
+
+  const currentBranch = currentRef.stdout;
+  if (!currentBranch) {
+    return result(PASS, `origin/HEAD → ${defaultBranch} (detached HEAD, skipped)`, null);
+  }
+  if (currentBranch === defaultBranch) {
+    return result(PASS, `origin/HEAD → ${defaultBranch} (matches current branch)`, null);
+  }
+
+  const ahead = runGit(projectRoot, [
+    'rev-list',
+    '--count',
+    `origin/${defaultBranch}..${currentBranch}`,
+  ]);
+  if (ahead.status !== 0) {
+    return result(PASS, `origin/HEAD → ${defaultBranch}`, null);
+  }
+  const aheadCount = Number.parseInt(ahead.stdout, 10) || 0;
+  if (aheadCount === 0) {
+    return result(
+      PASS,
+      `origin/HEAD → ${defaultBranch}, current '${currentBranch}' not ahead`,
+      null
+    );
+  }
+
+  return result(
+    WARN,
+    `Current branch '${currentBranch}' is ${aheadCount} commit(s) ahead of origin/${defaultBranch}`,
+    `Worktree agents (claude --worktree, Agent isolation:worktree) base off origin/${defaultBranch} and will miss those commits. Fix: \`git remote set-head origin ${currentBranch}\` (local-only, reversible with \`--auto\` or \`main\`)`
+  );
+}
+
 async function checkPendingReviewFiles(projectRoot) {
   const pending = [];
   try {
@@ -943,6 +1010,7 @@ export async function doctorCommand(options = {}) {
   // Git Integration
   section('Git Integration');
   record('git', await checkGitignore(projectRoot));
+  record('git', await checkOriginHead(projectRoot));
   spacer();
 
   // Integrity
