@@ -566,6 +566,11 @@ Checks installation health across four categories with PASS/WARN/FAIL status per
 - `docs/spec/PROGRESS.md` — exists (required by /start and /sync)
 - `docs/spec/SPEC.md` — exists (referenced by plan-reviewer)
 
+### Git Integration
+
+- `.claude/sessions/` and `.claude/learnings/` — gitignore coverage check (contain per-user state that shouldn't be committed)
+- `origin/HEAD` divergence — warns when the current branch is ahead of whatever `origin/HEAD` points to. Worktree agents (`claude --worktree` and `Agent` `isolation: "worktree"`) base off `origin/HEAD`, so an ahead branch produces stale worktree checkouts. Fix: `git remote set-head origin <branch>` (local-only, reversible via `--auto` or `main`). Skipped silently outside a git repo.
+
 ### Integrity
 
 - File hash comparison vs `workflow-meta.json` fileHashes — detects customizations or deletions

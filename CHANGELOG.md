@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.8.0] — 2026-04-24
+
+Fixes a long-standing agent worktree correctness bug. Both `claude --worktree` and the `Agent` tool's `isolation: "worktree"` option create their isolated checkout from `origin/HEAD` — which on most worclaude-convention repos resolves to `origin/main`. When the working branch (typically `develop`) is ahead of main (the normal state mid-release-cycle), agent worktrees get a stale checkout that misses recent commits, producing "missing develop files" symptoms easy to misattribute to tooling flakiness. This release ships two complementary fixes: a new `worclaude doctor` check that detects and warns on the at-risk configuration with a local, reversible remedy (`git remote set-head origin <branch>`), and a freshness preamble on the three bundled worktree agents (`bug-fixer`, `verify-app`, `test-writer`) that resets the worktree to match the parent's current branch regardless of `origin/HEAD`. Documentation in `subagent-usage` now correctly describes the harness behavior instead of the previous "creates a worktree from your current branch" claim.
+
+### Added
+
+- **`worclaude doctor` Git Integration / `origin/HEAD` divergence check** (PR #121) — warns when the current branch is ahead of `origin/HEAD`'s target, naming the branch and commit count. Suggests `git remote set-head origin <branch>` (local-only, reversible via `--auto` or `main`) as the fix. Skips silently outside a git repo or when `origin/HEAD` is unset. Shared `runGit(cwd, args)` helper added alongside for future checks to reuse the same spawn pattern.
+- **Worktree freshness preamble on `bug-fixer`, `verify-app`, `test-writer` agent templates** (PR #121) — on worktree start the agent runs `git fetch origin`, identifies the parent's current branch from `git worktree list --porcelain` (filtering out auto-named `worktree-agent-*` branches), then `git reset --hard "origin/${PARENT_BRANCH}"`. Protects correctness even when the user hasn't run `set-head`. LLM-driven parsing (no `awk`/`sed` pipelines) for cross-platform portability.
+
+### Changed
+
+- **`subagent-usage` skill (both `.claude/skills/subagent-usage/SKILL.md` and `templates/skills/universal/subagent-usage.md`)** (PR #121) — "How it works" item 1 corrected from "creates a worktree from your current branch" to "creates a worktree based on `origin/HEAD` (see gotcha below)". New "Base-branch gotcha" subsection cross-links to `worclaude doctor` and the `git remote set-head` remedy, and notes that the three bundled agents include a freshness preamble while other worktree agents do not.
+
+### Docs
+
+- **`docs/spec/SPEC.md` doctor section** (this /sync) — adds a `### Git Integration` subsection documenting both the gitignore coverage check and the new origin/HEAD divergence check.
+- **`docs/spec/PROGRESS.md`** (this /sync) — new v2.8.0 release entry; Stats refreshed (788 → 804 tests, 57 → 58 files).
+
 ## [2.7.1] — 2026-04-24
 
 Three `/setup` UX follow-ups from v2.7.0 confirmation testing, shipped as a single patch PR. The `?` / `help` trigger introduced in v2.7.0 turned out to collide with Claude Code's built-in keyboard-shortcut overlay (pressing `?` opens the shortcut panel before /setup's parser sees the keystroke); switched to the `help` keyword only. `worclaude init`'s `runOptionalExtras` was the only place in the init flow still using `inquirer type: 'confirm'` (rendered as `(y/N)`) — converted to `type: 'list'` arrow-key menus so every yes/no in init behaves consistently. CONFIRM_MEDIUM now invokes `AskUserQuestion` directly when the per-item option count fits the tool's `maxItems: 4` schema cap, with the consequence info ("Will be saved as") carried inside each option's `description` field; falls back to the verbatim text prompt (using `help` instead of `?`) when the count exceeds 4. CONFIRM_HIGH stays text-parse — detection lists routinely exceed 4 items. No consumer-visible schema or CLI surface additions.
