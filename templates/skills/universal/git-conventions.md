@@ -98,7 +98,7 @@ When using `git worktree` for parallel work:
 - Always clean up worktrees when done: `git worktree remove {path}`
 - Don't leave stale worktrees — they hold refs and can cause confusion
 
-Agents that use worktree isolation (code-simplifier, test-writer, ci-fixer, etc.)
+Agents that use worktree isolation (code-simplifier, test-writer, bug-fixer, etc.)
 create and clean up their own worktrees automatically.
 
 ## Shared-State Files

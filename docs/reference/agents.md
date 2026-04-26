@@ -55,7 +55,7 @@ Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fix
 
 ## Universal Agents
 
-These 5 agents are installed with every Worclaude project. They cover the core development workflow: planning, coding, testing, building, and verifying.
+These 6 agents are installed with every Worclaude project. They cover the core development workflow: planning, coding, testing, building, verifying, and tracking upstream changes.
 
 ### plan-reviewer
 
