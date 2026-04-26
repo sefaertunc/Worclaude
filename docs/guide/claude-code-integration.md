@@ -185,11 +185,10 @@ These agents have `disallowedTools` that prevent file modifications. They analyz
 
 The `background: true` field enables agents to run asynchronously. When you invoke a background agent, Claude continues working while the agent runs its checks in parallel.
 
-| Agent             | Model  | What It Does in Background                                   |
-| ----------------- | ------ | ------------------------------------------------------------ |
-| `build-validator` | Haiku  | Runs build, tests, and linter. Reports pass/fail.            |
-| `verify-app`      | Sonnet | Tests the running application end-to-end.                    |
-| `e2e-runner`      | Sonnet | Writes and runs end-to-end tests for critical user journeys. |
+| Agent             | Model  | What It Does in Background                        |
+| ----------------- | ------ | ------------------------------------------------- |
+| `build-validator` | Haiku  | Runs build, tests, and linter. Reports pass/fail. |
+| `verify-app`      | Sonnet | Tests the running application end-to-end.         |
 
 Background agents are ideal for validation tasks that do not need user oversight. They run, collect results, and report back when finished.
 

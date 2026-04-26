@@ -137,7 +137,7 @@ This is a two-step process. First, you select agent **categories**. The categori
   ◼ Backend         — api-designer, database-analyst, auth-auditor
   ◻ Frontend        — ui-reviewer, style-enforcer
   ◻ DevOps          — ci-fixer, docker-helper, deploy-validator, dependency-manager
-  ◼ Quality         — bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer, e2e-runner
+  ◼ Quality         — bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer
   ◻ Documentation   — doc-writer, changelog-generator
   ◻ Data / AI       — data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer
 ```

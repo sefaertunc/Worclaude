@@ -180,7 +180,7 @@ jobs:
 
             1. Read NEW_ITEMS_PATH and group items by source.
 
-            2. For each item, decide if it is "worth a Worclaude issue." Use the same cross-reference rules as `.claude/commands/upstream-check.md` — read that file with the Read tool and follow its classification logic (the critical-source list, the Worclaude-specific cross-reference rules against templates/agents, templates/commands, templates/hooks, src/data/agents.js, src/data/agent-registry.js, docs/spec/BACKLOG-v2.1.md, and CLAUDE.md Critical Rules).
+            2. For each item, decide if it is "worth a Worclaude issue." Use the cross-reference rules in `docs/reference/upstream-automation.md` — read that file with the Read tool and follow the "Classification Rules" section (the critical-source list, the Worclaude-specific cross-reference rules against templates/agents, templates/commands, templates/hooks, src/data/agents.js, src/data/agent-registry.js, docs/spec/BACKLOG.md, and CLAUDE.md Critical Rules).
 
             3. An item is worth an issue if it falls into any of these buckets:
                - Claude Code release / changelog / npm — always worth mentioning

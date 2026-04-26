@@ -2,7 +2,9 @@
 
 Worclaude ships a scheduled GitHub Actions workflow (`.github/workflows/upstream-check.yml`) that runs daily on the repository and opens an issue when Anthropic upstream changes are worth the maintainer's attention — even when no one's machine is on.
 
-This page documents the server-side automation. For the on-demand counterpart, see [`/upstream-check`](./slash-commands.md#upstream-check).
+::: warning Slash command retired
+The on-demand `/upstream-check` slash command (Phase 2 retirement, 2026-04) has been removed in favor of this scheduled automation. The classification rules previously lived in `.claude/commands/upstream-check.md`; they now live in this page (see [Classification Rules](#classification-rules) below) and the GitHub workflow reads them from here. The `upstream-watcher` agent is preserved for future revival.
+:::
 
 ## Overview
 
@@ -95,9 +97,57 @@ The workflow pushes state updates directly to `main`:
 
 The workflow fails loudly on a rejected push; it does not attempt to retry around protection rules.
 
-## Relationship to `/upstream-check`
+## Classification Rules
 
-The slash command (`.claude/commands/upstream-check.md`) is stateless and user-driven — good for ad-hoc checks inside a Claude Code session. The automated workflow is stateful and passive — good for catching upstream drift when you haven't opened the repo in a while. Both are expected to coexist indefinitely.
+The GitHub workflow uses these rules to decide whether an upstream item is worth a Worclaude issue. They previously lived in `.claude/commands/upstream-check.md` (retired in Phase 2). The workflow reads this section directly via the Read tool.
+
+### Critical sources
+
+Items whose `source` is one of these directly affect Worclaude scaffolded infrastructure — prefix as `[CRITICAL]` in the listing:
+
+- `claude-code-releases`
+- `claude-code-changelog`
+- `npm-claude-code`
+- `agent-sdk-ts-changelog`
+- `agent-sdk-py-changelog`
+
+### Worclaude-specific cross-reference
+
+For every `[CRITICAL]` item and every item from `engineering-blog`, do a targeted cross-reference against Worclaude's own architecture. Report under the heading **"Worclaude Impact"** with one subsection per item.
+
+- **Claude Code version / changelog / npm-claude-code** — a new Claude Code release can change agent frontmatter syntax, hook event names, command syntax, or tool names. Check:
+  - `templates/agents/**/*.md` and `templates/agents/universal/*.md` frontmatter fields (`model`, `isolation`, `disallowedTools`, `criticalSystemReminder`, `initialPrompt`)
+  - `templates/commands/*.md` frontmatter and bash examples
+  - `templates/hooks/*.cjs` — hook event names, input shapes, exit-code semantics (especially `pre-compact-save.cjs`, `correction-detect.cjs`, `learn-capture.cjs`, `skill-hint.cjs`)
+  - `src/data/agents.js` `AGENT_CATALOG` entries — any deprecated model names?
+
+- **Agent SDK TS/Py changelog** — SDK changes can affect spawned-agent capabilities and hook schemas. Check:
+  - `src/data/agent-registry.js` — `isolation`, `triggerType`, `model` fields still valid?
+  - `src/data/agents.js` `AGENT_CATALOG` — tool availability per category
+  - `src/core/scaffolder.js` and `src/core/merger.js` — do they emit frontmatter fields that the new SDK still understands?
+
+- **Anthropic API / docs** — only relevant if Worclaude adds direct SDK usage. Today Worclaude has no `@anthropic-ai/sdk` dependency; grep `package.json` to confirm, and flag informational only if absent.
+
+- **Engineering blog posts** — look for new workflow patterns, agent-design recommendations, or context-management techniques. Cross-reference against:
+  - `docs/spec/BACKLOG.md` — any pending item that this post would unblock or invalidate?
+  - `templates/skills/universal/*.md` — new best-practice skills that Worclaude should scaffold?
+  - `CLAUDE.md` Critical Rules section — any rule that this post contradicts?
+
+- **Status page incidents** — informational only. Note but do not cross-reference; no Worclaude impact.
+
+For each cross-reference, produce one of:
+
+- **Action needed:** specific file + what to check/update, plus a 1-line reason tied to the upstream item
+- **No impact detected:** the change does not touch any file listed above
+- **Needs investigation:** ambiguous; name the file and the uncertainty
+
+### Operational rules for the classifier
+
+- Use only `curl` and shell builtins. Do not invoke `node` or `npm`.
+- Do not cache, persist, or diff against prior runs — the classifier is stateless.
+- Reference specific Worclaude files by path. "Check the agents" is not enough; "Check `src/data/agents.js` line 10 — `ui-reviewer` model field" is.
+- If confidence that an item affects Worclaude is low, classify as "Needs investigation" rather than "Action needed".
+- Be concise. A maintainer skimming the issue should decide in 30 seconds whether to act.
 
 ## Version history
 

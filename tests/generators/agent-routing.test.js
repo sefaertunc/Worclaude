@@ -241,7 +241,7 @@ describe('AGENT_REGISTRY completeness', () => {
     }
   });
 
-  it('has exactly 26 agents (6 universal + 20 optional)', () => {
-    expect(Object.keys(AGENT_REGISTRY)).toHaveLength(26);
+  it('has exactly 25 agents (6 universal + 19 optional)', () => {
+    expect(Object.keys(AGENT_REGISTRY)).toHaveLength(25);
   });
 });
