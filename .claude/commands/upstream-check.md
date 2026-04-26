@@ -85,8 +85,8 @@ Cross-reference rules:
 - **Engineering blog posts** — look for new workflow patterns, agent-design
   recommendations, or context-management techniques. Cross-reference
   against:
-    - `docs/spec/BACKLOG-v2.1.md` — any item in the backlog that this post
-      would unblock or invalidate? Quote the backlog heading if so.
+    - `docs/spec/BACKLOG.md` — any pending item that this post would unblock
+      or invalidate? Quote the backlog heading if so.
     - `templates/skills/universal/*.md` — new best-practice skills that
       Worclaude should scaffold?
     - `CLAUDE.md` Critical Rules section — any rule that this post
