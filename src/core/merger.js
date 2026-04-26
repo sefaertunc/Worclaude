@@ -492,6 +492,12 @@ export async function performMerge(
   // Create learnings directory for correction capture
   await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
 
+  // Create scratch directory for SHA-keyed transient artifacts (gitignored)
+  await writeFile(path.join(projectRoot, '.claude', 'scratch', '.gitkeep'), '');
+
+  // Create plans directory for active work guidance (tracked)
+  await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
+
   // Opt-in: plugin.json (idempotent — scaffolder skips if file exists)
   if (selections.generatePluginJson) {
     await scaffoldPluginJson(projectRoot, selections);

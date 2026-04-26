@@ -48,3 +48,6 @@ docs/.vitepress/cache
 
 # Worclaude (generated workflow files)
 .claude/cache/
+
+# Worclaude (added Phase 2 PR G)
+.claude/scratch/
