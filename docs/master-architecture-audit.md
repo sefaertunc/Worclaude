@@ -377,22 +377,26 @@ What I might have missed:
 3. **Update Critical Rule #10** to include `agent-routing.md` as the third place to update on agent changes.
 4. **Remove or implement `ci-fixer`** — currently a dangling reference in `git-conventions.md`.
 5. **Decide `e2e-runner`'s fate** — bind to a future command, or retire alongside `/upstream-check`.
+6. **Fix `verify-app` agent** — surfaced by the 2026-04-26 concurrency test. The agent's contract requires Bash to execute scenarios A/B/C in tmp dirs, but its sandbox doesn't grant Bash; it bails immediately. Either grant Bash to its `tools` allowlist or rewrite the agent's contract to do something achievable with its current tool set. Currently a no-op for any project.
+7. **Add doctor check + cleanup convention for stale agent worktrees.** Surfaced by the 2026-04-26 concurrency test. After an agent completes, its worktree at `.claude/worktrees/agent-<id>` remains locked (lock holds the agent's pid even though the process is gone). `git worktree prune` does not remove locked worktrees; manual `git worktree remove -f -f` is required. Without a cleanup mechanism, worktrees pile up over time. Two parts:
+   - Doctor check: warn when more than N (e.g., 3) stale agent worktrees exist in `.claude/worktrees/`.
+   - Cleanup hook or convention: investigate whether Claude Code intends to clean up automatically or expects user intervention. If the latter, document and provide a `worclaude doctor --fix-worktrees` style helper.
 
 ### P1 — Architectural alignments (medium effort)
 
-6. **Auto-regenerate `agent-routing.md`** from `.claude/agents/*.md` frontmatter — eliminates the routing-skill drift surface.
-7. **Document hook contracts** in SPEC — input shapes, exit codes, profile gating, what each hook produces.
-8. **Define `.claude/scratch/` as a discoverable location** — `/start` lists it generically, new scratch artifacts auto-surface.
-9. **Designate `package.json` scripts as canonical for verification commands** — `/verify` and CLAUDE.md reference them, don't restate.
-10. **Add a `worclaude-meta.json` field for installation rationale** — record why specific agents/templates were chosen, so future readers understand the selection.
+8. **Auto-regenerate `agent-routing.md`** from `.claude/agents/*.md` frontmatter — eliminates the routing-skill drift surface.
+9. **Document hook contracts** in SPEC — input shapes, exit codes, profile gating, what each hook produces.
+10. **Define `.claude/scratch/` as a discoverable location** — `/start` lists it generically, new scratch artifacts auto-surface.
+11. **Designate `package.json` scripts as canonical for verification commands** — `/verify` and CLAUDE.md reference them, don't restate.
+12. **Add a `worclaude-meta.json` field for installation rationale** — record why specific agents/templates were chosen, so future readers understand the selection.
 
 ### P2 — Strategic alignments (larger or future-scoped)
 
-11. **Evaluate Boris's `@claude` PR-comment GitHub Action** — directly aligned with stated business purpose; missing today.
-12. **Audit unbound skills** (context-management, coordinator-mode, frontend-design-system, prompt-engineering, review-and-handoff, testing) — retire or bind.
-13. **Investigate `.claude/rules/` adoption** — Claude Code official feature; worclaude should consider scaffolding it as part of init.
-14. **Document the five-layer memory architecture** in CLAUDE.md or a dedicated skill — friction #6 outlined it; needs to land somewhere readable.
-15. **Reconcile `AGENTS.md` with CLAUDE.md** — confirm they're connected via `@import` or an explicit reference, per Claude Code v2 convention.
+13. **Evaluate Boris's `@claude` PR-comment GitHub Action** — directly aligned with stated business purpose; missing today.
+14. **Audit unbound skills** (context-management, coordinator-mode, frontend-design-system, prompt-engineering, review-and-handoff, testing) — retire or bind.
+15. **Investigate `.claude/rules/` adoption** — Claude Code official feature; worclaude should consider scaffolding it as part of init.
+16. **Document the five-layer memory architecture** in CLAUDE.md or a dedicated skill — friction #6 outlined it; needs to land somewhere readable.
+17. **Reconcile `AGENTS.md` with CLAUDE.md** — confirm they're connected via `@import` or an explicit reference, per Claude Code v2 convention.
 
 ---
 
