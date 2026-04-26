@@ -18,7 +18,7 @@ Each rule type handles a different point on the safety-vs-friction spectrum:
 
 **Evaluation order:** `deny` → `ask` → `allow`. The first matching rule wins. A command that matches both an `allow` pattern and a `deny` pattern will be denied, because `deny` is checked first.
 
-Worclaude installs `allow` rules only. `ask` and `deny` are user-managed policy — add them manually as your project requires.
+Worclaude installs `allow` rules and a small targeted `deny` set (see [Default Deny Rules](#default-deny-rules) below). `ask` rules are user-managed policy — add them manually as your project requires.
 
 ## Permission Syntax
 
@@ -183,23 +183,77 @@ Example:
 
 Worclaude does not install any `ask` rules by default. Choosing which commands deserve a confirmation prompt is project policy, not scaffolding.
 
-## Deny Rules
+## Default Deny Rules
 
-The `permissions` object also supports a `deny` key for explicitly blocking commands. Deny rules are checked before `ask` and `allow`, so a matched `deny` pattern always wins. Worclaude does not install any deny rules by default, but they can be added manually:
+Worclaude scaffolds a small, targeted `deny` set into `templates/settings/base.json`. Deny rules take precedence over `allow` and `ask`, so a matched deny is a hard block. The default set covers three categories:
+
+### 1. Secret-file Read/Edit
+
+Blocks Claude's built-in Read and Edit tools from accessing common secret-file paths:
 
 ```json
-{
-  "permissions": {
-    "allow": [ ... ],
-    "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(curl:*)",
-      "Read(.env*)",
-      "Read(secrets/**)"
-    ]
-  }
-}
+"Read(./.env)", "Read(./.env.*)",
+"Read(./secrets/**)",
+"Edit(./.env)", "Edit(./.env.*)", "Edit(./secrets/**)",
+"Read(./*.pem)", "Read(./*.key)",
+"Read(./id_rsa)", "Read(./id_ed25519)",
+"Read(~/.ssh/**)",
+"Read(~/.aws/credentials)",
+"Read(~/.config/gh/hosts.yml)"
 ```
+
+These use gitignore-style matching and are the **most reliable** deny patterns Claude Code supports — the path-pattern matcher is well-defined, unlike Bash argument constraints.
+
+### 2. `.env`-targeting Bash file viewers
+
+Closes the gap that Read denies don't cover (`Read(./.env)` blocks the Read tool, not `cat .env` in Bash):
+
+```json
+"Bash(cat *.env*)", "Bash(head *.env*)", "Bash(tail *.env*)",
+"Bash(less *.env*)", "Bash(more *.env*)", "Bash(grep *.env*)"
+```
+
+These enumerate the **commands** users would run, not the arguments — which is the official guidance for robust matching. Compound-command awareness (`&&`, `|`, `;`) means each subcommand is matched independently, so `git diff && cat .env` is still blocked.
+
+### 3. Catastrophic `rm -rf` patterns
+
+```json
+"Bash(rm -rf /)", "Bash(rm -rf /*)",
+"Bash(rm -fr /)", "Bash(rm -fr /*)",
+"Bash(rm -rf ~)", "Bash(rm -rf ~/*)",
+"Bash(rm -rf $HOME)", "Bash(rm -rf $HOME/*)"
+```
+
+Claude Code's sandbox already prompts on `rm`/`rmdir` against `/`, `$HOME`, or "critical system paths" — these deny rules turn that prompt into a hard block.
+
+### Coverage limitations
+
+Worclaude is explicit about what these rules don't catch:
+
+- **Bash deny rules constraining arguments are inherently fragile** (per Claude Code's own docs). The `rm -rf /` set covers literal-match catastrophes; variants like `rm --recursive --force /`, `rm -fr //`, or shell-variable indirection (`RM=rm; $RM -rf /`) **evade**. Treat as defense against accidents, not a sandbox.
+- **The `.env` Bash family doesn't cover every read tool.** `awk`, `xxd`, `od`, `vim`, `python -c "print(open('.env').read())"`, and similar workarounds **evade**.
+- **Read/Edit denies apply to Claude's tools, not Bash subprocesses.** A `Read(./.env)` deny blocks the Read tool but does not prevent `cat .env` in Bash unless the matching Bash deny is also present.
+- **For OS-level enforcement that survives all of these,** enable Claude Code's [sandbox](https://code.claude.com/docs/en/sandboxing) — it gives filesystem and network restrictions that no shell command can bypass.
+
+### Hardening further
+
+Common additions teams pick up:
+
+```json
+"deny": [
+  // Network exfil — block curl/wget entirely; use WebFetch with allowlist instead
+  "Bash(curl *)", "Bash(wget *)",
+
+  // Pipe-to-shell antipattern (note: still fragile per docs)
+  "Bash(curl * | sh)", "Bash(curl * | bash)",
+
+  // Cloud-credential files specific to your toolchain
+  "Read(~/.docker/config.json)",
+  "Read(~/.kube/config)"
+]
+```
+
+If you take the `Bash(curl *)` route, remember to add a `WebFetch(domain:...)` allow rule for legitimate fetches, otherwise Claude can't reach the network at all.
 
 ---
 

@@ -197,6 +197,28 @@ and tell the user to run /conflict-resolver first.
        ⚠-prefixed bullets under `### Changed` — not just in the transient
        prompt. This is how under-documentation becomes permanent record.
 
+    c. Refresh tech-stack metrics in CLAUDE.md and AGENTS.md.
+
+       Both files commonly include a line like `Vitest (804 tests, 58 files)`
+       or `npm test    # Run tests (804 tests, 58 files)`. These drift
+       silently as tests are added or moved.
+
+       - Run the project's test runner with a JSON-capable reporter and
+         capture the totals. Examples:
+         - Node/Vitest: `npx vitest run --reporter=json --outputFile=/tmp/_vitest.json && jq '.numTotalTests, (.testResults | length)' /tmp/_vitest.json`
+         - Node/Jest: `npx jest --json --outputFile=/tmp/_jest.json && jq '.numTotalTests, (.testResults | length)' /tmp/_jest.json`
+         - Python/pytest: `pytest --json-report --json-report-file=/tmp/_pytest.json -q && jq '.summary.total, (.tests | map(.nodeid | split("::")[0]) | unique | length)' /tmp/_pytest.json`
+         - Cargo test: count lines from `cargo test --no-run --message-format=json | jq -s '[.[] | select(.profile.test == true)] | length'`
+
+       - Search CLAUDE.md and AGENTS.md for any line matching the pattern
+         `\d+ tests?, \d+ files?`. Update each match with the captured
+         counts. If neither file contains such a line, skip silently — not
+         every project surfaces these metrics.
+
+       - Do NOT add the metrics line if it isn't already there. This step
+         only refreshes existing claims; introducing new ones is a project
+         decision, not a `/sync` decision.
+
 ## Verify
 
 11. Run /verify to confirm tests and lint pass.

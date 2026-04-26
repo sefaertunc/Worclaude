@@ -905,6 +905,41 @@ async function checkOriginHead(projectRoot) {
   );
 }
 
+const STALE_WORKTREE_THRESHOLD = 3;
+
+async function checkStaleWorktrees(projectRoot) {
+  const worktreesDir = path.join(projectRoot, '.claude', 'worktrees');
+  if (!(await fs.pathExists(worktreesDir))) {
+    return result(PASS, '.claude/worktrees/ (none)', null);
+  }
+
+  let entries;
+  try {
+    entries = await fs.readdir(worktreesDir);
+  } catch {
+    return result(PASS, '.claude/worktrees/ (unreadable, skipped)', null);
+  }
+
+  const dirs = [];
+  for (const name of entries) {
+    if (name.startsWith('.')) continue;
+    const stat = await fs.stat(path.join(worktreesDir, name)).catch(() => null);
+    if (stat && stat.isDirectory()) dirs.push(name);
+  }
+
+  if (dirs.length === 0) {
+    return result(PASS, '.claude/worktrees/ (empty)', null);
+  }
+  if (dirs.length <= STALE_WORKTREE_THRESHOLD) {
+    return result(PASS, `.claude/worktrees/ (${dirs.length} present)`, null);
+  }
+  return result(
+    WARN,
+    `.claude/worktrees/ has ${dirs.length} entries (threshold ${STALE_WORKTREE_THRESHOLD})`,
+    'Locked agent worktrees survive `git worktree prune`. Run `worclaude worktrees clean` to force-remove them.'
+  );
+}
+
 async function checkPendingReviewFiles(projectRoot) {
   const pending = [];
   try {
@@ -1017,6 +1052,7 @@ export async function doctorCommand(options = {}) {
   section('Integrity');
   record('integrity', await checkHashIntegrity(projectRoot, meta));
   record('integrity', await checkPendingReviewFiles(projectRoot));
+  record('integrity', await checkStaleWorktrees(projectRoot));
   spacer();
 
   // Exit code
