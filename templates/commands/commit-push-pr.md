@@ -44,26 +44,37 @@ files (see git-conventions.md for the canonical list).
 2. Stage all changes: git add -A
 3. Write a clear, conventional commit message
 4. Push to the current branch
-5. Create a PR targeting develop: gh pr create --base develop
-6. Determine the version bump level for this PR. Read the Versioning Policy
-   in the project's git-conventions document to decide: `major`, `minor`,
-   `patch`, or `none`.
-   - `major` — breaking change to public API, CLI, or scaffold contract
-   - `minor` — new feature, command, agent, or flag
-   - `patch` — bug fix or user-visible behavior change with no new surface
-   - `none` — docs, CI, tests, internal refactor (nothing consumers notice)
+5. **Required: prompt for `Version bump:` declaration via AskUserQuestion.**
+   Use AskUserQuestion with these four options and one-line descriptions:
+
+   ```
+   Question: "What version bump does this PR declare?"
+
+   - major  — breaking change to public API, CLI, or scaffold contract
+   - minor  — new feature, command, agent, or flag
+   - patch  — bug fix or user-visible behavior change with no new surface
+   - none   — docs, CI, tests, internal refactor (nothing consumers notice)
+   ```
 
    For revert PRs: declare the same bump level as the PR being reverted.
 
-   If the change is ambiguous, ASK THE USER. Do not guess.
+   **Refuse to proceed without an answer.** No PR opens until the user
+   selects one of the four options. This is the upstream enforcement of
+   `/sync`'s release-time aggregation — every PR carries an explicit
+   declaration so `/sync` can pick max without surprises.
 
-   The PR description MUST include this line on its own, verbatim:
+   If the user's answer is genuinely ambiguous after seeing the four
+   options (rare), ask one targeted clarifying question, then re-prompt.
+
+6. Create the PR with `gh pr create --base develop`. The PR description
+   MUST include this line on its own, verbatim:
 
    ```
    Version bump: {major|minor|patch|none}
    ```
 
    `/sync` parses this string exactly — other phrasings will be ignored.
+
 7. Include in PR description: title, changes, testing done, reviewer notes
 
 ## On develop

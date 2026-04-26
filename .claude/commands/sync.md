@@ -81,6 +81,15 @@ and tell the user to run /conflict-resolver first.
 
 ## Aggregate version bumps from merged PRs
 
+**Enforcement model.** `/commit-push-pr` prompts every PR author for a
+`Version bump:` declaration via `AskUserQuestion` and refuses to open a
+PR without one. This step catches stragglers — manual `gh pr create`
+calls, hot-fix branches that bypassed `/commit-push-pr`, or imports
+from outside the workflow. Missing declarations are treated as `none`
+**and surfaced permanently in the CHANGELOG** so under-documentation is
+visible rather than silent. Do NOT silently upgrade missing declarations
+to a higher level — the warning is the enforcement.
+
 7. Collect `Version bump:` declarations from all PRs merged into develop
    since the last version tag. Use `%as` for the date format (strict
    YYYY-MM-DD; `%ai` breaks GitHub search due to space separator and
