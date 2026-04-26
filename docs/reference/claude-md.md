@@ -2,9 +2,9 @@
 
 Worclaude generates a `CLAUDE.md` file at the project root during `worclaude init`. This file is the primary instruction set Claude reads at the start of every session and after every context compaction. It is deliberately kept short.
 
-## Why ~40 Lines
+## Why ~200 Lines
 
-Claude reads CLAUDE.md on every session start and after every `/compact`. Every line consumes context budget on every interaction. The template targets roughly 40 lines of actual content to balance completeness with economy.
+Claude reads CLAUDE.md on every session start and after every `/compact`. Every line consumes context budget on every interaction. The template targets roughly 200 lines of actual content (Claude Code's official guidance), balancing completeness with economy.
 
 Detailed knowledge is pushed to skill files, which are loaded on demand. CLAUDE.md contains just enough for Claude to orient itself and pointers to deeper knowledge.
 
@@ -111,9 +111,14 @@ Three-line workflow protocol. Covers the full session lifecycle. Each phase has 
 5. Self-healing: same mistake twice → update CLAUDE.md.
 6. Use subagents to keep main context clean.
 7. Mediocre fix → scrap it, implement elegantly.
+8. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
+9. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
+10. Surgical changes only — every changed line must trace to the request. Don't "improve" adjacent code, comments, or formatting.
+11. Push back when simpler approaches exist. Present alternatives, don't pick silently.
+12. Transform tasks to success criteria. "Fix the bug" → "Write a failing test, then make it pass."
 ```
 
-Seven rules that apply to every task. These prevent the most common failure modes: feature drift (rule 1), untested code (rule 2), silent assumptions (rules 3-4), repeated mistakes (rule 5), context bloat (rule 6), and low-quality patches (rule 7).
+Twelve baseline rules that apply to every task. They prevent the most common failure modes: feature drift (rule 1), untested code (rule 2), silent assumptions (rules 3-4), repeated mistakes (rule 5), context bloat (rule 6), low-quality patches (rule 7), shared-state conflicts on parallel branches (rule 8), unwanted attribution in git history (rule 9), scope creep (rule 10), unilateral architectural choices (rule 11), and vague success criteria (rule 12). Projects accumulate additional rules as they encounter project-specific edge cases — Worclaude's own CLAUDE.md currently has 15.
 
 ### Gotchas
 
@@ -152,7 +157,7 @@ After installation, users should:
 1. Run `/setup` to fill in tech stack details and commands with real project data.
 2. Add project-specific critical rules as they emerge.
 3. Let the Gotchas section grow naturally from development experience.
-4. Keep the file under ~50 lines. Move detailed guidance to skill files.
+4. Keep the file under ~200 lines (Claude Code's official guidance). Move detailed guidance to skill files.
 5. Prune regularly -- remove rules for deleted code, consolidate duplicates.
 
 ---

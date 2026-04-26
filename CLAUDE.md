@@ -16,7 +16,7 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 - **Spinners:** Ora ^8.2.0
 - **File operations:** fs-extra ^11.3.0
 - **Hashing:** Node.js crypto (built-in, CRLF-normalized)
-- **Testing:** Vitest (497 tests, 31 files)
+- **Testing:** Vitest (804 tests, 58 files)
 - **Linting:** ESLint flat config (eslint.config.js) + Prettier (single quotes, trailing commas ES5, 100 char width)
 - **Docs:** VitePress (GitHub Pages via GitHub Actions)
 - **Package manager:** npm (caret ranges, no lockfile pinning)
@@ -32,7 +32,7 @@ node src/index.js backup        # Test backup command
 node src/index.js restore       # Test restore command
 node src/index.js diff          # Test diff command
 node src/index.js delete        # Test delete command
-npm test                        # Run tests (497 tests, 31 files)
+npm test                        # Run tests (804 tests, 58 files)
 npm run lint                    # Lint
 npm run format                  # Format
 npm run docs:dev                # VitePress dev server
@@ -55,7 +55,7 @@ See `.claude/skills/` for project-specific guidance.
 
 ## Memory Architecture
 
-- Auto-memory: `.claude/learnings/` (captured by hooks; reviewed via `/learn`).
+- Captured learnings: `.claude/learnings/` (captured by hooks; reviewed via `/learn`). Reserved phrase "auto-memory" refers to Claude Code's built-in feature at `~/.claude/projects/<proj>/memory/`, not this directory.
 - CLAUDE.md stays lean — it is shared with teammates. Long-form notes belong in `docs/memory/` or the learnings directory.
 - The `[LEARN]` marker in tool output flags moments worth capturing.
 
@@ -78,7 +78,7 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 7. Never do JSON text substitution on stringified JSON — always operate on parsed objects.
 8. Never use `console.log` for user output — use `display.*` functions.
 9. Never leave Ora spinner running when Inquirer prompt fires.
-10. Always add new agents to both `agents.js` AND `agent-registry.js`.
+10. Always add new agents to `agents.js`, `agent-registry.js`, AND regenerate `.claude/skills/agent-routing/SKILL.md` (built by `src/generators/agent-routing.js` from registry metadata).
 11. Always add new template files to both scaffolder AND workflow-meta hash computation.
 12. Always handle the "Other / None" language edge case in stack-related code.
 13. Every merge to `main` is a user-visible release and carries a version bump (`patch`, `minor`, or `major`). `/sync` aggregates per-PR `Version bump:` declarations from develop and only opens a PR to `main` when at least one declared bump is above `none`. Internal-only work (`none`-only batches) updates shared-state files on develop but never reaches `main`. Always publish from `main` via the `release.yml` workflow (triggered by creating a GitHub Release), never directly from `develop`. See git-conventions.md Versioning Policy.

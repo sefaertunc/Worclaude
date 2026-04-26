@@ -72,7 +72,7 @@ How it works:
 3. Commits changes
 4. You merge or cherry-pick the results
 
-Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fixer,
+Agents with worktree isolation: code-simplifier, test-writer, verify-app,
 bug-fixer, refactorer, doc-writer.
 
 ### Base-branch gotcha

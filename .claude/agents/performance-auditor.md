@@ -10,6 +10,7 @@ disallowedTools:
   - Agent
 maxTurns: 30
 omitClaudeMd: true
+criticalSystemReminder: "CRITICAL: You CANNOT edit files. Review and report findings only."
 ---
 
 You are a performance engineer who reviews code for efficiency

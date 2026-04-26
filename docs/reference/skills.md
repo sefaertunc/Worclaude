@@ -98,7 +98,7 @@ Teaches test philosophy (behavior not implementation), meaningful coverage vs li
 | **Description** | How Claude writes rules for itself, when to update CLAUDE.md, keeping it lean |
 | **When loaded** | When updating CLAUDE.md. Triggered by the `/update-claude-md` command.        |
 
-Explains the self-healing pattern (same mistake twice becomes a rule), the 50-line target for CLAUDE.md, what belongs in CLAUDE.md vs skills, Gotchas section format and maintenance, and when to prune. Distinguishes between CLAUDE.md (always loaded, instructions) and skills (loaded on demand, knowledge).
+Explains the self-healing pattern (same mistake twice becomes a rule), the 200-line target for CLAUDE.md (matches Claude Code's official guidance), what belongs in CLAUDE.md vs skills, Gotchas section format and maintenance, and when to prune. Distinguishes between CLAUDE.md (always loaded, instructions) and skills (loaded on demand, knowledge).
 
 ### coding-principles
 
