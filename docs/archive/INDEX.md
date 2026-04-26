@@ -48,9 +48,15 @@ scheduled into a phase). It is not archived per release.
   findings beyond the friction docs; established P0/P1/P2 priorities
   that fed the phase plan.
 
-### Retrospectives
+### Retrospectives — 2026-04
 
-_(empty; populate at phase ends)_
+- [phase-1.md](retrospectives/2026-04/phase-1.md)
+  — Phase 1 (drift cleanup) shipped across PRs #126, #127, #128 in
+  one day. Captures 5 deviations from the audit's plan, follow-ups
+  surfaced during implementation, and lessons for Phase 2+ (mark
+  explicit decision points in phase docs; verify external docs
+  before proposing implementation; audit acceptance criteria need
+  reality-check; A/B/C slicing works).
 
 ## Conventions
 
