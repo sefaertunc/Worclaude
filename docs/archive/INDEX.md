@@ -48,8 +48,12 @@ The structure: `docs/archive/{topic}/{YYYY-MM}/{slug}.md`.
 
 ### Backlogs — 2026-04
 
-_(empty; populated when `BACKLOG-v2.1.md` is migrated per Phase 1
-T1.8)_
+- [backlog-v2.1.md](backlogs/2026-04/backlog-v2.1.md)
+  — Migrated from `docs/spec/BACKLOG-v2.1.md` (Phase 1 T1.8). Captures
+  completed Phase 2/4/5 work, speculative agent/skill enhancements that
+  were not adopted, sandbox-defaults open questions, and competitive-
+  awareness notes. Forward-looking pending items live in
+  `docs/spec/BACKLOG.md`.
 
 ### Retrospectives
 

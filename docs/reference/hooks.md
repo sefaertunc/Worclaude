@@ -1,6 +1,11 @@
 # Hooks
 
-Worclaude configures Claude Code hooks in `.claude/settings.json`. Hooks are commands that run automatically in response to Claude's actions. Four hooks are installed by default, plus a strict-only hook that activates with the `strict` [hook profile](#hook-profiles).
+Worclaude configures Claude Code hooks in `.claude/settings.json`. Hooks are commands that run automatically in response to Claude's actions. Worclaude scaffolds nine hook entries across eight events, plus a strict-only hook that activates with the `strict` [hook profile](#hook-profiles).
+
+Two kinds of hook bodies ship with Worclaude:
+
+- **Inline shell** — short commands embedded directly in `settings.json` (SessionStart, PostCompact, PostToolUse formatter and TypeScript check, SessionEnd/Notification notification command).
+- **Hook scripts** — Node.js files under `.claude/hooks/` that are invoked from `settings.json` via `node .claude/hooks/<name>.cjs`. Four scripts are installed by default: `correction-detect.cjs`, `skill-hint.cjs`, `learn-capture.cjs`, and `pre-compact-save.cjs`. They share a defensive contract: never block the host event, always exit 0, and silently no-op if the script is missing.
 
 ## Installed Hooks
 
@@ -8,26 +13,17 @@ Worclaude configures Claude Code hooks in `.claude/settings.json`. Hooks are com
 
 Fires when a Claude Code session begins. Injects the full project context so Claude starts every session oriented.
 
-```json
-{
-  "matcher": "",
-  "hooks": [
-    {
-      "type": "command",
-      "command": "echo '=== CLAUDE.md ==='; cat CLAUDE.md 2>/dev/null; echo; echo '=== PROGRESS ==='; cat docs/spec/PROGRESS.md 2>/dev/null; echo; echo '=== LAST SESSION ==='; f=$(ls -t .claude/sessions/*.md 2>/dev/null | head -1); if [ -n \"$f\" ]; then cat \"$f\"; else echo 'No previous session found'; fi; echo; echo '=== BRANCH ==='; git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'not a git repo'"
-    }
-  ]
-}
-```
-
-The empty `matcher` string means this hook fires on every session start. It reads four things:
+The empty `matcher` string means this hook fires on every session start. It reads five things:
 
 1. **CLAUDE.md** -- project instructions and critical rules
 2. **docs/spec/PROGRESS.md** -- what was completed, what is next
 3. **Last session summary** -- the most recent file from `.claude/sessions/`, so the new session picks up where the previous one left off
 4. **Current branch** -- via `git rev-parse`
+5. **Recent learnings** -- top 5 entries from `.claude/learnings/index.json`, sorted by capture date
 
 This hook has no profile gate -- it always fires regardless of `WORCLAUDE_HOOK_PROFILE`, because losing project context is never desirable.
+
+**Exit-code semantics:** standard `SessionStart` semantics — exit 0 with stdout shown to Claude. The hook always exits 0 because it pipes through `cat` / `git` directly and tolerates missing files via `2>/dev/null`.
 
 The `/start` slash command supplements this hook with drift detection (commits since last session), handoff file checks, and active implementation prompt loading.
 
@@ -75,35 +71,7 @@ When multiple languages are selected, the first language's formatter is used.
 
 ---
 
-### PostToolUse: Stop Notification
-
-Sends a desktop notification when Claude stops and needs user attention.
-
-```json
-{
-  "matcher": "Stop",
-  "hooks": [
-    {
-      "type": "command",
-      "command": "notify-send 'Claude Code' 'Session needs attention' 2>/dev/null || true"
-    }
-  ]
-}
-```
-
-The notification command is selected based on the operating system detected during `worclaude init`.
-
-**Notification commands by OS:**
-
-| OS      | Command                                                                                                                |
-| ------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Linux   | `notify-send 'Claude Code' 'Session needs attention' 2>/dev/null \|\| true`                                            |
-| macOS   | `osascript -e 'display notification "Session needs attention" with title "Claude Code"' 2>/dev/null \|\| true`         |
-| Windows | `powershell -command "New-BurntToastNotification -Text 'Claude Code','Session needs attention'" 2>/dev/null \|\| true` |
-
-All commands include `2>/dev/null || true` to fail silently if the notification tool is not installed.
-
-Both PostToolUse hooks (formatter and stop notification) are gated by the hook profile. They skip execution when `WORCLAUDE_HOOK_PROFILE=minimal`. See [Hook Profiles](#hook-profiles) below.
+The PostToolUse formatter is gated by the hook profile and skips execution when `WORCLAUDE_HOOK_PROFILE=minimal`. See [Hook Profiles](#hook-profiles) below.
 
 ---
 
@@ -151,19 +119,189 @@ This hook works in tandem with the `/compact-safe` slash command, which triggers
 
 ---
 
+### PreCompact: Snapshot (`pre-compact-save.cjs`)
+
+Writes a git context snapshot to `.claude/sessions/pre-compact-{timestamp}.md` immediately before a `/compact` runs, so the next session can recover branch, modified files, and recent commits even if compaction loses other context.
+
+```json
+{
+  "matcher": "",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "test -f .claude/hooks/pre-compact-save.cjs && node .claude/hooks/pre-compact-save.cjs || true",
+      "async": true
+    }
+  ]
+}
+```
+
+**Script:** `.claude/hooks/pre-compact-save.cjs`. Reads JSON on stdin per Claude Code's hook contract (`trigger`, `cwd`), shells out to `git rev-parse --abbrev-ref HEAD`, `git status --porcelain`, and `git log --oneline -3` (each with a 5s timeout and stderr suppressed), then writes a markdown snapshot. `mkdir -p .claude/sessions/` is idempotent.
+
+**Exit-code semantics:** always exits 0 — never blocks compaction. The wrapper's `|| true` means a missing or broken script also never blocks. `async: true` runs the snapshot in the background so compaction is not delayed.
+
+**Profile gating:** none — fires on every compact event regardless of `WORCLAUDE_HOOK_PROFILE`. Snapshots are cheap and the recovery value is high.
+
+---
+
+### UserPromptSubmit: Correction & Skill Hints
+
+Two hook scripts run in sequence on every user prompt: `correction-detect.cjs` flags learnable moments, `skill-hint.cjs` suggests relevant skills based on prompt keywords. Both surface short hints to Claude via stdout; neither blocks the prompt.
+
+```json
+{
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/correction-detect.cjs && node .claude/hooks/correction-detect.cjs || true"
+        }
+      ]
+    },
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/skill-hint.cjs && node .claude/hooks/skill-hint.cjs || true"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Script:** `.claude/hooks/correction-detect.cjs`. Regex-matches the user prompt against two pattern sets:
+
+- **Correction patterns** (e.g., `no, that's wrong`, `you should`, `actually,`, `wrong file`, `undo that`) — emits `[Correction detected] Consider proposing a [LEARN] block...` so Claude can suggest capturing a generalizable rule.
+- **Learn patterns** (e.g., `remember this`, `add this to your rules`, `[LEARN]`) — emits `[Learn trigger detected] Capture this as a [LEARN] block...` so Claude formats the capture cleanly.
+
+No file I/O, no network. Hits at most one path per prompt.
+
+**Script:** `.claude/hooks/skill-hint.cjs`. Tokenizes the user prompt (length ≥4, common stop-words removed), reads `.claude/skills/` directory entries, and emits `[Skill hint] Consider loading skill: <slug>/SKILL.md` for the first slug whose tokens overlap with the prompt. Stops after one hint to avoid noise. (Frontmatter-aware matching is a pending enhancement tracked in `docs/spec/BACKLOG.md` — currently matches directory names only.)
+
+**Exit-code semantics:** both scripts exit 0 unconditionally — `UserPromptSubmit` exit code 2 would block the prompt, which neither script ever does. `try/catch` around stdin parsing means malformed input also exits 0 silently.
+
+**Profile gating:** both scripts skip on `minimal`; fire on `standard` and `strict`.
+
+---
+
+### Stop: Learning Capture (`learn-capture.cjs`)
+
+Scans the session transcript for `[LEARN]` blocks at session stop and persists each one as a markdown file under `.claude/learnings/`, with an updated `index.json`.
+
+```json
+{
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/learn-capture.cjs && node .claude/hooks/learn-capture.cjs || true"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Script:** `.claude/hooks/learn-capture.cjs`. Reads `cwd` and `transcript_path` from stdin, scans the last 20 transcript lines for assistant messages containing `[LEARN] category: rule` blocks (with optional `Mistake:` and `Correction:` lines), and appends each capture to `.claude/learnings/<slug>.md` plus `index.json`.
+
+A 30-second `.claude/.stop-hook-active` flag file guards against re-entry when multiple stop hooks fire in quick succession. The flag is best-effort and tolerates unreadable state — if the flag check fails, the script proceeds.
+
+**Exit-code semantics:** always exits 0 — never blocks `Stop`. Exit code 2 on `Stop` would re-prompt Claude to continue, which is wrong for a passive capture hook.
+
+**Profile gating:** skips on `minimal`; fires on `standard` and `strict`.
+
+---
+
+### SessionEnd: Notification
+
+Fires when a Claude Code session ends (clear, logout, prompt-input exit, or other). Worclaude wires the OS-appropriate desktop notification command here so the user knows their session closed.
+
+```json
+{
+  "SessionEnd": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {notification_command}",
+          "async": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+The `{notification_command}` placeholder is replaced during scaffolding with the OS-appropriate command (see [Notification commands by OS](#notification-commands-by-os) below).
+
+**Exit-code semantics:** exit 0 succeeds silently. The notification command's `2>/dev/null || true` suffix means a missing notifier (e.g., `notify-send` not installed) also exits 0.
+
+**Profile gating:** skips on `minimal`; fires on `standard` and `strict`. `async: true` so the notification does not delay session teardown.
+
+---
+
+### Notification: Attention Notification
+
+Fires when Claude needs the user's attention mid-session (permission request, idle prompt). Same notification command body as `SessionEnd` — Worclaude reuses the OS-appropriate notifier.
+
+```json
+{
+  "Notification": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; {notification_command}",
+          "async": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Exit-code semantics:** exit 0 silent. Same fail-silent guarantees as `SessionEnd`.
+
+**Profile gating:** skips on `minimal`; fires on `standard` and `strict`.
+
+#### Notification commands by OS
+
+| OS      | Command                                                                                                                |
+| ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Linux   | `notify-send 'Claude Code' 'Session needs attention' 2>/dev/null \|\| true`                                            |
+| macOS   | `osascript -e 'display notification "Session needs attention" with title "Claude Code"' 2>/dev/null \|\| true`         |
+| Windows | `powershell -command "New-BurntToastNotification -Text 'Claude Code','Session needs attention'" 2>/dev/null \|\| true` |
+
+The OS is detected during `worclaude init` and the matching command substituted into both the `SessionEnd` and `Notification` hook entries.
+
+---
+
 ## Hook Profiles
 
 The `WORCLAUDE_HOOK_PROFILE` environment variable controls which hooks fire. The default is `standard`.
 
-| Hook                          | `minimal` | `standard` | `strict` |
-| ----------------------------- | --------- | ---------- | -------- |
-| SessionStart: Context         | Yes       | Yes        | Yes      |
-| PostToolUse: Formatter        | No        | Yes        | Yes      |
-| PostToolUse: Stop             | No        | Yes        | Yes      |
-| PostToolUse: TypeScript Check | No        | No         | Yes      |
-| PostCompact: Context          | Yes       | Yes        | Yes      |
+| Hook                                  | `minimal` | `standard` | `strict` |
+| ------------------------------------- | --------- | ---------- | -------- |
+| SessionStart: Context                 | Yes       | Yes        | Yes      |
+| PostToolUse: Formatter                | No        | Yes        | Yes      |
+| PostToolUse: TypeScript Check         | No        | No         | Yes      |
+| PostCompact: Context                  | Yes       | Yes        | Yes      |
+| PreCompact: Snapshot (script)         | Yes       | Yes        | Yes      |
+| UserPromptSubmit: Correction (script) | No        | Yes        | Yes      |
+| UserPromptSubmit: Skill Hint (script) | No        | Yes        | Yes      |
+| Stop: Learning Capture (script)       | No        | Yes        | Yes      |
+| SessionEnd: Notification              | No        | Yes        | Yes      |
+| Notification: Attention               | No        | Yes        | Yes      |
 
-**Design rationale:** SessionStart and PostCompact always fire because losing project context is never desirable. The formatter and notification hooks can be disabled for environments where they cause issues (CI runners, constrained machines, or when the formatter is too slow). The TypeScript check is strict-only because it adds latency after every edit.
+**Design rationale:** SessionStart, PostCompact, and PreCompact always fire because losing project context (or losing the chance to snapshot it) is never desirable. The formatter, notification, learning-capture, correction-detection, and skill-hint hooks can be disabled for environments where they cause issues (CI runners, constrained machines, or when the formatter is too slow). The TypeScript check is strict-only because it adds latency after every edit.
 
 **Setting the profile:**
 

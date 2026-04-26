@@ -175,8 +175,9 @@ each skill's `description:` frontmatter and use those tokens too. Higher
 hit rate, less drift between skill-rename and matching behavior.
 
 **Files:** `templates/hooks/skill-hint.cjs`.
-**Source:** legacy `BACKLOG-v2.1.md` → migrated to `BACKLOG.md` in
-T1.8.
+**Source:** archived in `docs/archive/backlogs/2026-04/backlog-v2.1.md`
+("Phase 4 follow-up items"); listed as pending in `docs/spec/BACKLOG.md`
+after T1.8 migration.
 **Acceptance:** skills are matched by description content, not just
 name.
 
@@ -186,8 +187,9 @@ ci.yml` that runs `claude plugin validate` on the generated
 evolves. Gate on the file existing.
 
 **Files:** `.github/workflows/ci.yml`.
-**Source:** legacy `BACKLOG-v2.1.md` → migrated to `BACKLOG.md` in
-T1.8.
+**Source:** archived in `docs/archive/backlogs/2026-04/backlog-v2.1.md`
+("Phase 4 follow-up items"); listed as pending in `docs/spec/BACKLOG.md`
+after T1.8 migration.
 **Acceptance:** CI fails on plugin.json schema breakage; passes when
 schema is valid (or file absent).
 

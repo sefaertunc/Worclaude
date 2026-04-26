@@ -21,11 +21,12 @@ The cycle:
 This is why the Gotchas section exists. It grows organically from real problems
 encountered during development.
 
-## The 50-Line Target
+## The 200-Line Target
 
-CLAUDE.md should stay under 50 lines of actual content (excluding blank lines and
-section headers). This is a target, not a hard limit, but exceeding it significantly
-means CLAUDE.md is trying to do too much.
+CLAUDE.md should stay under 200 lines of actual content. This is the official
+Claude Code guidance and matches `worclaude doctor`'s WARN threshold (150 lines /
+30,000 chars) and ERROR threshold (200 lines). It is a target, not a hard limit,
+but exceeding it significantly means CLAUDE.md is trying to do too much.
 
 Claude reads CLAUDE.md at the start of every session and after every /compact.
 Long CLAUDE.md files waste context on every single interaction.
@@ -78,7 +79,7 @@ Each gotcha should be:
 ## When to Prune
 
 Review CLAUDE.md when:
-- It exceeds 50 lines
+- It exceeds the 200-line target
 - You notice rules that no longer apply
 - A rule has been absorbed into a skill
 - Two rules say the same thing differently
@@ -102,25 +103,60 @@ Only add rules for recurring problems.
 
 ## The @include Directive
 
-When CLAUDE.md grows beyond the 50-line target, use `@include` to split content
-into separate files while keeping it loadable:
+When CLAUDE.md outgrows what one file can hold cleanly, use `@path/to/import`
+to split content into separate files that still load with CLAUDE.md:
 
 ```markdown
 # CLAUDE.md
 ## Key Files
-@./docs/conventions.md
-@./docs/api-standards.md
+@README
+@docs/git-instructions.md
+@~/.claude/my-project-instructions.md
 ```
 
-- `@./relative` — relative to the file containing the directive
-- `@~/path` — relative to home directory
-- `@/absolute` — absolute path
+Syntax (per official Claude Code docs):
+
+- `@path/to/import` — relative to the file containing the directive
+  (e.g., `@README`, `@docs/git-instructions.md`)
+- `@~/path` — home-directory relative
+  (e.g., `@~/.claude/my-project-instructions.md`)
 - Works in CLAUDE.md, .claude/CLAUDE.md, .claude/rules/*.md, and CLAUDE.local.md
 - Does NOT work inside code blocks (only in leaf text nodes)
 - Non-existent files are silently ignored; circular references are prevented
 
-This is the recommended alternative to cramming everything into CLAUDE.md.
-Each included file still consumes context budget, so use judiciously.
+Behavior:
+
+- **Imports load at launch and consume context.** They help organization, not
+  context budget. Splitting CLAUDE.md into 5 files of 50 lines each produces
+  the same context cost as one 250-line file.
+- **Recursion is capped at 5 hops.** A imports B imports C... — Claude stops
+  resolving after 5 levels.
+- **External imports trigger an approval dialog on first use.** Importing a
+  path outside the project root (e.g., a system-wide config) prompts the user
+  to confirm before the import resolves. This is a one-time approval.
+
+### The `@~/.claude/...` worktree-share pattern
+
+Worktree agents (`isolation: worktree`) operate in a freshly-checked-out copy
+of the repo. Anything in `.claude/CLAUDE.local.md` or other gitignored files
+is not present in the worktree, so the agent loses your local rules.
+
+Workaround: store shared local rules in a home-directory file and import it
+from the project's CLAUDE.md:
+
+```markdown
+# CLAUDE.md
+@~/.claude/my-team-rules.md
+```
+
+The worktree agent re-reads `~/.claude/my-team-rules.md` at launch (it lives
+outside the repo, so no checkout is needed) and gets the same rules as your
+main session. The first run triggers an external-import approval; after that
+it loads silently.
+
+Reserve this pattern for rules that belong to *you* across all projects
+(coding style preferences, personal shortcuts). Team-shared rules should
+still live inside the repo.
 
 ## Gotchas
 
