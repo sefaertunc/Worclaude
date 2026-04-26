@@ -236,7 +236,7 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     await initCommand();
 
     const agentsDir = path.join(tmpDir, '.claude', 'agents');
-    const asyncAgents = ['verify-app.md', 'build-validator.md', 'e2e-runner.md'];
+    const asyncAgents = ['verify-app.md', 'build-validator.md'];
 
     for (const name of asyncAgents) {
       const agentPath = path.join(agentsDir, name);

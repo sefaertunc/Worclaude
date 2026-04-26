@@ -100,6 +100,16 @@ These agents are spawned when you or the user explicitly requests them.
 
 ---
 
+## Reserved
+
+### upstream-watcher
+- **Model:** Sonnet | **Isolation:** None
+- **Status:** Reserved — no in-session command currently invokes this agent.
+- **Why kept:** The `/upstream-check` slash command was retired in Phase 2 (2026-04). The agent definition is preserved so the scheduled GitHub Actions workflow (`.github/workflows/upstream-check.yml`) and any future on-demand variant have an established contract to revive.
+- **Do NOT spawn this agent in regular sessions.** It exists for the daily automation and for future revival; spawning it manually has no defined entry path today.
+
+---
+
 ## Decision Matrix
 
 | You just... | Spawn this | Auto? |

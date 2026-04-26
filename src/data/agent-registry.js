@@ -79,14 +79,15 @@ export const AGENT_REGISTRY = {
     isolation: 'none',
     pipelineStage: 'Stage 1: Context',
     triggerType: 'manual',
-    triggerCommand: '/upstream-check',
+    triggerCommand: null,
+    status: 'reserved',
     whenToUse:
-      'At the start of a session to check for upstream Claude Code changes. After Claude Code updates. When behavior seems different from last session.',
+      'Reserved for future revival. The /upstream-check slash command was retired in Phase 2 (2026-04); the agent definition is preserved so the scheduled GitHub Actions workflow (.github/workflows/upstream-check.yml) and any future on-demand variant have an established contract to revive.',
     whatItDoes:
       "Fetches anthropic-watch feeds, cross-references upstream changes against the project's scaffolded agents/commands/hooks/skills, and produces an impact report.",
     expectBack:
       'Impact report: which upstream changes affect this project, which are informational, and recommended actions.',
-    situationLabel: 'Want to check for upstream Claude Code changes',
+    situationLabel: 'Reserved — no in-session command currently invokes this agent',
   },
 
   // --- Frontend agents (2) ---
@@ -278,20 +279,6 @@ export const AGENT_REGISTRY = {
     expectBack: 'All checks passing, with a summary of what was fixed and why.',
     situationLabel: 'Build or tests are broken',
   },
-  'e2e-runner': {
-    category: 'quality',
-    model: 'Sonnet',
-    isolation: 'worktree',
-    triggerType: 'manual',
-    triggerCommand: null,
-    whenToUse:
-      'After implementing user-facing features. Before releases. When unit tests pass but integration is suspect.',
-    whatItDoes:
-      'Writes and runs end-to-end tests for critical user journeys. Detects E2E framework (Playwright/Cypress) or recommends setup. Tests web, API, or CLI flows.',
-    expectBack: 'E2E test results with pass/fail per journey and reproduction steps for failures.',
-    situationLabel: 'Need end-to-end testing of user flows',
-  },
-
   // --- Documentation agents (2) ---
 
   'doc-writer': {

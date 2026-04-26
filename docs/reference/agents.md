@@ -36,11 +36,11 @@ Without a `description` field, agents are invisible to Claude Code. They will no
 
 Each agent is assigned a model based on the complexity and nature of its task:
 
-| Model      | Token Cost | Best For                                                  | Agents Using It                                                                                                                                                                                                                                    |
-| ---------- | ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Opus**   | Highest    | Deep judgment, architectural decisions, security analysis | plan-reviewer, api-designer, auth-auditor, security-reviewer, prompt-engineer                                                                                                                                                                      |
-| **Sonnet** | Medium     | Implementation, code changes, testing, documentation      | code-simplifier, test-writer, verify-app, database-analyst, ui-reviewer, ci-fixer, docker-helper, deploy-validator, performance-auditor, bug-fixer, refactorer, build-fixer, e2e-runner, doc-writer, data-pipeline-reviewer, ml-experiment-tracker |
-| **Haiku**  | Lowest     | Narrow validation, formatting, simple checks              | build-validator, style-enforcer, dependency-manager, changelog-generator                                                                                                                                                                           |
+| Model      | Token Cost | Best For                                                  | Agents Using It                                                                                                                                                                                                                        |
+| ---------- | ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Opus**   | Highest    | Deep judgment, architectural decisions, security analysis | plan-reviewer, api-designer, auth-auditor, security-reviewer, prompt-engineer                                                                                                                                                          |
+| **Sonnet** | Medium     | Implementation, code changes, testing, documentation      | code-simplifier, test-writer, verify-app, database-analyst, ui-reviewer, ci-fixer, docker-helper, deploy-validator, performance-auditor, bug-fixer, refactorer, build-fixer, doc-writer, data-pipeline-reviewer, ml-experiment-tracker |
+| **Haiku**  | Lowest     | Narrow validation, formatting, simple checks              | build-validator, style-enforcer, dependency-manager, changelog-generator                                                                                                                                                               |
 
 ### Isolation Modes
 
@@ -49,7 +49,7 @@ Each agent is assigned a model based on the complexity and nature of its task:
 | **none**     | Agent works in the current working directory alongside the user. Changes are made directly to the working tree.                                | Read-only review tasks, validation, analysis. No risk of conflicting with user changes.                                                                            |
 | **worktree** | Agent creates an isolated git worktree from the current branch. All changes happen in the worktree. User reviews and merges results afterward. | Code modification tasks (writing tests, fixing bugs, refactoring). Prevents conflicts with uncommitted user work. Requires clean git state to create the worktree. |
 
-Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fixer, bug-fixer, refactorer, build-fixer, e2e-runner, doc-writer.
+Agents with worktree isolation: code-simplifier, test-writer, verify-app, ci-fixer, bug-fixer, refactorer, build-fixer, doc-writer.
 
 ---
 
@@ -125,7 +125,7 @@ Cross-references new Anthropic upstream changes (Claude Code releases, Agent SDK
 
 ## Optional Agents
 
-20 optional agents organized into 6 categories. During `worclaude init`, categories are recommended based on the selected project type.
+19 optional agents organized into 6 categories. During `worclaude init`, categories are recommended based on the selected project type.
 
 ### Backend
 
@@ -160,7 +160,6 @@ Cross-references new Anthropic upstream changes (Claude Code releases, Agent SDK
 | `performance-auditor` | sonnet | none      | Analyzes code for performance bottlenecks, memory leaks, and inefficiencies.     |
 | `refactorer`          | sonnet | worktree  | Refactors code to improve maintainability, readability, and structure.           |
 | `build-fixer`         | sonnet | worktree  | Diagnoses and fixes build failures, test failures, lint errors, and type errors. |
-| `e2e-runner`          | sonnet | worktree  | Writes and runs end-to-end tests for critical user journeys.                     |
 
 ### Documentation
 
@@ -199,9 +198,9 @@ The following table shows the specific agents recommended for each project type:
 
 | Project Type               | Recommended Agents                                                                                           |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Full-stack web application | ui-reviewer, api-designer, database-analyst, security-reviewer, bug-fixer, doc-writer, e2e-runner            |
+| Full-stack web application | ui-reviewer, api-designer, database-analyst, security-reviewer, bug-fixer, doc-writer                        |
 | Backend / API              | api-designer, database-analyst, security-reviewer, auth-auditor, bug-fixer, performance-auditor, build-fixer |
-| Frontend / UI              | ui-reviewer, style-enforcer, performance-auditor, bug-fixer, e2e-runner                                      |
+| Frontend / UI              | ui-reviewer, style-enforcer, performance-auditor, bug-fixer                                                  |
 | CLI tool                   | bug-fixer, doc-writer, dependency-manager, build-fixer                                                       |
 | Data / ML / AI             | data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer, database-analyst                             |
 | Library / Package          | doc-writer, dependency-manager, performance-auditor, refactorer, changelog-generator                         |
@@ -209,7 +208,7 @@ The following table shows the specific agents recommended for each project type:
 
 ---
 
-## Summary Table (All 26 Agents)
+## Summary Table (All 25 Agents)
 
 | Agent                  | Category      | Model  | Isolation | Description                                                         |
 | ---------------------- | ------------- | ------ | --------- | ------------------------------------------------------------------- |
@@ -233,7 +232,6 @@ The following table shows the specific agents recommended for each project type:
 | performance-auditor    | Quality       | sonnet | none      | Analyzes code for performance issues                                |
 | refactorer             | Quality       | sonnet | worktree  | Refactors code to improve maintainability                           |
 | build-fixer            | Quality       | sonnet | worktree  | Diagnoses and fixes build failures                                  |
-| e2e-runner             | Quality       | sonnet | worktree  | Writes and runs end-to-end tests                                    |
 | doc-writer             | Documentation | sonnet | worktree  | Writes and updates documentation                                    |
 | changelog-generator    | Documentation | haiku  | none      | Generates changelog from commits                                    |
 | data-pipeline-reviewer | Data / AI     | sonnet | none      | Reviews data pipeline correctness                                   |
@@ -258,7 +256,6 @@ The following table shows which agents have special runtime properties beyond th
 | performance-auditor    |           |            |         | Yes          |
 | dependency-manager     | Yes       |            |         |              |
 | deploy-validator       | Yes       |            |         |              |
-| e2e-runner             |           | Yes        |         |              |
 | doc-writer             |           |            | project |              |
 | changelog-generator    | Yes       |            |         | Yes          |
 | data-pipeline-reviewer | Yes       |            |         |              |

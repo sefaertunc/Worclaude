@@ -56,19 +56,6 @@ Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. T
 
 ---
 
-### /techdebt
-
-**Scan codebase for technical debt and report findings.**
-
-|                  |                                                                                                                                                                                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **File**         | `.claude/commands/techdebt.md`                                                                                                                                                                                                                         |
-| **When to use**  | Periodically, or when the codebase feels messy                                                                                                                                                                                                         |
-| **What it does** | Scans for duplicated code, dead code (unused functions, imports, variables), TODO/FIXME/HACK comments, overly complex functions, missing tests for critical paths, and inconsistent patterns. Reports findings by severity. Fixes quick wins directly. |
-| **Key behavior** | Produces a prioritized report. Small fixes are applied immediately; larger items are documented.                                                                                                                                                       |
-
----
-
 ### /verify
 
 **Run full project verification -- tests, build, lint, type checking.**
@@ -92,19 +79,6 @@ Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. T
 | **When to use**  | When context is running low (~70% used) and you need to keep working                                                                                                                                                           |
 | **What it does** | Triggers `/compact` to compress conversation history. The PostCompact hook automatically re-reads CLAUDE.md and PROGRESS.md. After compaction, Claude confirms the current task, current branch, and what was being worked on. |
 | **Key behavior** | Relies on the PostCompact hook for automatic context re-injection. See [Hooks](/reference/hooks).                                                                                                                              |
-
----
-
-### /status
-
-**Report current session state -- branch, recent changes, pending work.**
-
-|                  |                                                                                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **File**         | `.claude/commands/status.md`                                                                                                                           |
-| **When to use**  | Mid-session to check where things stand                                                                                                                |
-| **What it does** | Reports the current task, git branch and recent commits, test status from the last run, context usage estimate, and any blockers or pending decisions. |
-| **Key behavior** | Read-only. This is a session-level status check, distinct from the `worclaude status` CLI command which reports installation metadata.                 |
 
 ---
 
@@ -239,21 +213,6 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 ---
 
-### /upstream-check
-
-**Check Anthropic upstream feeds (Claude Code releases, SDK changelogs, docs, blog, status).**
-
-|                  |                                                                                                                                                                                                                                                                                            |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **File**         | `.claude/commands/upstream-check.md`                                                                                                                                                                                                                                                       |
-| **When to use**  | At the start of a session, after a Claude Code update, or whenever behavior feels different from last time                                                                                                                                                                                 |
-| **What it does** | Fetches `run-report.json` and `all.json` from the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds via `curl` (no npm deps), reports source health (`Y/16`) and the 10 most recent items grouped by category.                                                        |
-| **Key behavior** | Stateless — no caching. Flags items from `claude-code-releases`, `claude-code-changelog`, `npm-claude-code`, `agent-sdk-ts-changelog`, and `agent-sdk-py-changelog` as `[CRITICAL]`. Graceful fetch-failure handling. Paired with the `upstream-watcher` agent for deeper cross-reference. |
-
-> For the scheduled GitHub Actions workflow that runs the same check daily without user interaction, see [Upstream Automation](./upstream-automation.md).
-
----
-
 ## Command File Location
 
 ```
@@ -262,10 +221,8 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
   end.md
   commit-push-pr.md
   review-plan.md
-  techdebt.md
   verify.md
   compact-safe.md
-  status.md
   update-claude-md.md
   learn.md
   setup.md
@@ -275,7 +232,6 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
   build-fix.md
   refactor-clean.md
   test-coverage.md
-  upstream-check.md
 ```
 
 Commands can be customized after installation. Additional custom commands can be added to the same directory.
