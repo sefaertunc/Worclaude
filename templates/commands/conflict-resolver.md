@@ -23,7 +23,12 @@ For each conflicted file:
 For each conflict:
 - Changes in DIFFERENT parts of the code → keep both
 - Changes modify the SAME lines → combine intelligently based on intent
-- Changes truly contradict → ask the user which to keep
+- Changes truly contradict → use **AskUserQuestion** with three options:
+  - `keep A` — keep the incoming branch's version
+  - `keep B` — keep the current branch's version
+  - `combine` — merge both intents (you describe how)
+
+  Refuse to proceed without an answer. Never guess.
 - NEVER silently drop changes from either side
 
 ## Step 4: Verify clean
@@ -33,8 +38,7 @@ Search ALL tracked files for remaining conflict markers
 
 ## Step 5: Test
 
-Run /verify (or the project's test and lint commands).
-If anything fails, fix it.
+Run `/verify`. If anything fails, fix it.
 
 ## Step 6: Commit resolution only
 

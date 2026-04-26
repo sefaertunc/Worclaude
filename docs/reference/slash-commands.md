@@ -34,12 +34,12 @@ Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. T
 
 **Commit, push, and create PR -- branch-aware with session summary.**
 
-|                  |                                                                                                                                                                                                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/commit-push-pr.md`                                                                                                                                                                                                                                 |
-| **When to use**  | When a feature or fix is ready for review                                                                                                                                                                                                                            |
-| **What it does** | Writes a session summary to `.claude/sessions/` first. On feature branches: skips shared-state files (PROGRESS.md, SPEC.md, package.json version), stages, commits, pushes, PRs to develop. On develop: stages, commits, pushes, PRs to main (after `/sync` is run). |
-| **Key behavior** | Feature branches never touch shared-state files — that prevents merge conflicts during parallel work.                                                                                                                                                                |
+|                  |                                                                                                                                                                                                                                                                                   |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/commit-push-pr.md`                                                                                                                                                                                                                                              |
+| **When to use**  | When a feature or fix is ready for review                                                                                                                                                                                                                                         |
+| **What it does** | Writes a session summary to `.claude/sessions/` first. On feature branches: skips shared-state files, stages, commits, pushes, then **prompts via `AskUserQuestion` for the `Version bump:` declaration (`major`/`minor`/`patch`/`none`)** before opening a PR to develop.        |
+| **Key behavior** | Refuses to open a PR without an explicit `Version bump:` declaration. Feature branches never touch shared-state files — that prevents merge conflicts during parallel work. On develop: stages, commits, pushes, PRs to main (after `/sync` has pre-written the release PR body). |
 
 ---
 
@@ -58,14 +58,14 @@ Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /verify
 
-**Run full project verification -- tests, build, lint, type checking.**
+**Run fast read-only verification — tests + lint (and optional `prettier --check`).**
 
-|                  |                                                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/verify.md`                                                                                                                |
-| **When to use**  | Before committing, before opening a PR, after major changes                                                                                 |
-| **What it does** | Runs the test suite, build, linter, and type checker (if applicable). Runs domain-specific verification as needed. Reports results clearly. |
-| **Key behavior** | Blocks further work if any check fails. All checks must pass before proceeding.                                                             |
+|                  |                                                                                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **File**         | `.claude/commands/verify.md`                                                                                                                                                                                       |
+| **When to use**  | Before committing, before opening a PR, after major changes                                                                                                                                                        |
+| **What it does** | Runs the test suite and the linter. Optionally runs `prettier --check` (read-only format drift). Build, type checking, and domain-specific verification are intentionally **out of scope**.                        |
+| **Key behavior** | **Read-only contract — never modifies files.** No `--fix` flags, no formatter auto-fix. Blocks further work if any check fails. For build/type errors use `/build-fix`; for end-to-end use the `verify-app` agent. |
 
 ---
 
@@ -152,12 +152,12 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 **Resolve merge conflicts on develop branch.**
 
-|                  |                                                                                                                                                            |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/conflict-resolver.md`                                                                                                                    |
-| **When to use**  | On develop after `git pull` when merge conflicts are present                                                                                               |
-| **What it does** | Detects conflicts, understands each side's intent, resolves them (keeping both sides where possible), verifies no markers remain, runs tests, and commits. |
-| **Key behavior** | ONLY resolves conflicts. Does not update PROGRESS.md, SPEC.md, or bump versions — that is `/sync`'s job. Does not push or create PRs.                      |
+|                  |                                                                                                                                                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/conflict-resolver.md`                                                                                                                                                                                                 |
+| **When to use**  | On develop after `git pull` when merge conflicts are present                                                                                                                                                                            |
+| **What it does** | Detects conflicts, understands each side's intent, resolves them (keeping both sides where possible). For truly contradictory changes uses **`AskUserQuestion`** with `keep A` / `keep B` / `combine`. Then runs `/verify` and commits. |
+| **Key behavior** | Single canonical test path: `/verify` (no parenthetical fallback). ONLY resolves conflicts; does not update PROGRESS.md, SPEC.md, or bump versions — that is `/sync`'s job. Does not push or create PRs.                                |
 
 ---
 
@@ -178,12 +178,12 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 **Fix current build failures via build-fixer agent.**
 
-|                  |                                                                                                                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **File**         | `.claude/commands/build-fix.md`                                                                                                                                                |
-| **When to use**  | Build is broken after a merge, rebase, or dependency update                                                                                                                    |
-| **What it does** | Runs the full validation suite (build, tests, linter, type checker, formatter). Categorizes errors by type and fixes one category at a time, re-running checks after each fix. |
-| **Key behavior** | Never silences tests or weakens lint rules. If an error persists after 3 attempts, reports it as unresolvable with a diagnosis.                                                |
+|                  |                                                                                                                                                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/build-fix.md`                                                                                                                                                                                            |
+| **When to use**  | Build is broken after a merge, rebase, or dependency update                                                                                                                                                                |
+| **What it does** | Step 1 delegates to `/verify` (test + lint), then runs the build and type checker separately to capture compilation errors. Categorizes errors by type and fixes one category at a time, re-running checks after each fix. |
+| **Key behavior** | **3-attempt escalation:** after 3 failed fixes on the same error category, delegates to the `bug-fixer` agent (worktree-isolated). The user is the last resort, not the third. Never silences tests or weakens lint rules. |
 
 ---
 
