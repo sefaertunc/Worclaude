@@ -615,6 +615,49 @@ describe('doctor command', () => {
   });
 
   // JSON output (Task 12)
+  // Stale agent worktrees (T1.16)
+  it('passes when .claude/worktrees/ does not exist', async () => {
+    await scaffoldProject(tmpDir);
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('.claude/worktrees/ (none)');
+  });
+
+  it('passes when .claude/worktrees/ has 3 or fewer entries', async () => {
+    await scaffoldProject(tmpDir);
+    const wt = path.join(tmpDir, '.claude', 'worktrees');
+    await fs.ensureDir(path.join(wt, 'agent-a'));
+    await fs.ensureDir(path.join(wt, 'agent-b'));
+    await fs.ensureDir(path.join(wt, 'agent-c'));
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('.claude/worktrees/ (3 present)');
+    expect(output).not.toMatch(/has \d+ entries \(threshold/);
+  });
+
+  it('warns when .claude/worktrees/ exceeds the threshold', async () => {
+    await scaffoldProject(tmpDir);
+    const wt = path.join(tmpDir, '.claude', 'worktrees');
+    for (const name of ['agent-1', 'agent-2', 'agent-3', 'agent-4']) {
+      await fs.ensureDir(path.join(wt, name));
+    }
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('has 4 entries (threshold 3)');
+    expect(output).toContain('worclaude worktrees clean');
+  });
+
+  it('ignores hidden entries and files in .claude/worktrees/', async () => {
+    await scaffoldProject(tmpDir);
+    const wt = path.join(tmpDir, '.claude', 'worktrees');
+    await fs.ensureDir(wt);
+    await fs.writeFile(path.join(wt, '.gitkeep'), '');
+    await fs.writeFile(path.join(wt, 'README.md'), '# notes');
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('.claude/worktrees/ (empty)');
+  });
+
   it('emits valid JSON with --json flag', async () => {
     await scaffoldProject(tmpDir);
     await doctorCommand({ json: true });

@@ -297,6 +297,80 @@ describe('merger', () => {
       expect(settings.permissions.allow).toContain('Bash(npm:*)');
     });
 
+    it('appends workflow deny rules without dropping user denies', async () => {
+      // Pre-create settings with a custom deny rule
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify({
+          permissions: {
+            allow: [],
+            deny: ['Bash(my-dangerous-tool:*)'],
+          },
+          hooks: {},
+        })
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingSkillDirs: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      const settings = JSON.parse(
+        await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      // User deny preserved
+      expect(settings.permissions.deny).toContain('Bash(my-dangerous-tool:*)');
+      // Workflow deny appended (one of the rules from base.json)
+      expect(settings.permissions.deny).toContain('Read(./.env)');
+    });
+
+    it('does not duplicate deny rules already present in user settings', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify({
+          permissions: {
+            allow: [],
+            // User has the same rule the workflow ships
+            deny: ['Read(./.env)'],
+          },
+          hooks: {},
+        })
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingSkillDirs: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      const settings = JSON.parse(
+        await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      const occurrences = settings.permissions.deny.filter((r) => r === 'Read(./.env)').length;
+      expect(occurrences).toBe(1);
+    });
+
     it('detects hook matcher conflicts (Tier 3)', async () => {
       // Pre-create settings with a conflicting hook
       await fs.ensureDir(path.join(tmpDir, '.claude'));

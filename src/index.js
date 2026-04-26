@@ -12,6 +12,7 @@ import { deleteCommand } from './commands/delete.js';
 import { doctorCommand } from './commands/doctor.js';
 import { scanCommand } from './commands/scan.js';
 import { setupStateCommand } from './commands/setup-state.js';
+import { worktreesCleanCommand } from './commands/worktrees.js';
 
 const program = new Command();
 
@@ -109,6 +110,19 @@ setupState.on('command:*', (operands) => {
   console.error(
     `Error: unknown setup-state subcommand: ${operands[0]} (expected one of show, save, reset, resume-info)`
   );
+  process.exitCode = 2;
+});
+
+const worktrees = program.command('worktrees').description('Manage agent worktrees');
+
+worktrees
+  .command('clean')
+  .description('Force-remove locked agent worktrees under .claude/worktrees/')
+  .option('--path <dir>', 'Project root', process.cwd())
+  .action((options) => worktreesCleanCommand(options));
+
+worktrees.on('command:*', (operands) => {
+  console.error(`Error: unknown worktrees subcommand: ${operands[0]} (expected one of clean)`);
   process.exitCode = 2;
 });
 

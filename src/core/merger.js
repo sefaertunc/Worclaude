@@ -240,13 +240,21 @@ export async function mergeSettingsPermissionsAndHooks(
   const existingRaw = await readFile(path.join(projectRoot, '.claude', 'settings.json'));
   const existing = parseUserJson(existingRaw, '.claude/settings.json');
 
-  // Merge permissions (Tier 1)
+  // Merge permissions (Tier 1) — union-merge both allow and deny
   const existingAllow = existing.permissions?.allow || [];
   const workflowAllow = workflowSettings.permissions?.allow || [];
-  const newPerms = workflowAllow.filter((p) => !existingAllow.includes(p));
+  const newAllow = workflowAllow.filter((p) => !existingAllow.includes(p));
   if (!existing.permissions) existing.permissions = {};
-  existing.permissions.allow = [...existingAllow, ...newPerms];
-  report.added.permissions = newPerms.length;
+  existing.permissions.allow = [...existingAllow, ...newAllow];
+
+  const existingDeny = existing.permissions?.deny || [];
+  const workflowDeny = workflowSettings.permissions?.deny || [];
+  const newDeny = workflowDeny.filter((p) => !existingDeny.includes(p));
+  if (newDeny.length > 0 || existingDeny.length > 0) {
+    existing.permissions.deny = [...existingDeny, ...newDeny];
+  }
+
+  report.added.permissions = newAllow.length + newDeny.length;
 
   // Merge hooks (Tier 1 + Tier 3)
   if (!existing.hooks) existing.hooks = {};
@@ -333,7 +341,9 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
   if (!existingScan.hasSettingsJson) {
     // No existing settings — create fresh
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
-    report.added.permissions = workflowSettings.permissions?.allow?.length || 0;
+    report.added.permissions =
+      (workflowSettings.permissions?.allow?.length || 0) +
+      (workflowSettings.permissions?.deny?.length || 0);
     report.added.hooks = countHooks(workflowSettings.hooks);
     return;
   }
@@ -343,7 +353,9 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
   } catch {
     display.warn('Existing settings.json contains invalid JSON — creating fresh settings instead.');
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
-    report.added.permissions = workflowSettings.permissions?.allow?.length || 0;
+    report.added.permissions =
+      (workflowSettings.permissions?.allow?.length || 0) +
+      (workflowSettings.permissions?.deny?.length || 0);
     report.added.hooks = countHooks(workflowSettings.hooks);
   }
 }

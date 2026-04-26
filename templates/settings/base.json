@@ -40,6 +40,29 @@
       "Edit(README*)", "Edit(*.md)",
       "Edit(package.json)", "Edit(pyproject.toml)",
       "Edit(.github/**)"
+    ],
+    "deny": [
+      "// -- Secret files (Read/Edit — Claude's own tools) --",
+      "Read(./.env)", "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Edit(./.env)", "Edit(./.env.*)", "Edit(./secrets/**)",
+      "Read(./*.pem)", "Read(./*.key)",
+      "Read(./id_rsa)", "Read(./id_ed25519)",
+
+      "// -- SSH and cloud creds (home-relative) --",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.config/gh/hosts.yml)",
+
+      "// -- Bash file-view commands targeting .env --",
+      "Bash(cat *.env*)", "Bash(head *.env*)", "Bash(tail *.env*)",
+      "Bash(less *.env*)", "Bash(more *.env*)", "Bash(grep *.env*)",
+
+      "// -- Catastrophic rm patterns (literal-match defense-in-depth) --",
+      "Bash(rm -rf /)", "Bash(rm -rf /*)",
+      "Bash(rm -fr /)", "Bash(rm -fr /*)",
+      "Bash(rm -rf ~)", "Bash(rm -rf ~/*)",
+      "Bash(rm -rf $HOME)", "Bash(rm -rf $HOME/*)"
     ]
   },
   "hooks": {
