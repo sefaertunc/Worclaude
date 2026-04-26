@@ -37,7 +37,7 @@ try {
       );
     } else if (correctionPatterns.some((p) => p.test(prompt))) {
       process.stdout.write(
-        '[Correction detected] Consider proposing a [LEARN] block if this is a generalizable rule.\n'
+        '[Correction detected — semi-auto] Draft a one-line generalizable rule, then prompt via AskUserQuestion: "Capture as team learning? yes / yes, let me edit / no". On yes or yes-edit, emit a [LEARN] block; the Stop hook will persist it.\n'
       );
     }
   }
