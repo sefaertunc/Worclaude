@@ -9,8 +9,10 @@ The structure: `docs/archive/{topic}/{YYYY-MM}/{slug}.md`.
 
 - **decisions/** — implemented or in-flight friction-decision records.
 - **audits/** — point-in-time architectural snapshots.
-- **backlogs/** — superseded backlog versions.
 - **retrospectives/** — phase-end reviews (future).
+
+`docs/spec/BACKLOG.md` is a single rolling file (items removed when
+scheduled into a phase). It is not archived per release.
 
 ## Catalog
 
@@ -45,15 +47,6 @@ The structure: `docs/archive/{topic}/{YYYY-MM}/{slug}.md`.
   — Deep architectural audit across 7 layers; surfaced 10 net-new
   findings beyond the friction docs; established P0/P1/P2 priorities
   that fed the phase plan.
-
-### Backlogs — 2026-04
-
-- [backlog-v2.1.md](backlogs/2026-04/backlog-v2.1.md)
-  — Migrated from `docs/spec/BACKLOG-v2.1.md` (Phase 1 T1.8). Captures
-  completed Phase 2/4/5 work, speculative agent/skill enhancements that
-  were not adopted, sandbox-defaults open questions, and competitive-
-  awareness notes. Forward-looking pending items live in
-  `docs/spec/BACKLOG.md`.
 
 ### Retrospectives
 
