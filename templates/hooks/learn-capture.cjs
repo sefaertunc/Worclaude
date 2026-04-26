@@ -139,7 +139,6 @@ try {
         `created: ${today}`,
         `category: ${learning.category}`,
         `project: ${projectName}`,
-        'times_applied: 0',
         '---',
         '',
         `**Rule:** ${learning.rule}`,
@@ -163,7 +162,6 @@ try {
           file: filename,
           category: learning.category,
           created: today,
-          times_applied: 0,
         });
       }
     }

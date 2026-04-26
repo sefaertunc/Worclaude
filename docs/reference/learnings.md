@@ -40,7 +40,19 @@ The `correction-detect.cjs` hook runs on every user prompt and matches two patte
 - `learn from this`
 - `[LEARN]`
 
-On a match, the hook writes `[Correction detected]` or `[Learn trigger detected]` to stdout — Claude sees it and is prompted to propose a `[LEARN]` block.
+On a correction match, the hook writes `[Correction detected — semi-auto]` to stdout. Claude reads the hint and follows the **correction-triggered semi-auto path**: drafts a one-line generalizable rule and prompts the user via `AskUserQuestion`:
+
+```
+Question: "You corrected me: '<short paraphrase>'.
+           Proposed learning: '<concrete rule>'.
+           Capture as team learning?"
+
+- yes              — save as proposed
+- yes, let me edit — show the text, I'll refine
+- no               — drop it
+```
+
+On a learn-trigger match, the hook writes `[Learn trigger detected]` and Claude emits a `[LEARN]` block directly — the user has already signaled the intent, so no extra prompt is needed.
 
 ### 2. Automatic learning extraction (Stop hook)
 
@@ -83,7 +95,6 @@ Each distinct `[LEARN] Category:` value produces one file at `.claude/learnings/
 created: 2026-04-15
 category: git
 project: worclaude
-times_applied: 0
 ---
 
 **Rule:** Always use `Bash(git:*)` wildcard instead of listing subcommands.
@@ -93,12 +104,15 @@ times_applied: 0
 
 Fields:
 
-| Field           | Purpose                                                                                                   |
-| --------------- | --------------------------------------------------------------------------------------------------------- |
-| `created`       | ISO date the entry was first persisted                                                                    |
-| `category`      | Verbatim from the `[LEARN]` block — used as the slug basis                                                |
-| `project`       | Name of the project (from `package.json` or the directory name) — useful when a dotfiles sync merges them |
-| `times_applied` | Usage counter. Not auto-incremented; tools can bump it when they notice a rule firing                     |
+| Field      | Purpose                                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------------------------- |
+| `created`  | ISO date the entry was first persisted                                                                    |
+| `category` | Verbatim from the `[LEARN]` block — used as the slug basis                                                |
+| `project`  | Name of the project (from `package.json` or the directory name) — useful when a dotfiles sync merges them |
+
+::: info Removed: `times_applied`
+The original schema included a `times_applied` counter. It was never automatically incremented, and wiring it would require non-trivial signal detection. The field was removed in Phase 2 (2026-04) — shipping a field that always reads `0` is a lie. Existing learnings still carrying the field are harmless; the SessionStart hook simply ignores it. Newly-captured learnings omit it.
+:::
 
 Multiple `[LEARN]` blocks with the same category append to the same file with a blank-line separator, so a single `git.md` can accumulate many git-related rules over time.
 
@@ -110,14 +124,13 @@ Multiple `[LEARN]` blocks with the same category append to the same file with a 
     {
       "file": "git.md",
       "category": "git",
-      "created": "2026-04-15",
-      "times_applied": 0
+      "created": "2026-04-15"
     }
   ]
 }
 ```
 
-`index.json` is the source of truth the SessionStart hook reads. Each entry maps to a file in `.claude/learnings/`. The index is overwritten atomically on each Stop-hook write.
+`index.json` is the source of truth the SessionStart hook reads. Each entry maps to a file in `.claude/learnings/`. The Stop hook overwrites it atomically on each capture, and `/learn` regenerates it from the directory contents — never hand-maintained.
 
 ---
 
