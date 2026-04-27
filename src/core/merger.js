@@ -498,6 +498,9 @@ export async function performMerge(
   // Create plans directory for active work guidance (tracked)
   await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
 
+  // Create observability directory for hook-captured event logs (gitignored)
+  await writeFile(path.join(projectRoot, '.claude', 'observability', '.gitkeep'), '');
+
   // Opt-in scaffolders: each registry feature is idempotent. Tier 3 notices
   // (e.g. existing Memory Architecture section for gtd-memory) are handled
   // inside handleClaudeMd, which runs section detection.

@@ -143,6 +143,40 @@
           "type": "command",
           "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/skill-hint.cjs && node .claude/hooks/skill-hint.cjs || true"
         }]
+      },
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-command-invocations.cjs && node .claude/hooks/obs-command-invocations.cjs || true"
+        }]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-skill-loads.cjs && node .claude/hooks/obs-skill-loads.cjs || true"
+        }]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-agent-events.cjs && node .claude/hooks/obs-agent-events.cjs || true"
+        }]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-agent-events.cjs && node .claude/hooks/obs-agent-events.cjs || true"
+        }]
       }
     ],
     "Notification": [

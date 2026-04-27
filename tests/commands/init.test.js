@@ -216,20 +216,40 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', 'skill-hint.cjs'))).toBe(true);
   });
 
-  it('settings.json has two UserPromptSubmit entries (correction-detect + skill-hint)', async () => {
+  it('settings.json has three UserPromptSubmit entries (correction-detect + skill-hint + obs-command-invocations)', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8');
     const settings = JSON.parse(content);
     const ups = settings.hooks.UserPromptSubmit;
-    expect(ups).toHaveLength(2);
+    expect(ups).toHaveLength(3);
     expect(ups[0].hooks[0].command).toContain('correction-detect');
     expect(ups[1].hooks[0].command).toContain('skill-hint');
+    expect(ups[2].hooks[0].command).toContain('obs-command-invocations');
   });
 
   it('creates .claude/learnings/ with .gitkeep', async () => {
     await initCommand();
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'learnings'))).toBe(true);
     expect(await fs.pathExists(path.join(tmpDir, '.claude', 'learnings', '.gitkeep'))).toBe(true);
+  });
+
+  it('creates .claude/observability/ with .gitkeep for hook-captured event logs', async () => {
+    await initCommand();
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'observability'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'observability', '.gitkeep'))).toBe(
+      true
+    );
+  });
+
+  it('scaffolds the three observability hook scripts', async () => {
+    await initCommand();
+    for (const name of [
+      'obs-skill-loads.cjs',
+      'obs-command-invocations.cjs',
+      'obs-agent-events.cjs',
+    ]) {
+      expect(await fs.pathExists(path.join(tmpDir, '.claude', 'hooks', name))).toBe(true);
+    }
   });
 
   it('creates AGENTS.md with cross-tool content', async () => {
