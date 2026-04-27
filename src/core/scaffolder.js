@@ -138,6 +138,30 @@ export async function scaffoldHooks(projectRoot) {
   }
 }
 
+export async function scaffoldScripts(projectRoot) {
+  const scriptsTemplateDir = path.join(getTemplatesDir(), 'scripts');
+  if (!(await fs.pathExists(scriptsTemplateDir))) return;
+  const destDir = path.join(projectRoot, '.claude', 'scripts');
+  await fs.ensureDir(destDir);
+
+  const entries = await fs.readdir(scriptsTemplateDir);
+  for (const entry of entries) {
+    if (!entry.endsWith('.sh')) continue;
+    const destPath = path.join(destDir, entry);
+    await fs.copy(path.join(scriptsTemplateDir, entry), destPath, {
+      overwrite: false,
+      errorOnExist: false,
+    });
+    if (process.platform !== 'win32') {
+      try {
+        await fs.chmod(destPath, 0o755);
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+    }
+  }
+}
+
 export function slugifyPluginName(projectName) {
   const slug = String(projectName || '')
     .toLowerCase()

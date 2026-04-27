@@ -14,6 +14,7 @@ import {
   scaffoldPluginJson,
   scaffoldMemoryDocs,
   scaffoldHooks,
+  scaffoldScripts,
 } from '../../src/core/scaffolder.js';
 import { UNIVERSAL_AGENTS } from '../../src/data/agents.js';
 
@@ -522,4 +523,57 @@ describe('scaffoldHooks filters non-script files', () => {
       }
     }
   );
+});
+
+describe('scaffoldScripts copies slash-command helper scripts', () => {
+  let tmpDir;
+
+  afterEach(async () => {
+    if (tmpDir) await fs.remove(tmpDir);
+  });
+
+  it('copies every templates/scripts/*.sh into .claude/scripts/', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-scripts-'));
+    await scaffoldScripts(tmpDir);
+    const scriptsDir = path.join(tmpDir, '.claude', 'scripts');
+    const entries = await fs.readdir(scriptsDir);
+    expect(entries).toContain('start-drift.sh');
+    expect(entries).toContain('sync-release-scope.sh');
+    expect(entries).toContain('test-coverage-changed-files.sh');
+  });
+
+  it('does NOT copy non-.sh files (e.g. README.md if added later)', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-scripts-filter-'));
+    await scaffoldScripts(tmpDir);
+    const scriptsDir = path.join(tmpDir, '.claude', 'scripts');
+    const entries = await fs.readdir(scriptsDir);
+    for (const entry of entries) {
+      expect(entry.endsWith('.sh')).toBe(true);
+    }
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'sets at least one exec bit on every copied .sh file (POSIX)',
+    async () => {
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-scripts-chmod-'));
+      await scaffoldScripts(tmpDir);
+      const scriptsDir = path.join(tmpDir, '.claude', 'scripts');
+      const entries = (await fs.readdir(scriptsDir)).filter((f) => f.endsWith('.sh'));
+      expect(entries.length).toBeGreaterThan(0);
+      for (const entry of entries) {
+        const stat = await fs.stat(path.join(scriptsDir, entry));
+        expect(stat.mode & 0o111).not.toBe(0);
+      }
+    }
+  );
+
+  it('preserves user-modified scripts on a second invocation (overwrite: false)', async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-scripts-preserve-'));
+    await scaffoldScripts(tmpDir);
+    const scriptPath = path.join(tmpDir, '.claude', 'scripts', 'start-drift.sh');
+    await fs.writeFile(scriptPath, '#!/bin/sh\necho "user-customized"\n');
+    await scaffoldScripts(tmpDir);
+    const finalContent = await fs.readFile(scriptPath, 'utf-8');
+    expect(finalContent).toContain('user-customized');
+  });
 });

@@ -61,13 +61,18 @@ Run this command only when the human explicitly invokes it (typed `/sync` or one
 
 ## Bootstrap: ensure a version tag exists
 
-6. Check for a version tag:
+6. Check for a version tag and capture its commit date. Run the helper as
+   a single command — do not unpack the script body.
 
    ```bash
-   LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+   bash .claude/scripts/sync-release-scope.sh
    ```
 
-   If no tag exists, prompt the user. Do NOT silently auto-tag:
+   The script prints two lines: `last_tag=<tag>` and `since=<YYYY-MM-DD>`.
+   Both empty when no tag exists. Read `last_tag` from the first line.
+
+   If no tag exists (`last_tag=` is empty), prompt the user. Do NOT
+   silently auto-tag:
 
    ```
    No version tag found. /sync needs a starting tag to compute release scope.
@@ -119,13 +124,16 @@ to a higher level — the warning is the enforcement.
    YYYY-MM-DD; `%ai` breaks GitHub search due to space separator and
    timezone offset). Pass `--limit 500` to avoid the `gh pr list` default
    cap of 30, which would silently truncate on repos with infrequent
-   tagging:
+   tagging.
+
+   The `since=<YYYY-MM-DD>` value from step 6's helper output is what you
+   pass below as `<SINCE>`. If you skipped step 6 (rare), re-run
+   `bash .claude/scripts/sync-release-scope.sh` and use its `since=` line.
 
    ```bash
-   SINCE=$(git log -1 --format=%as "$LAST_TAG")
    gh pr list --state merged --base develop \
      --limit 500 \
-     --search "merged:>=$SINCE" \
+     --search "merged:>=<SINCE>" \
      --json number,title,body,headRefName,baseRefName
    ```
 

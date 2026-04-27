@@ -6,6 +6,7 @@ import {
   scaffoldAgentsMd,
   updateGitignore,
   scaffoldHooks,
+  scaffoldScripts,
 } from '../core/scaffolder.js';
 import { OPTIONAL_FEATURES } from '../data/optional-features.js';
 import {
@@ -495,6 +496,10 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     // Copy hook scripts (.claude/hooks/)
     await scaffoldHooks(projectRoot);
     spinner.text = 'Created .claude/hooks/';
+
+    // Copy slash-command helper scripts (.claude/scripts/)
+    await scaffoldScripts(projectRoot);
+    spinner.text = 'Created .claude/scripts/';
 
     // Create learnings directory for correction capture
     await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
