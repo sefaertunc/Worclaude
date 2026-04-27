@@ -10,12 +10,37 @@ captured learnings. Apply changes only with explicit per-change consent.
 Look at three places, in priority order:
 
 1. **`.claude/learnings/` directory** — surface promotion candidates.
-   A learning is promotion-worthy when:
-   - It appears in multiple learning files (recurring pattern), OR
-   - Its content matches a CLAUDE.md section but is missing from it
-     (drift), OR
-   - The user has invoked the same `[LEARN]` category 3+ times across
-     sessions (use `index.json` `created` dates to gauge recurrence)
+
+   `learn-capture.cjs` writes one file per `[LEARN]` category and
+   **appends** when the same category is captured again. The directory's
+   `index.json` updates `created` to the latest capture date — treat it
+   as "last touched," not "first created." See the `memory-architecture`
+   skill for the full layer model.
+
+   Concrete promotion algorithm — a learning is a candidate when at
+   least one of these holds:
+
+   - **Recurrence:** the file at `.claude/learnings/<category>.md`
+     contains **3 or more** `**Rule:**` blocks. Count by scanning the
+     file directly (the index doesn't track count). Three independent
+     captures of the same category is the threshold for "this isn't a
+     fluke."
+   - **Recency:** the index entry's `created` date is within the last
+     **14 days**. Recent learnings are warmer signals than old ones.
+   - **Drift:** the learning's content is structurally relevant to an
+     existing `CLAUDE.md` section (e.g., a "always do X" pattern that
+     belongs in `## Critical Rules` or `## Gotchas`) but the rule is
+     missing from `CLAUDE.md`.
+
+   A candidate satisfying *only* recency is weak — surface it but rank
+   it below a recurring or drift-aligned candidate. Prefer learnings
+   that hit two or three signals at once.
+
+   **Out of scope for now:** Claude Code's auto memory at
+   `~/.claude/projects/<slug>/memory/` is NOT scanned. Auto memory is
+   personal-scoped; promotion to `CLAUDE.md` (team-scoped) requires
+   the user's explicit reasoning and is mediated through `/learn`.
+   This may be revisited once Phase 6a observability ships.
 
 2. **This session's mistakes** — if Claude made the same mistake twice
    in this session, it's a candidate for a Gotchas entry. Once-per-session
