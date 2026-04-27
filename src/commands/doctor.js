@@ -11,7 +11,7 @@ import {
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
 import { hasClaudeMdMemoryGuidance, readClaudeMd } from '../core/drift-checks.js';
-import { detectClaudeMdTestCountDrift } from '../utils/drift-detect.js';
+import { lintRepo } from '../utils/doc-lint.js';
 import { resolveKeyPath, isWorkflowRefFile } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 
@@ -109,19 +109,29 @@ function checkInstallationRationale(meta) {
   return result(PASS, `Installation rationale: ${rationale}`, null);
 }
 
-async function checkClaudeMdTestCountDrift(projectRoot) {
-  const drift = await detectClaudeMdTestCountDrift(projectRoot);
-  if (drift.reason === 'no-claude-md' || drift.reason === 'no-claims') return null;
-  if (!drift.hasDrift) {
-    return result(PASS, `CLAUDE.md file count matches (${drift.actual.files} test files)`, null);
+async function checkDocLint(projectRoot) {
+  const lint = await lintRepo(projectRoot);
+  if (lint.markerCount === 0) return null;
+  if (!lint.hasDrift) {
+    return result(PASS, `doc-lint: ${lint.markerCount} marker(s) match their source`, null);
   }
-  const lines = drift.mismatches
-    .map((m) => `line ${m.lineNumber} claims ${m.claimedFiles} files`)
+  const summary = lint.findings
+    .slice(0, 3)
+    .map((f) => {
+      if (f.kind === 'test-count-drift') {
+        return `${f.file}:${f.claimLine} claims ${f.claimed.files} files (actual ${f.actual.files})`;
+      }
+      if (f.kind === 'missing-npm-script') {
+        return `${f.file}:${f.markerLine} references missing script \`npm run ${f.scriptName}\``;
+      }
+      return `${f.file}:${f.markerLine} ${f.kind}`;
+    })
     .join('; ');
+  const more = lint.findings.length > 3 ? ` (+${lint.findings.length - 3} more)` : '';
   return result(
     WARN,
-    'CLAUDE.md test-file count drift',
-    `Actual ${drift.actual.files} test files; ${lines}. Run /sync to refresh.`
+    `doc-lint: ${lint.findings.length} drift finding(s)`,
+    `${summary}${more}. Run /sync to refresh tech-stack metrics, or fix the cited section.`
   );
 }
 
@@ -1064,8 +1074,8 @@ export async function doctorCommand(options = {}) {
   record('docs', await checkDocSpecs(projectRoot));
   const rationaleCheck = checkInstallationRationale(meta);
   if (rationaleCheck) record('docs', rationaleCheck);
-  const driftCheck = await checkClaudeMdTestCountDrift(projectRoot);
-  if (driftCheck) record('docs', driftCheck);
+  const lintCheck = await checkDocLint(projectRoot);
+  if (lintCheck) record('docs', lintCheck);
   spacer();
 
   // Learnings
