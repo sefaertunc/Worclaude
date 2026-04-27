@@ -15,7 +15,7 @@ export async function docLintCommand(options = {}) {
   for (const f of result.findings) {
     if (f.kind === 'test-count-drift') {
       display.barLine(
-        `  ${f.file}:${f.claimLine} — claims ${f.claimed.tests} tests, ${f.claimed.files} files; actual ${f.actual.tests} tests, ${f.actual.files} files`
+        `  ${f.file}:${f.claimLine} — claims ${f.claimed.files} test files (actual ${f.actual.files})`
       );
     } else if (f.kind === 'missing-npm-script') {
       display.barLine(
@@ -28,7 +28,7 @@ export async function docLintCommand(options = {}) {
 
   display.newline();
   display.dim(
-    'Fix by running /sync (which refreshes tech-stack metrics in step 10c) or by editing the cited section.'
+    'Fix by running /sync (refreshes both test count and file count in step 10c via the test runner) or by editing the cited section.'
   );
 
   if (options.strict) {
