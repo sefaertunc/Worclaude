@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/worclaude.png" alt="Worclaude: The Workflow Layer for Claude Code" width="100%" />
+  <img src="assets/banner.png" alt="Worclaude: The Workflow Layer for Claude Code" width="100%" />
 </p>
 
 <p align="center">
