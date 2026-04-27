@@ -16,6 +16,7 @@ const ALWAYS_SCAFFOLDED_TYPES = new Set([
   'command',
   'universal-skill',
   'hook',
+  'script',
   'root-file',
 ]);
 
@@ -147,6 +148,21 @@ export async function buildTemplateHashMap() {
       const templatePath = `hooks/${entry}`;
       const content = await readTemplate(templatePath);
       map[key] = { templatePath, hash: hashContent(content), type: 'hook' };
+    }
+  }
+
+  // Slash-command helper scripts: collapse multi-line bash blocks into a
+  // single allowed invocation. Walked from templates/scripts/ so new helpers
+  // flow through automatically.
+  const scriptsDir = path.join(getTemplatesDir(), 'scripts');
+  if (await fs.pathExists(scriptsDir)) {
+    const entries = await fs.readdir(scriptsDir);
+    for (const entry of entries) {
+      if (!entry.endsWith('.sh')) continue;
+      const key = `scripts/${entry}`;
+      const templatePath = `scripts/${entry}`;
+      const content = await readTemplate(templatePath);
+      map[key] = { templatePath, hash: hashContent(content), type: 'script' };
     }
   }
 

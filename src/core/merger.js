@@ -8,6 +8,7 @@ import {
   scaffoldAgentsMd,
   mergeSettings,
   scaffoldHooks,
+  scaffoldScripts,
 } from './scaffolder.js';
 import { OPTIONAL_FEATURES } from '../data/optional-features.js';
 import { workflowRefRelPath } from './file-categorizer.js';
@@ -488,6 +489,9 @@ export async function performMerge(
 
   // Copy hook scripts (preserves existing user modifications)
   await scaffoldHooks(projectRoot);
+
+  // Copy slash-command helper scripts (preserves existing user modifications)
+  await scaffoldScripts(projectRoot);
 
   // Create learnings directory for correction capture
   await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');

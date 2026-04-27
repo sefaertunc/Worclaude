@@ -29,4 +29,34 @@ describe('templates/settings/base.json permissions.allow', () => {
     expect(parsed.permissions.allow).toContain('Bash(worclaude scan:*)');
     expect(parsed.permissions.allow).toContain('Bash(worclaude setup-state:*)');
   });
+
+  it('includes shell builtins so [ -n "$X" ] tests in helper scripts do not prompt', async () => {
+    const parsed = await loadBaseJson();
+    expect(parsed.permissions.allow).toContain('Bash(test:*)');
+    expect(parsed.permissions.allow).toContain('Bash([:*)');
+  });
+
+  it('includes Bash(bash:*) so .claude/scripts/*.sh helpers run without approval', async () => {
+    const parsed = await loadBaseJson();
+    expect(parsed.permissions.allow).toContain('Bash(bash:*)');
+  });
+
+  it('includes WebFetch domains for the four reference sources every Claude Code session uses', async () => {
+    const parsed = await loadBaseJson();
+    expect(parsed.permissions.allow).toContain('WebFetch(domain:docs.anthropic.com)');
+    expect(parsed.permissions.allow).toContain('WebFetch(domain:docs.claude.com)');
+    expect(parsed.permissions.allow).toContain('WebFetch(domain:github.com)');
+    expect(parsed.permissions.allow).toContain('WebFetch(domain:api.github.com)');
+  });
+
+  it('includes WebSearch so the built-in search tool runs without approval', async () => {
+    const parsed = await loadBaseJson();
+    expect(parsed.permissions.allow).toContain('WebSearch');
+  });
+
+  it('includes Skill() rules for the built-in workflow skills the templates reference', async () => {
+    const parsed = await loadBaseJson();
+    expect(parsed.permissions.allow).toContain('Skill(update-config)');
+    expect(parsed.permissions.allow).toContain('Skill(fewer-permission-prompts)');
+  });
 });

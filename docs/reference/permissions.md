@@ -31,6 +31,58 @@ Permissions use the format `Tool(pattern)` where the pattern supports wildcards:
 
 The `*` wildcard matches any arguments. The `**` glob matches any path depth.
 
+## Why Prompts Still Fire
+
+Even with the right `allow` patterns, you will still see permission prompts in some situations. These are not bugs in your `settings.json` — they are gaps between how Claude Code's matcher works and how shell commands are actually shaped. Knowing the four common causes lets you redesign around them instead of accumulating one-off ad-hoc grants in `settings.local.json`.
+
+### 1. Env-var-prefix gotcha
+
+A bash command like:
+
+```bash
+LAST_SESSION=$(ls -t .claude/sessions/*.md | head -1)
+```
+
+will prompt **even when `Bash(ls:*)` is allowed**. Claude Code's matcher only bypasses env-var prefixes for a small hardcoded safe-list (`LANG`, `TZ`, `NO_COLOR`, etc.). Arbitrary `X=$(cmd)` is treated as a different command entirely.
+
+**Workaround:** bundle the bash into a helper script under `.claude/scripts/` and invoke it as a single line. Worclaude ships several helper scripts (`start-drift.sh`, `sync-release-scope.sh`, `test-coverage-changed-files.sh`) for exactly this reason — they collapse what was 6+ permission interactions per `/start` invocation into a single `Bash(bash:*)` match.
+
+### 2. Multi-line shell fragmentation
+
+Multi-line constructs like `for ... do ... done` or `if ... elif ... fi` get prompted **per shell-keyword line** when Claude generates them as separate executions. The fingerprint in `settings.local.json` is entries like `Bash(for cmd:*)`, `Bash(do echo:*)`, `Bash(done)` — these are never reusable; they are dead artifacts of one-time approvals.
+
+**Workaround:** same as above — bundle multi-line shell into a helper script. Each script invocation matches a single `Bash(...)` allow rule.
+
+### 3. Pipes and redirects in compound commands
+
+Commands with `|`, `2>&1`, `>` may still prompt even when each subcommand is allowed. Per Anthropic's changelog, the "don't ask again" dialog shows the full raw command for compound commands — the matcher and the prompt UX are designed to keep humans in the loop on chained operations.
+
+**Workaround:** wrap the pipeline in a helper script, or for hard enforcement use Claude Code's [sandbox](https://code.claude.com/docs/en/sandboxing) which gives OS-level filesystem and network restrictions independent of shell construction.
+
+### 4. Directory access is a separate layer
+
+The `Read(...)` allowlist gates what files Claude's Read tool can open by **pattern**. A separate `additionalDirectories` setting in `~/.claude.json` gates which directories the Read tool can access at all. If you see the prompt "allow reading from `<project-name>/` from this project," that is the directory-access layer — not your `settings.json` patterns.
+
+**Workaround:** add the project root (or any other directory you legitimately need to read from) to `additionalDirectories` in your global `~/.claude.json`:
+
+```json
+{
+  "additionalDirectories": ["~/projects/my-app", "/tmp/claude-scratch"]
+}
+```
+
+Avoid the workaround pattern of `Read(//absolute/path/**)` in `settings.local.json` — `additionalDirectories` is the canonical place for directory grants and persists across all projects on your machine.
+
+### Use the built-in `fewer-permission-prompts` skill
+
+Claude Code ships a built-in skill that scans your transcripts for common read-only Bash and MCP tool calls and proposes a prioritized allowlist for `.claude/settings.json`. Run it periodically when you notice friction:
+
+```
+/fewer-permission-prompts
+```
+
+Worclaude does NOT ship its own version — the built-in skill is the canonical tool. Worclaude's contribution is the curated base allowlist, the helper-script pattern that avoids the gotchas above, and this documentation.
+
 ## Universal Permissions (Base)
 
 These permissions are installed for every project regardless of tech stack.
