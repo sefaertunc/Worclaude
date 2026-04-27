@@ -63,8 +63,9 @@ export async function promptAgentSelection(projectTypes) {
   // Step 3: Offer unselected categories
   const unselectedCategories = categoryNames.filter((cat) => !selectedCategories.includes(cat));
 
+  let additionalCategories = [];
   if (unselectedCategories.length > 0) {
-    const { additionalCategories } = await inquirer.prompt([
+    ({ additionalCategories } = await inquirer.prompt([
       {
         type: 'checkbox',
         name: 'additionalCategories',
@@ -74,7 +75,7 @@ export async function promptAgentSelection(projectTypes) {
           value: cat,
         })),
       },
-    ]);
+    ]));
 
     for (const cat of additionalCategories) {
       const agentNames = AGENT_CATEGORIES[cat].agents;
@@ -95,5 +96,12 @@ export async function promptAgentSelection(projectTypes) {
   }
 
   // Deduplicate
-  return [...new Set(selected)];
+  const dedupedSelectedAgents = [...new Set(selected)];
+
+  return {
+    selectedAgents: dedupedSelectedAgents,
+    selectedCategories,
+    additionalCategories,
+    preSelectedCategories: [...preSelectedCategories],
+  };
 }

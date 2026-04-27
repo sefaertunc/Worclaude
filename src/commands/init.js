@@ -70,8 +70,14 @@ async function runTechStack(selections) {
 }
 
 async function runAgents(selections) {
-  const selectedAgents = await promptAgentSelection(selections.projectTypes);
-  return { ...selections, selectedAgents };
+  const result = await promptAgentSelection(selections.projectTypes);
+  return {
+    ...selections,
+    selectedAgents: result.selectedAgents,
+    selectedCategories: result.selectedCategories,
+    additionalCategories: result.additionalCategories,
+    preSelectedCategories: result.preSelectedCategories,
+  };
 }
 
 async function runOptionalExtras(selections) {
@@ -281,6 +287,56 @@ function buildTemplateVariables(selections) {
   };
 }
 
+export function buildInstallationRationale(selections) {
+  const projectTypes = selections.projectTypes || [];
+  const preSelected = new Set(selections.preSelectedCategories || []);
+  const picked = new Set(selections.selectedCategories || []);
+  const added = selections.additionalCategories || [];
+
+  const autoMatched = [...picked].filter((c) => preSelected.has(c));
+  const removedAuto = [...preSelected].filter((c) => !picked.has(c));
+  const manualPicked = [...picked].filter((c) => !preSelected.has(c));
+
+  const decisions = [];
+  if (autoMatched.length > 0) {
+    decisions.push(
+      `Accepted auto-recommended categories from project type(s) ${projectTypes.join(', ') || '(none)'}: ${autoMatched.join(', ')}.`
+    );
+  }
+  if (removedAuto.length > 0) {
+    decisions.push(`Removed auto-recommended categories: ${removedAuto.join(', ')}.`);
+  }
+  if (manualPicked.length > 0) {
+    decisions.push(
+      `Added categories beyond the project-type recommendations: ${manualPicked.join(', ')}.`
+    );
+  }
+  if (added.length > 0) {
+    decisions.push(`Opted into extra categories at the second prompt: ${added.join(', ')}.`);
+  }
+
+  let rationale;
+  if (
+    autoMatched.length > 0 &&
+    removedAuto.length === 0 &&
+    manualPicked.length === 0 &&
+    added.length === 0
+  ) {
+    rationale = `Auto-selected from project type(s) '${projectTypes.join(', ')}'.`;
+  } else if (decisions.length === 0) {
+    rationale = 'No optional categories selected.';
+  } else {
+    rationale = decisions.join(' ');
+  }
+
+  return {
+    projectTypes,
+    selectedCategories: [...picked, ...added],
+    rationale,
+    userDecisions: decisions,
+  };
+}
+
 async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
   const fileHashes = await computeFileHashes(projectRoot);
 
@@ -292,6 +348,7 @@ async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
     optionalAgents: selections.selectedAgents,
     useDocker: selections.useDocker || false,
     fileHashes,
+    installation: buildInstallationRationale(selections),
   });
   await writeWorkflowMeta(projectRoot, meta);
 }

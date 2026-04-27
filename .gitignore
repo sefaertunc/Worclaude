@@ -51,3 +51,6 @@ docs/.vitepress/cache
 
 # Worclaude (added Phase 2 PR G)
 .claude/scratch/
+
+# Worclaude (scheduled-task harness lock — runtime state)
+.claude/scheduled_tasks.lock
