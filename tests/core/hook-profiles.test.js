@@ -88,11 +88,13 @@ describe('hook profiles', () => {
   it('UserPromptSubmit hooks have standard+strict profile gate', async () => {
     const { settingsObject } = await buildSettingsJson(['node'], false);
     const ups = settingsObject.hooks.UserPromptSubmit;
-    expect(ups).toHaveLength(2);
+    expect(ups).toHaveLength(3);
     expect(ups[0].hooks[0].command).toContain('WORCLAUDE_HOOK_PROFILE');
     expect(ups[0].hooks[0].command).toContain('correction-detect');
     expect(ups[1].hooks[0].command).toContain('WORCLAUDE_HOOK_PROFILE');
     expect(ups[1].hooks[0].command).toContain('skill-hint');
+    expect(ups[2].hooks[0].command).toContain('WORCLAUDE_HOOK_PROFILE');
+    expect(ups[2].hooks[0].command).toContain('obs-command-invocations');
   });
 
   it('SessionEnd hook has standard+strict profile gate and async', async () => {
@@ -103,9 +105,9 @@ describe('hook profiles', () => {
     expect(sessionEnd[0].hooks[0].async).toBe(true);
   });
 
-  it('settings have 8 hook event types', async () => {
+  it('settings have 11 hook event types', async () => {
     const { settingsObject } = await buildSettingsJson(['node'], false);
-    expect(Object.keys(settingsObject.hooks).length).toBe(8);
+    expect(Object.keys(settingsObject.hooks).length).toBe(11);
   });
 
   it('profile gate survives multi-language formatter chaining', async () => {

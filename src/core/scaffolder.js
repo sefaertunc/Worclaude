@@ -77,6 +77,7 @@ export async function updateGitignore(projectDir) {
     '.claude/.stop-hook-active',
     '.claude/cache/',
     '.claude/scratch/',
+    '.claude/observability/',
   ];
   const header = '# Worclaude (generated workflow files)';
 

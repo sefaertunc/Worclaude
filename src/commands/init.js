@@ -478,6 +478,10 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
     spinner.text = 'Created .claude/plans/';
 
+    // Create observability directory for hook-captured event logs (gitignored)
+    await writeFile(path.join(projectRoot, '.claude', 'observability', '.gitkeep'), '');
+    spinner.text = 'Created .claude/observability/';
+
     // Opt-in: scaffold each optional feature the user selected. Scaffolders
     // are idempotent — if a file already exists they skip it.
     const optedIn = new Set(selections.optionalFeatures || []);

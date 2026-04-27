@@ -205,7 +205,15 @@ export const TEMPLATE_SKILLS = [
   'project-patterns',
 ];
 
-export const HOOK_FILES = ['pre-compact-save', 'correction-detect', 'learn-capture', 'skill-hint'];
+export const HOOK_FILES = [
+  'pre-compact-save',
+  'correction-detect',
+  'learn-capture',
+  'skill-hint',
+  'obs-skill-loads',
+  'obs-command-invocations',
+  'obs-agent-events',
+];
 
 export const PROJECT_TYPES = [
   'Full-stack web application',
