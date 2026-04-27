@@ -1,12 +1,18 @@
 ---
 name: test-writer
-description: "Writes comprehensive, meaningful tests for recently changed code"
+description: Writes comprehensive, meaningful tests for recently changed code
 model: sonnet
 isolation: worktree
 maxTurns: 50
 memory: project
 skills:
   - testing
+category: universal
+triggerType: automatic
+whenToUse: After completing implementation of any feature or module.
+whatItDoes: Writes unit tests, integration tests, edge case tests. Covers happy path, error cases, boundary conditions.
+expectBack: Test files committed to worktree branch. Merge when reviewed.
+situationLabel: Finished implementing a feature
 ---
 
 ## Worktree freshness preamble

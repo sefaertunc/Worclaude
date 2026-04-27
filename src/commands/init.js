@@ -34,7 +34,7 @@ import {
   CONFIRMATION_STEPS,
   SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
-import { buildAgentRoutingSkill } from '../generators/agent-routing.js';
+import { buildAgentRoutingSkill, loadShippedAgents } from '../generators/agent-routing.js';
 import { buildCommandsBlock } from '../core/variables.js';
 
 // --- Helper functions ---
@@ -368,7 +368,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     }
     spinner.text = `Created ${TEMPLATE_SKILLS.length} template skills`;
 
-    const agentRoutingContent = buildAgentRoutingSkill(selectedAgents, projectTypes);
+    const agentRoutingContent = buildAgentRoutingSkill(await loadShippedAgents(selectedAgents));
     await writeFile(
       path.join(projectRoot, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
       agentRoutingContent

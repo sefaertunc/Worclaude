@@ -1,9 +1,15 @@
 ---
 name: bug-fixer
-description: "Diagnoses and fixes bugs"
+description: Diagnoses and fixes bugs
 model: sonnet
 isolation: worktree
 maxTurns: 50
+category: quality
+triggerType: manual
+whenToUse: Bug reported. Test failing. Error in logs. Something broke but you don't want to derail current work.
+whatItDoes: Investigates the bug in isolation. Reads logs, reproduces, finds root cause, implements fix, writes regression test.
+expectBack: Fix committed to worktree branch with regression test.
+situationLabel: Got a bug report mid-task
 ---
 
 ## Worktree freshness preamble

@@ -1,6 +1,6 @@
 ---
 name: ml-experiment-tracker
-description: "Reviews ML experiment reproducibility"
+description: Reviews ML experiment reproducibility
 model: sonnet
 isolation: none
 disallowedTools:
@@ -9,6 +9,12 @@ disallowedTools:
   - NotebookEdit
   - Agent
 maxTurns: 30
+category: data
+triggerType: manual
+whenToUse: Running ML experiments. Comparing model performance. Hyperparameter tuning. Model selection.
+whatItDoes: Tracks ML experiments, compares metrics across runs, documents hyperparameters and results.
+expectBack: Experiment comparison report with recommendations.
+situationLabel: Running or comparing ML experiments
 ---
 
 You are an ML engineering specialist who reviews experiment code for

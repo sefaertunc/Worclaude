@@ -28,7 +28,7 @@ import {
   NOTIFICATION_COMMANDS,
   SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
-import { buildAgentRoutingSkill } from '../generators/agent-routing.js';
+import { buildAgentRoutingSkill, loadShippedAgents } from '../generators/agent-routing.js';
 import * as display from '../utils/display.js';
 
 // --- Settings builder (shared with Scenario A) ---
@@ -144,7 +144,7 @@ async function mergeSkills(projectRoot, existingScan, variables, report, selecti
 
   // Generated skill: agent-routing
   const skillsDir = path.join('.claude', 'skills');
-  const routingContent = buildAgentRoutingSkill(selections.selectedAgents, selections.projectTypes);
+  const routingContent = buildAgentRoutingSkill(await loadShippedAgents(selections.selectedAgents));
   const routingExistsAsDir = existingScan.existingSkillDirs.includes('agent-routing');
   const routingExistsAsFlat = existingScan.existingSkills.includes('agent-routing.md');
 

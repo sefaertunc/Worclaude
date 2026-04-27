@@ -13,6 +13,7 @@ import { doctorCommand } from './commands/doctor.js';
 import { scanCommand } from './commands/scan.js';
 import { setupStateCommand } from './commands/setup-state.js';
 import { worktreesCleanCommand } from './commands/worktrees.js';
+import { regenerateRoutingCommand } from './commands/regenerate-routing.js';
 
 const program = new Command();
 
@@ -64,6 +65,13 @@ program
   .description('Validate workflow installation health')
   .option('--json', 'Output results as JSON')
   .action((options) => doctorCommand(options));
+
+program
+  .command('regenerate-routing')
+  .description(
+    'Regenerate .claude/skills/agent-routing/SKILL.md from .claude/agents/*.md frontmatter'
+  )
+  .action(() => regenerateRoutingCommand());
 
 program
   .command('scan')

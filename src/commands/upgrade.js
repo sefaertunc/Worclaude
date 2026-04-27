@@ -26,6 +26,7 @@ import {
   patchAgentDescriptions,
   migrateWorkflowRefLocation,
 } from '../core/migration.js';
+import { regenerateRoutingForProject } from './regenerate-routing.js';
 
 const CONFLICT_CHECK_TYPES = new Set(['hook', 'root-file']);
 
@@ -553,6 +554,18 @@ export async function upgradeCommand(options = {}) {
     }
 
     await updateGitignore(projectRoot);
+
+    try {
+      const routingResult = await regenerateRoutingForProject(projectRoot);
+      if (routingResult.regenerated) {
+        const rel = path.relative(projectRoot, routingResult.skillPath);
+        if (rel in fileHashes || (await fs.pathExists(routingResult.skillPath))) {
+          fileHashes[rel] = await hashFile(routingResult.skillPath);
+        }
+      }
+    } catch (err) {
+      display.warn(`agent-routing regeneration skipped: ${err.message}`);
+    }
 
     meta.version = currentVersion;
     meta.lastUpdated = new Date().toISOString();

@@ -228,6 +228,23 @@ to a higher level — the warning is the enforcement.
          only refreshes existing claims; introducing new ones is a project
          decision, not a `/sync` decision.
 
+## Regenerate agent-routing skill
+
+10b. Regenerate `.claude/skills/agent-routing/SKILL.md` from the project's
+     installed agent files so it reflects whatever was added/removed/renamed
+     across the merged PRs:
+
+     ```bash
+     worclaude regenerate-routing
+     ```
+
+     The regenerator reads `.claude/agents/*.md` frontmatter and replaces
+     only the content between `<!-- AUTO-GENERATED-START -->` and
+     `<!-- AUTO-GENERATED-END -->` markers — anything outside (frontmatter,
+     local notes) is preserved. If the file is missing or marker-less, a
+     fresh complete file is written. Stage the result alongside the other
+     `/sync` updates if it changed.
+
 ## Verify
 
 11. Run /verify to confirm tests and lint pass.

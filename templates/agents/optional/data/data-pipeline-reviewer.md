@@ -1,6 +1,6 @@
 ---
 name: data-pipeline-reviewer
-description: "Reviews data pipeline correctness"
+description: Reviews data pipeline correctness
 model: sonnet
 isolation: none
 disallowedTools:
@@ -9,6 +9,12 @@ disallowedTools:
   - NotebookEdit
   - Agent
 maxTurns: 30
+category: data
+triggerType: manual
+whenToUse: New data pipeline created. ETL logic changed. Data transformation modified. Schema compatibility concerns.
+whatItDoes: Reviews data flows, validates transformations, checks for data loss, validates schema compatibility.
+expectBack: Pipeline review with data integrity concerns.
+situationLabel: Created or changed a data pipeline
 ---
 
 You are a data engineering specialist who reviews data pipeline code

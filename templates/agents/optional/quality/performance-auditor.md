@@ -1,6 +1,6 @@
 ---
 name: performance-auditor
-description: "Analyzes code for performance issues"
+description: Analyzes code for performance issues
 model: sonnet
 isolation: none
 disallowedTools:
@@ -11,6 +11,12 @@ disallowedTools:
 maxTurns: 30
 omitClaudeMd: true
 criticalSystemReminder: "CRITICAL: You CANNOT edit files. Review and report findings only."
+category: quality
+triggerType: manual
+whenToUse: Performance concern raised. Slow endpoint discovered. Before releasing to production. After major changes.
+whatItDoes: Profiles code, identifies bottlenecks, checks database query efficiency, measures response times, suggests optimizations.
+expectBack: Performance report with benchmarks and recommendations.
+situationLabel: Suspect performance issues
 ---
 
 You are a performance engineer who reviews code for efficiency
