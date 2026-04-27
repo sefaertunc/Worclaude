@@ -100,6 +100,7 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 13. Every merge to `main` is a user-visible release and carries a version bump (`patch`, `minor`, or `major`). `/sync` aggregates per-PR `Version bump:` declarations from develop and only opens a PR to `main` when at least one declared bump is above `none`. Internal-only work (`none`-only batches) updates shared-state files on develop but never reaches `main`. Always publish from `main` via the `release.yml` workflow (triggered by creating a GitHub Release), never directly from `develop`. See git-conventions.md Versioning Policy.
 14. Feature branches NEVER modify shared-state files. Those are updated only on develop via /sync after merging PRs. See git-conventions.md Shared-State Files for the canonical list.
 15. Never add Co-Authored-By trailers, AI attribution footers, or "Generated with" signatures to commits or PRs.
+16. Commit, push, and PR only when the human explicitly invokes /commit-push-pr or /sync. Never run git commit, git push, or gh pr create on your own initiative, never invoke those slash commands without an explicit human trigger, and never auto-answer the Version bump: question — refuse to proceed without a human-selected option.
 
 ## Key Directories
 

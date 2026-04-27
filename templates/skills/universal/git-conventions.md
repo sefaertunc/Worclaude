@@ -6,6 +6,16 @@ version: "1.0.0"
 
 # Git Conventions
 
+## Invocation Boundary
+
+`git commit`, `git push`, and `gh pr create` are invoked only when the human
+explicitly types `/commit-push-pr` or `/sync` (or one of their listed Trigger
+Phrases). The slash commands themselves are not invoked autonomously — wait for
+the human trigger. The `Version bump:` AskUserQuestion in `/commit-push-pr` is
+non-skippable; refuse to proceed without an explicit human selection.
+
+See CLAUDE.md Critical Rule 13.
+
 ## Branch Naming
 
 Pattern: `{type}/{short-description}`
