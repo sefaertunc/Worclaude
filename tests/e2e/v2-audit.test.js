@@ -205,6 +205,15 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     expect(claudeMd).toContain('12. Transform tasks to success criteria');
   });
 
+  it('scaffolded CLAUDE.md contains the explicit-trigger commit/push/PR rule', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf8');
+    expect(claudeMd).toContain('13. Commit, push, and PR only when the human');
+    expect(claudeMd).toContain('Trigger discipline:');
+  });
+
   it('every agent has name AND description frontmatter', async () => {
     setupFreshMocks({ allAgents: true });
     await initCommand();

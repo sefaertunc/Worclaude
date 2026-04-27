@@ -10,6 +10,10 @@ ONLY update shared-state files — do not resolve conflicts. That is
 /conflict-resolver's job. If you detect unresolved conflicts, stop
 and tell the user to run /conflict-resolver first.
 
+## Invocation Contract
+
+Run this command only when the human explicitly invokes it (typed `/sync` or one of the Trigger Phrases at the bottom of this file). Do not auto-launch after detecting that PRs were merged. The "ship/wait" prompt at step 9 is non-skippable. See CLAUDE.md Critical Rule 13.
+
 ## Pre-check
 
 1. Confirm you are on the develop branch. If not, stop and warn.
