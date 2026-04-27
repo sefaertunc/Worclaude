@@ -1,5 +1,106 @@
 # SPEC.md — Worclaude CLI
 
+## Table of Contents
+
+- [Product Overview](#product-overview)
+- [Core Commands](#core-commands)
+- [Three Scenarios](#three-scenarios)
+  - [Scenario A: Fresh Project](#scenario-a-fresh-project)
+  - [Scenario B: Existing Project](#scenario-b-existing-project)
+  - [Scenario C: Upgrade](#scenario-c-upgrade)
+- [Init Flow (Scenario A — Fresh Project)](#init-flow-scenario-a--fresh-project)
+  - [Step 1: Welcome & Project Info](#step-1-welcome--project-info)
+  - [Step 2: Project Type Selection](#step-2-project-type-selection)
+  - [Step 3: Tech Stack Selection](#step-3-tech-stack-selection)
+  - [Step 4: Agent Selection](#step-4-agent-selection)
+  - [Step 4.5: Confirmation](#step-45-confirmation)
+  - [Step 5: Scaffold](#step-5-scaffold)
+- [Init Flow (Scenario B — Existing Project)](#init-flow-scenario-b--existing-project)
+  - [Step 1: Detection & Backup](#step-1-detection--backup)
+  - [Step 2: Backup](#step-2-backup)
+  - [Step 3: Project Type & Tech Stack & Agents](#step-3-project-type--tech-stack--agents)
+  - [Step 4: Tiered Merge](#step-4-tiered-merge)
+  - [Step 5: CLAUDE.md Special Handling](#step-5-claudemd-special-handling)
+  - [Step 6: Report](#step-6-report)
+- [Upgrade Flow (Scenario C)](#upgrade-flow-scenario-c)
+  - [Step 1: CLI Self-Update Check](#step-1-cli-self-update-check)
+  - [Step 2: Change Detection](#step-2-change-detection)
+  - [Step 2b: Drift Repair (Tier 1)](#step-2b-drift-repair-tier-1)
+  - [Step 3: Apply](#step-3-apply)
+- [Status Command](#status-command)
+- [Backup & Restore](#backup--restore)
+  - [Backup](#backup)
+  - [Restore](#restore)
+  - [Diff](#diff)
+- [Delete Command](#delete-command)
+  - [Safety Rules](#safety-rules)
+  - [Flow](#flow)
+  - [Backup](#backup-1)
+  - [Empty Directory Cleanup](#empty-directory-cleanup)
+- [Doctor Command](#doctor-command)
+  - [Core Files](#core-files)
+  - [Components](#components)
+  - [Documentation](#documentation)
+  - [Git Integration](#git-integration)
+  - [Integrity](#integrity)
+- [Session Persistence](#session-persistence)
+  - [SessionStart Hook](#sessionstart-hook)
+  - [Session Summaries](#session-summaries)
+  - [Drift Detection](#drift-detection)
+- [Hook Profiles](#hook-profiles)
+- [Hook Script Contracts](#hook-script-contracts)
+  - [pre-compact-save.cjs](#pre-compact-savecjs)
+  - [correction-detect.cjs](#correction-detectcjs)
+  - [learn-capture.cjs](#learn-capturecjs)
+  - [skill-hint.cjs](#skill-hintcjs)
+- [File Templates](#file-templates)
+  - [CLAUDE.md Template](#claudemd-template)
+  - [workflow-meta.json Template](#workflow-metajson-template)
+  - [settings.json Structure](#settingsjson-structure)
+- [Background-Agent Concurrency](#background-agent-concurrency)
+- [Agent Routing Skill (auto-regeneration)](#agent-routing-skill-auto-regeneration)
+- [Universal Agents](#universal-agents)
+  - [plan-reviewer.md](#plan-reviewermd)
+  - [code-simplifier.md](#code-simplifiermd)
+  - [test-writer.md](#test-writermd)
+  - [build-validator.md](#build-validatormd)
+  - [verify-app.md](#verify-appmd)
+- [Optional Agent Catalog](#optional-agent-catalog)
+  - [Category Recommendations Map](#category-recommendations-map)
+  - [All Optional Agents](#all-optional-agents)
+- [Universal Slash Commands](#universal-slash-commands)
+  - [/start](#start-startmd)
+  - [/end](#end-endmd)
+  - [/commit-push-pr](#commit-push-pr-commit-push-prmd)
+  - [/review-plan](#review-plan-review-planmd)
+  - [/techdebt](#techdebt-techdebtmd)
+  - [/verify](#verify-verifymd)
+  - [/compact-safe](#compact-safe-compact-safemd)
+  - [/status](#status-statusmd)
+  - [/update-claude-md](#update-claude-md-update-claude-mdmd)
+  - [/setup](#setup-setupmd)
+  - [/sync](#sync-syncmd)
+  - [/conflict-resolver](#conflict-resolver-conflict-resolvermd)
+  - [/review-changes](#review-changes-review-changesmd)
+  - [/build-fix](#build-fix-build-fixmd)
+  - [/refactor-clean](#refactor-clean-refactor-cleanmd)
+  - [/test-coverage](#test-coverage-test-coveragemd)
+- [Universal Skills](#universal-skills)
+  - [Skill Summaries](#skill-summaries)
+  - [Template Skills (project-specific placeholders)](#template-skills-project-specific-placeholders)
+- [Configuration Details](#configuration-details)
+  - [Statusline](#statusline)
+  - [Effort Level](#effort-level)
+  - [Output Style](#output-style)
+  - [Sandbox Mode](#sandbox-mode)
+- [Tech Stack for the CLI Tool Itself](#tech-stack-for-the-cli-tool-itself)
+  - [package.json bin entry](#packagejson-bin-entry)
+- [Project Structure](#project-structure)
+- [Implementation Phases](#implementation-phases)
+- [Design Decisions Reference](#design-decisions-reference)
+
+---
+
 ## Product Overview
 
 **worclaude** is a CLI tool that scaffolds a comprehensive Claude Code workflow system into any project. It installs agents, skills, slash commands, hooks, permissions, and configuration files derived from tips by Boris Cherny (creator of Claude Code at Anthropic).
@@ -624,13 +725,16 @@ The SessionStart hook has **no profile gate** — it always fires because losing
 
 Written automatically by `/commit-push-pr` (after committing) and `/end` (mid-task handoff). Stored in `.claude/sessions/` with naming: `YYYY-MM-DD-HHMM-{short-branch-name}.md`. Summaries include a `## Workflow Observability` section listing agents invoked, commands used, and verification result.
 
+The second line of each summary is `sha: {full HEAD SHA at the time of writing}`. The line MUST start at column 0 with the literal string `sha:` (case-sensitive, no markdown formatting around it) so `/start` can match it with `grep -oP '^sha:\s*\K[a-f0-9]+'` and use the value as the lower bound of `git log <sha>..HEAD` drift detection.
+
 ### Drift Detection
 
-The `/start` command supplements SessionStart with git history drift:
+The `/start` command supplements SessionStart with git history drift. It prefers SHA-based drift when the most recent session summary records a `sha:` line and the SHA is reachable; otherwise it falls back to date-based drift.
 
-- Extracts session date from the most recent session file
-- Counts commits since that date (max 15 one-liners)
-- Reports as non-interpreted signals (no warnings or analysis)
+- **SHA-based** (preferred): `git log <sha>..HEAD --oneline` from the recorded SHA to the current HEAD.
+- **Date-based** (fallback): commits since the session date parsed from the filename.
+- Either path caps the listed commits at 15 one-liners.
+- Reports as non-interpreted signals (no warnings or analysis).
 
 ---
 
@@ -638,20 +742,86 @@ The `/start` command supplements SessionStart with git history drift:
 
 Set `WORCLAUDE_HOOK_PROFILE` to control which hooks execute:
 
-| Hook                           | minimal | standard (default) | strict |
-| ------------------------------ | ------- | ------------------ | ------ |
-| SessionStart: Context          | always  | always             | always |
-| PostToolUse: Formatter         | skip    | run                | run    |
-| PostToolUse: Stop Notification | skip    | run                | run    |
-| PostToolUse: TypeScript Check  | skip    | skip               | run    |
-| PostCompact: Context           | always  | always             | always |
+| Hook                          | minimal | standard (default) | strict |
+| ----------------------------- | ------- | ------------------ | ------ |
+| SessionStart: Context         | always  | always             | always |
+| PostToolUse: Formatter        | skip    | run                | run    |
+| PostToolUse: TypeScript Check | skip    | skip               | run    |
+| PostCompact: Context          | always  | always             | always |
+| PreCompact: pre-compact-save  | always  | always             | always |
+| UserPromptSubmit: correction  | skip    | run                | run    |
+| UserPromptSubmit: skill-hint  | skip    | run                | run    |
+| Stop: learn-capture           | skip    | run                | run    |
+| SessionEnd: Notification      | skip    | run                | run    |
+| Notification                  | skip    | run                | run    |
 
-SessionStart and PostCompact always fire (no profile gate). Formatter and notification hooks gate via shell `case` statement. TypeScript check is strict-only.
+SessionStart, PostCompact, and PreCompact:pre-compact-save always fire (no
+profile gate). Formatter, notification, correction, skill-hint, and
+learn-capture gate via a shell `case` statement that exits 0 on `minimal`.
+TypeScript check runs only on `strict`.
 
 ```bash
 WORCLAUDE_HOOK_PROFILE=minimal claude          # Per-session
 export WORCLAUDE_HOOK_PROFILE=strict           # Persistent
 ```
+
+---
+
+## Hook Script Contracts
+
+Four Node scripts ship in `templates/hooks/` and are scaffolded into
+`.claude/hooks/` during init. Each is invoked from `settings.json` with the
+hook payload on stdin and obeys a strict "never block the user" contract: any
+internal failure is swallowed and the script exits 0.
+
+### pre-compact-save.cjs
+
+|                     |                                                                                                                                                                                                                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Event**           | `PreCompact` (registered with `async: true`)                                                                                                                                                                                                                                                   |
+| **Profile gating**  | None — always fires. Losing context to compaction is unacceptable.                                                                                                                                                                                                                             |
+| **Stdin (JSON)**    | `trigger`, `cwd` (both optional; `cwd` falls back to `process.cwd()`)                                                                                                                                                                                                                          |
+| **Stdout / stderr** | None on the happy path.                                                                                                                                                                                                                                                                        |
+| **Exit code**       | Always `0`.                                                                                                                                                                                                                                                                                    |
+| **Side effects**    | Writes a snapshot to `.claude/sessions/pre-compact-{ISO-timestamp}.md` containing trigger, current branch, `git status --porcelain`, and `git log --oneline -3`. Creates `.claude/sessions/` if missing. Each shelled-out git call has a 5-second timeout and a swallowed-stderr stdio config. |
+
+### correction-detect.cjs
+
+|                     |                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Event**           | `UserPromptSubmit`                                                                                                        |
+| **Profile gating**  | Skipped on `minimal` via shell `case`. Runs on `standard`/`strict`.                                                       |
+| **Stdin (JSON)**    | `input.prompt` (string)                                                                                                   |
+| **Stdout / stderr** | One of two hint lines on stdout when a `learnPatterns` or `correctionPatterns` regex matches the prompt. Otherwise empty. |
+| **Exit code**       | Always `0`.                                                                                                               |
+| **Side effects**    | None. No file I/O, no network.                                                                                            |
+
+### learn-capture.cjs
+
+|                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Event**           | `Stop`                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Profile gating**  | Skipped on `minimal` via shell `case`. Runs on `standard`/`strict`.                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Stdin (JSON)**    | `cwd` (optional; falls back to `process.cwd()`), `transcript_path` (path to JSONL transcript).                                                                                                                                                                                                                                                                                                                                                                |
+| **Stdout / stderr** | None on the happy path.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Exit code**       | Always `0`.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Side effects**    | Scans the last 20 lines of the transcript for `[LEARN] Category: rule` blocks (with optional `Mistake:` / `Correction:` follow-up lines). Each match becomes a markdown entry appended to `.claude/learnings/{slugified-category}.md` and indexed in `.claude/learnings/index.json`. Creates the directory if missing. A `.claude/.stop-hook-active` flag file (30s TTL) prevents re-entrancy when the Stop event fires more than once for the same response. |
+
+### skill-hint.cjs
+
+|                     |                                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Event**           | `UserPromptSubmit`                                                                                                                                                                                     |
+| **Profile gating**  | Skipped on `minimal` via shell `case`. Runs on `standard`/`strict`.                                                                                                                                    |
+| **Stdin (JSON)**    | `input.prompt` (string), `cwd` (optional).                                                                                                                                                             |
+| **Stdout / stderr** | At most one `[Skill hint] Consider loading skill: {slug}/SKILL.md` line on stdout when a token in the prompt overlaps a token in any subdirectory name of `.claude/skills/`. Stops at the first match. |
+| **Exit code**       | Always `0`.                                                                                                                                                                                            |
+| **Side effects**    | None. Read-only directory listing under `.claude/skills/`.                                                                                                                                             |
+
+Tokenization is shared shape across both prompt-submit hooks: lowercase, non-
+alphanumeric split, `length >= 4`, stopword filter (`the`, `and`, `for`, ...).
+Skill-hint matches by skill **directory name** today; an enrichment to also
+match the skill's `description:` frontmatter is tracked as Phase 3 T3.10.
 
 ---
 
@@ -889,6 +1059,78 @@ See `.claude/skills/` — load only what's relevant:
 | Windows | `powershell -command "New-BurntToastNotification -Text 'Claude Code','Session needs attention'" 2>/dev/null \|\| true` |
 
 > **Windows note:** Claude Code runs hooks in bash (Git Bash / WSL) on all platforms. All hook commands use Unix shell syntax and require [Git for Windows](https://gitforwindows.org) to be installed.
+
+---
+
+## Background-Agent Concurrency
+
+Multiple background agents on the same branch coexist cleanly. Worktree-isolated
+agents (`isolation: "worktree"`) each create their own sibling worktree off
+`origin/HEAD`, so file/index/ref collisions are impossible by construction.
+Non-isolated agents share the main checkout but are read-only by convention.
+
+A "lock file per branch" guard was rejected after the 2026-04-26 concurrency
+test: it would have blocked the legitimate parallel-agents case without adding
+guarantees beyond what worktree isolation already provides. Worktree locks
+themselves are pid-keyed by Claude Code and survive agent completion; stale
+locks are normal and cleared with `git worktree remove -f -f <path>` or the
+project's worktree-cleanup helper.
+
+The full convention lives in `.claude/skills/agent-routing/SKILL.md` under
+`## Background-Agent Concurrency`. SPEC defers to that skill so the guidance
+stays in the file every session reads.
+
+---
+
+## Agent Routing Skill (auto-regeneration)
+
+The agent-routing skill at `.claude/skills/agent-routing/SKILL.md` is generated
+from the project's `.claude/agents/*.md` frontmatter, not from a centralized
+JS registry. Each agent file is the single source of truth for its routing
+metadata. The required frontmatter fields are:
+
+| Field            | Type                    | Notes                                                   |
+| ---------------- | ----------------------- | ------------------------------------------------------- |
+| `name`           | string                  | Already required by Claude Code's runtime               |
+| `description`    | string                  | Already required by Claude Code's runtime               |
+| `model`          | `opus`/`sonnet`/`haiku` | Already required by Claude Code's runtime               |
+| `isolation`      | `none` / `worktree`     | Already required by Claude Code's runtime               |
+| `category`       | string                  | `universal`, `frontend`, `backend`, `quality`, etc.     |
+| `triggerType`    | `automatic` / `manual`  | Drives Automatic-vs-Manual section partitioning         |
+| `triggerCommand` | string \| omitted       | Slash command that invokes the agent, if any            |
+| `whenToUse`      | string                  | Surfaces under `**When:**` in the routing entry         |
+| `whatItDoes`     | string                  | Surfaces under `**What it does:**`                      |
+| `expectBack`     | string                  | Surfaces under `**Expect back:**`                       |
+| `situationLabel` | string                  | Decision-matrix row label                               |
+| `status`         | `reserved` \| omitted   | Routes the agent into `## Reserved` instead of triggers |
+
+The generator (`src/generators/agent-routing.js`) emits a complete file:
+
+```
+---
+description: "Agent Routing Guide — when to spawn each installed agent"
+---
+
+<!-- AUTO-GENERATED-START -->
+# Agent Routing Guide
+…canonical content…
+<!-- AUTO-GENERATED-END -->
+```
+
+Regeneration only touches content between the AUTO-GENERATED markers — any
+user-authored prose above or below the markers is preserved. If the file
+exists without markers (older scaffolds, hand-edited files), regeneration
+replaces the whole file with the marker-wrapped form.
+
+**Run automatically:** during `worclaude upgrade` (after the upgrade write
+phase) and during `/sync` (step 10b, after PROGRESS/SPEC updates).
+
+**Run manually:** `worclaude regenerate-routing` reads the project's
+`.claude/agents/` and rewrites the skill file in place.
+
+**Init/scaffold:** generates the routing skill from
+`templates/agents/**/*.md` (worclaude's source-side templates) filtered to
+the agents the user selected during init.
 
 ---
 

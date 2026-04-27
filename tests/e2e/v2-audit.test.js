@@ -67,7 +67,9 @@ function setupFreshMocks({ allAgents = false, multiStack = false } = {}) {
   // runOptionalExtras (Phase 4) — opt-outs for plugin.json + GTD memory.
   // Omitting this response caused `showConfirmation` to loop on an
   // undefined confirmation value, leaking memory until OOM.
-  responses.push({ generatePluginJson: false, scaffoldGtdMemory: false });
+  responses.push({ 'plugin-json': false, 'gtd-memory': false });
+  // Phase 7 — GitHub Action opt-out
+  responses.push({ installGithubAction: false });
 
   responses.push({ confirmation: 'yes' });
 
@@ -122,8 +124,11 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
 
     for (const dir of dirs) {
       const content = await fs.readFile(path.join(skillsDir, dir.name, 'SKILL.md'), 'utf8');
-      // agent-routing is dynamically generated without frontmatter
-      if (dir.name !== 'agent-routing') {
+      // agent-routing carries a minimal description frontmatter only — the
+      // body is auto-generated and `when_to_use` does not apply.
+      if (dir.name === 'agent-routing') {
+        expect(content, 'agent-routing should have description').toContain('description:');
+      } else {
         expect(content, `${dir.name} should have description`).toContain('description:');
         expect(content, `${dir.name} should have when_to_use`).toContain('when_to_use:');
       }
@@ -200,6 +205,15 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     expect(claudeMd).toContain('12. Transform tasks to success criteria');
   });
 
+  it('scaffolded CLAUDE.md contains the explicit-trigger commit/push/PR rule', async () => {
+    setupFreshMocks();
+    await initCommand();
+
+    const claudeMd = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf8');
+    expect(claudeMd).toContain('13. Commit, push, and PR only when the human');
+    expect(claudeMd).toContain('Trigger discipline:');
+  });
+
   it('every agent has name AND description frontmatter', async () => {
     setupFreshMocks({ allAgents: true });
     await initCommand();
@@ -236,7 +250,7 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
     await initCommand();
 
     const agentsDir = path.join(tmpDir, '.claude', 'agents');
-    const asyncAgents = ['verify-app.md', 'build-validator.md', 'e2e-runner.md'];
+    const asyncAgents = ['verify-app.md', 'build-validator.md'];
 
     for (const name of asyncAgents) {
       const agentPath = path.join(agentsDir, name);
@@ -436,7 +450,8 @@ describe('E2E Audit — Scenario B (existing project)', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: false },
+      { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;

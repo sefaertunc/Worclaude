@@ -19,6 +19,22 @@
       "Bash(worclaude scan:*)",
       "Bash(worclaude setup-state:*)",
 
+      "// -- Shell builtins for slash-command flow --",
+      "Bash(test:*)",
+      "Bash([:*)",
+      "Bash(bash:*)",
+
+      "// -- WebFetch (research targets) + built-in WebSearch --",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebSearch",
+
+      "// -- Built-in skills used by the workflow --",
+      "Skill(update-config)",
+      "Skill(fewer-permission-prompts)",
+
       "// -- Common Dev Tools --",
       "Bash(echo:*)", "Bash(mkdir:*)", "Bash(touch:*)",
       "Bash(cp:*)", "Bash(mv:*)",
@@ -40,6 +56,29 @@
       "Edit(README*)", "Edit(*.md)",
       "Edit(package.json)", "Edit(pyproject.toml)",
       "Edit(.github/**)"
+    ],
+    "deny": [
+      "// -- Secret files (Read/Edit — Claude's own tools) --",
+      "Read(./.env)", "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Edit(./.env)", "Edit(./.env.*)", "Edit(./secrets/**)",
+      "Read(./*.pem)", "Read(./*.key)",
+      "Read(./id_rsa)", "Read(./id_ed25519)",
+
+      "// -- SSH and cloud creds (home-relative) --",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.config/gh/hosts.yml)",
+
+      "// -- Bash file-view commands targeting .env --",
+      "Bash(cat *.env*)", "Bash(head *.env*)", "Bash(tail *.env*)",
+      "Bash(less *.env*)", "Bash(more *.env*)", "Bash(grep *.env*)",
+
+      "// -- Catastrophic rm patterns (literal-match defense-in-depth) --",
+      "Bash(rm -rf /)", "Bash(rm -rf /*)",
+      "Bash(rm -fr /)", "Bash(rm -fr /*)",
+      "Bash(rm -rf ~)", "Bash(rm -rf ~/*)",
+      "Bash(rm -rf $HOME)", "Bash(rm -rf $HOME/*)"
     ]
   },
   "hooks": {
@@ -119,6 +158,40 @@
         "hooks": [{
           "type": "command",
           "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/skill-hint.cjs && node .claude/hooks/skill-hint.cjs || true"
+        }]
+      },
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-command-invocations.cjs && node .claude/hooks/obs-command-invocations.cjs || true"
+        }]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-skill-loads.cjs && node .claude/hooks/obs-skill-loads.cjs || true"
+        }]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-agent-events.cjs && node .claude/hooks/obs-agent-events.cjs || true"
+        }]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "p=${WORCLAUDE_HOOK_PROFILE:-standard}; case \"$p\" in minimal) exit 0;; esac; test -f .claude/hooks/obs-agent-events.cjs && node .claude/hooks/obs-agent-events.cjs || true"
         }]
       }
     ],

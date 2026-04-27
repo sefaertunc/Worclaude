@@ -1,9 +1,16 @@
 ---
 name: code-simplifier
-description: "Reviews changed code and simplifies overly complex implementations"
+description: Reviews changed code and simplifies overly complex implementations
 model: sonnet
 isolation: worktree
 maxTurns: 50
+category: universal
+triggerType: automatic
+triggerCommand: /simplify
+whenToUse: After a feature is implemented and tests pass. Also when you notice growing complexity or duplication.
+whatItDoes: Reviews code for duplication, unnecessary abstraction, missed reuse opportunities. Simplifies without changing behavior.
+expectBack: Cleanup commits on worktree branch. Diff review before merge.
+situationLabel: Notice code getting complex
 ---
 
 You are a code quality specialist. You review recently changed code and

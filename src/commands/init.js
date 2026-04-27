@@ -6,9 +6,9 @@ import {
   scaffoldAgentsMd,
   updateGitignore,
   scaffoldHooks,
-  scaffoldPluginJson,
-  scaffoldMemoryDocs,
+  scaffoldScripts,
 } from '../core/scaffolder.js';
+import { OPTIONAL_FEATURES } from '../data/optional-features.js';
 import {
   computeFileHashes,
   createWorkflowMeta,
@@ -34,7 +34,7 @@ import {
   CONFIRMATION_STEPS,
   SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
-import { buildAgentRoutingSkill } from '../generators/agent-routing.js';
+import { buildAgentRoutingSkill, loadShippedAgents } from '../generators/agent-routing.js';
 import { buildCommandsBlock } from '../core/variables.js';
 
 // --- Helper functions ---
@@ -70,34 +70,61 @@ async function runTechStack(selections) {
 }
 
 async function runAgents(selections) {
-  const selectedAgents = await promptAgentSelection(selections.projectTypes);
-  return { ...selections, selectedAgents };
+  const result = await promptAgentSelection(selections.projectTypes);
+  return {
+    ...selections,
+    selectedAgents: result.selectedAgents,
+    selectedCategories: result.selectedCategories,
+    additionalCategories: result.additionalCategories,
+    preSelectedCategories: result.preSelectedCategories,
+  };
 }
 
 async function runOptionalExtras(selections) {
-  const { generatePluginJson, scaffoldGtdMemory } = await inquirer.prompt([
+  const previouslySelected = new Set(selections.optionalFeatures || []);
+  const questions = OPTIONAL_FEATURES.map((feature) => ({
+    type: 'list',
+    name: feature.id,
+    message: feature.label,
+    choices: [
+      { name: 'Yes', value: true },
+      { name: 'No', value: false },
+    ],
+    default: previouslySelected.has(feature.id) ? 0 : 1,
+  }));
+  const answers = await inquirer.prompt(questions);
+  const optionalFeatures = OPTIONAL_FEATURES.filter((f) => answers[f.id]).map((f) => f.id);
+
+  // GitHub Action (`@claude` PR-comment workflow). Worclaude does NOT run
+  // the install — Claude Code provides /install-github-action and we point
+  // at it. Phase 7 T7.3.
+  const { installGithubAction } = await inquirer.prompt([
     {
       type: 'list',
-      name: 'generatePluginJson',
-      message: 'Generate .claude-plugin/plugin.json for marketplace compatibility?',
+      name: 'installGithubAction',
+      message:
+        'Install Claude Code\'s GitHub Action for the @claude "compounding engineering" workflow?',
       choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
+        { name: 'Yes — show me the install instructions now', value: true },
+        { name: "No — I'll do it later", value: false },
       ],
-      default: selections.generatePluginJson === true ? 0 : 1,
-    },
-    {
-      type: 'list',
-      name: 'scaffoldGtdMemory',
-      message: 'Scaffold structured memory files (decisions.md, preferences.md)?',
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-      default: selections.scaffoldGtdMemory === true ? 0 : 1,
+      default: 1,
     },
   ]);
-  return { ...selections, generatePluginJson, scaffoldGtdMemory };
+
+  return { ...selections, optionalFeatures, installGithubAction };
+}
+
+function displayGithubActionHint(selections) {
+  if (!selections.installGithubAction) return;
+  display.newline();
+  display.barLine('GitHub Action setup:');
+  display.barLine(
+    `  Run ${display.white('/install-github-action')} inside Claude Code to enable the @claude workflow.`
+  );
+  display.barLine(
+    `  See ${display.dimColor('docs/guide/claude-code-integration.md#github-action-integration-claude-pattern')} for details.`
+  );
 }
 
 const STEP_RUNNERS = {
@@ -142,9 +169,8 @@ async function showConfirmation(selections) {
     `  ${'Agents'.padEnd(10)}${display.white(`${universalCount} universal + ${optionalCount} optional`)} ${display.dimColor(`(${totalCount} total)`)}`
   );
 
-  const extrasLabels = [];
-  if (selections.generatePluginJson) extrasLabels.push('plugin.json');
-  if (selections.scaffoldGtdMemory) extrasLabels.push('memory docs');
+  const opted = new Set(selections.optionalFeatures || []);
+  const extrasLabels = OPTIONAL_FEATURES.filter((f) => opted.has(f.id)).map((f) => f.extrasLabel);
   if (extrasLabels.length > 0) {
     console.log(`  ${'Extras'.padEnd(10)}${display.white(extrasLabels.join(', '))}`);
   }
@@ -177,8 +203,7 @@ function createInitialSelections(projectRoot) {
     languages: [],
     useDocker: false,
     selectedAgents: [],
-    generatePluginJson: false,
-    scaffoldGtdMemory: false,
+    optionalFeatures: [],
   };
 }
 
@@ -263,7 +288,7 @@ function buildTemplateVariables(selections) {
   );
   const skillsText = skillsLines.join('\n');
 
-  const memoryArchitectureExtras = selections.scaffoldGtdMemory
+  const memoryArchitectureExtras = (selections.optionalFeatures || []).includes('gtd-memory')
     ? '\n- Team decisions: `docs/memory/decisions.md` (version-controlled, shared).\n- Team preferences: `docs/memory/preferences.md` (version-controlled, shared).'
     : '';
 
@@ -281,6 +306,56 @@ function buildTemplateVariables(selections) {
   };
 }
 
+export function buildInstallationRationale(selections) {
+  const projectTypes = selections.projectTypes || [];
+  const preSelected = new Set(selections.preSelectedCategories || []);
+  const picked = new Set(selections.selectedCategories || []);
+  const added = selections.additionalCategories || [];
+
+  const autoMatched = [...picked].filter((c) => preSelected.has(c));
+  const removedAuto = [...preSelected].filter((c) => !picked.has(c));
+  const manualPicked = [...picked].filter((c) => !preSelected.has(c));
+
+  const decisions = [];
+  if (autoMatched.length > 0) {
+    decisions.push(
+      `Accepted auto-recommended categories from project type(s) ${projectTypes.join(', ') || '(none)'}: ${autoMatched.join(', ')}.`
+    );
+  }
+  if (removedAuto.length > 0) {
+    decisions.push(`Removed auto-recommended categories: ${removedAuto.join(', ')}.`);
+  }
+  if (manualPicked.length > 0) {
+    decisions.push(
+      `Added categories beyond the project-type recommendations: ${manualPicked.join(', ')}.`
+    );
+  }
+  if (added.length > 0) {
+    decisions.push(`Opted into extra categories at the second prompt: ${added.join(', ')}.`);
+  }
+
+  let rationale;
+  if (
+    autoMatched.length > 0 &&
+    removedAuto.length === 0 &&
+    manualPicked.length === 0 &&
+    added.length === 0
+  ) {
+    rationale = `Auto-selected from project type(s) '${projectTypes.join(', ')}'.`;
+  } else if (decisions.length === 0) {
+    rationale = 'No optional categories selected.';
+  } else {
+    rationale = decisions.join(' ');
+  }
+
+  return {
+    projectTypes,
+    selectedCategories: [...picked, ...added],
+    rationale,
+    userDecisions: decisions,
+  };
+}
+
 async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
   const fileHashes = await computeFileHashes(projectRoot);
 
@@ -292,6 +367,11 @@ async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
     optionalAgents: selections.selectedAgents,
     useDocker: selections.useDocker || false,
     fileHashes,
+    installation: buildInstallationRationale(selections),
+    optionalFeatures: selections.optionalFeatures || [],
+    optedOutFeatures: OPTIONAL_FEATURES.filter(
+      (f) => !(selections.optionalFeatures || []).includes(f.id)
+    ).map((f) => f.id),
   });
   await writeWorkflowMeta(projectRoot, meta);
 }
@@ -368,7 +448,7 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     }
     spinner.text = `Created ${TEMPLATE_SKILLS.length} template skills`;
 
-    const agentRoutingContent = buildAgentRoutingSkill(selectedAgents, projectTypes);
+    const agentRoutingContent = buildAgentRoutingSkill(await loadShippedAgents(selectedAgents));
     await writeFile(
       path.join(projectRoot, '.claude', 'skills', 'agent-routing', 'SKILL.md'),
       agentRoutingContent
@@ -417,20 +497,33 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await scaffoldHooks(projectRoot);
     spinner.text = 'Created .claude/hooks/';
 
+    // Copy slash-command helper scripts (.claude/scripts/)
+    await scaffoldScripts(projectRoot);
+    spinner.text = 'Created .claude/scripts/';
+
     // Create learnings directory for correction capture
     await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
     spinner.text = 'Created .claude/learnings/';
 
-    // Opt-in: plugin.json for Claude Code marketplace compatibility
-    if (selections.generatePluginJson) {
-      await scaffoldPluginJson(projectRoot, selections);
-      spinner.text = 'Created .claude-plugin/plugin.json';
-    }
+    // Create scratch directory for SHA-keyed transient artifacts (gitignored)
+    await writeFile(path.join(projectRoot, '.claude', 'scratch', '.gitkeep'), '');
+    spinner.text = 'Created .claude/scratch/';
 
-    // Opt-in: GTD memory scaffold (docs/memory/decisions.md, preferences.md)
-    if (selections.scaffoldGtdMemory) {
-      await scaffoldMemoryDocs(projectRoot);
-      spinner.text = 'Created docs/memory/';
+    // Create plans directory for active work guidance (tracked)
+    await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
+    spinner.text = 'Created .claude/plans/';
+
+    // Create observability directory for hook-captured event logs (gitignored)
+    await writeFile(path.join(projectRoot, '.claude', 'observability', '.gitkeep'), '');
+    spinner.text = 'Created .claude/observability/';
+
+    // Opt-in: scaffold each optional feature the user selected. Scaffolders
+    // are idempotent — if a file already exists they skip it.
+    const optedIn = new Set(selections.optionalFeatures || []);
+    for (const feature of OPTIONAL_FEATURES) {
+      if (!optedIn.has(feature.id)) continue;
+      await feature.scaffold(projectRoot, selections);
+      spinner.text = `Created ${feature.successPath}`;
     }
 
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
@@ -459,11 +552,16 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.claude/sessions/');
   display.success('.claude/hooks/');
-  if (selections.generatePluginJson) {
-    display.success('.claude-plugin/plugin.json');
-  }
-  if (selections.scaffoldGtdMemory) {
-    display.success('docs/memory/' + display.dimColor('           decisions.md, preferences.md'));
+  const optedIn = new Set(selections.optionalFeatures || []);
+  for (const feature of OPTIONAL_FEATURES) {
+    if (!optedIn.has(feature.id)) continue;
+    if (feature.successDetail) {
+      display.success(
+        `${feature.successPath}${display.dimColor(`           ${feature.successDetail}`)}`
+      );
+    } else {
+      display.success(feature.successPath);
+    }
   }
   display.success('.mcp.json');
   display.success('.gitignore');
@@ -706,6 +804,7 @@ export async function initCommand() {
     const { settingsStr } = await buildSettingsJson(selections.languages, selections.useDocker);
     const skipped = await scaffoldFresh(projectRoot, selections, variables, settingsStr, version);
     displayFreshSuccess(selections, skipped);
+    displayGithubActionHint(selections);
   } else {
     // Scenario B: merge
     const spinner = ora('Merging workflow...').start();
@@ -717,6 +816,7 @@ export async function initCommand() {
       await computeAndWriteWorkflowMeta(projectRoot, selections, version);
       spinner.succeed('Workflow merged successfully!');
       displayMergeReport(report, backupPath);
+      displayGithubActionHint(selections);
     } catch (err) {
       spinner.fail('Failed to merge workflow');
       display.error(err.message);

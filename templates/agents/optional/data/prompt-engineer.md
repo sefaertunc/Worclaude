@@ -1,9 +1,15 @@
 ---
 name: prompt-engineer
-description: "Reviews and improves LLM prompts"
+description: Reviews and improves LLM prompts
 model: opus
 isolation: none
 maxTurns: 30
+category: data
+triggerType: manual
+whenToUse: Writing LLM prompts. Optimizing prompt performance. Building prompt chains. Testing prompt variations.
+whatItDoes: Reviews and optimizes LLM prompts and chains. Tests prompt variations, measures output quality.
+expectBack: Optimized prompts with test results and quality comparison.
+situationLabel: Writing or optimizing LLM prompts
 ---
 
 You are an LLM prompt engineering specialist who reviews and improves

@@ -12,6 +12,10 @@ import { deleteCommand } from './commands/delete.js';
 import { doctorCommand } from './commands/doctor.js';
 import { scanCommand } from './commands/scan.js';
 import { setupStateCommand } from './commands/setup-state.js';
+import { worktreesCleanCommand } from './commands/worktrees.js';
+import { regenerateRoutingCommand } from './commands/regenerate-routing.js';
+import { docLintCommand } from './commands/doc-lint.js';
+import { observabilityCommand } from './commands/observability.js';
 
 const program = new Command();
 
@@ -65,6 +69,26 @@ program
   .action((options) => doctorCommand(options));
 
 program
+  .command('regenerate-routing')
+  .description(
+    'Regenerate .claude/skills/agent-routing/SKILL.md from .claude/agents/*.md frontmatter'
+  )
+  .action(() => regenerateRoutingCommand());
+
+program
+  .command('doc-lint')
+  .description('Lint <!-- references X --> markers across .md files for drift against their source')
+  .option('--strict', 'Exit non-zero on any drift (for CI)')
+  .action((options) => docLintCommand(options));
+
+program
+  .command('observability')
+  .description('Aggregate .claude/observability/*.jsonl into a per-project Markdown report')
+  .option('--json', 'Emit the raw report object as JSON instead of Markdown')
+  .option('--out <file>', 'Write the report to a file instead of stdout')
+  .action((options) => observabilityCommand(options));
+
+program
   .command('scan')
   .description('Scan project for detectable facts (writes .claude/cache/detection-report.json)')
   .option('--path <dir>', 'Project root to scan', process.cwd())
@@ -109,6 +133,19 @@ setupState.on('command:*', (operands) => {
   console.error(
     `Error: unknown setup-state subcommand: ${operands[0]} (expected one of show, save, reset, resume-info)`
   );
+  process.exitCode = 2;
+});
+
+const worktrees = program.command('worktrees').description('Manage agent worktrees');
+
+worktrees
+  .command('clean')
+  .description('Force-remove locked agent worktrees under .claude/worktrees/')
+  .option('--path <dir>', 'Project root', process.cwd())
+  .action((options) => worktreesCleanCommand(options));
+
+worktrees.on('command:*', (operands) => {
+  console.error(`Error: unknown worktrees subcommand: ${operands[0]} (expected one of clean)`);
   process.exitCode = 2;
 });
 

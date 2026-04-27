@@ -1,6 +1,6 @@
 ---
 name: dependency-manager
-description: "Reviews dependency health and updates"
+description: Reviews dependency health and updates
 model: haiku
 isolation: none
 disallowedTools:
@@ -9,6 +9,12 @@ disallowedTools:
   - NotebookEdit
   - Agent
 maxTurns: 20
+category: devops
+triggerType: manual
+whenToUse: After adding new packages. During regular maintenance. When security advisories are published.
+whatItDoes: Audits, updates, and resolves dependency issues. Checks for security vulnerabilities in packages.
+expectBack: Dependency audit report with update recommendations.
+situationLabel: Added new dependencies or running maintenance
 ---
 
 You are a dependency health analyst. You review the project's

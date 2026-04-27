@@ -82,6 +82,8 @@ async function seedCompleteInstall(tmpDir, currentVersion) {
     optionalAgents: [],
     useDocker: false,
     fileHashes,
+    optionalFeatures: [],
+    optedOutFeatures: ['plugin-json', 'gtd-memory'],
   };
   await fs.writeFile(
     path.join(tmpDir, '.claude', 'workflow-meta.json'),
@@ -357,6 +359,38 @@ describe('upgrade command', () => {
     const entries = await fs.readdir(tmpDir);
     const backups = entries.filter((e) => e.startsWith('.claude-backup-'));
     expect(backups.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('creates .claude/observability/.gitkeep on full upgrade for existing v0.9 installs', async () => {
+    const meta = {
+      version: '0.9.0',
+      installedAt: '2026-03-24T12:00:00.000Z',
+      lastUpdated: '2026-03-24T12:00:00.000Z',
+      projectTypes: ['CLI tool'],
+      techStack: ['node'],
+      universalAgents: [],
+      optionalAgents: [],
+      useDocker: false,
+      fileHashes: {},
+    };
+    await fs.ensureDir(path.join(tmpDir, '.claude'));
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'workflow-meta.json'),
+      JSON.stringify(meta, null, 2)
+    );
+    await fs.writeFile(
+      path.join(tmpDir, '.claude', 'settings.json'),
+      JSON.stringify({ permissions: { allow: [] }, hooks: {} })
+    );
+
+    inquirer.prompt.mockResolvedValue({ proceed: true });
+
+    await upgradeCommand();
+
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'observability'))).toBe(true);
+    expect(await fs.pathExists(path.join(tmpDir, '.claude', 'observability', '.gitkeep'))).toBe(
+      true
+    );
   });
 
   it('saves conflict files under .claude/workflow-ref/ (not sibling to live file)', async () => {

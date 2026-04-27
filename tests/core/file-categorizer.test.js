@@ -58,6 +58,15 @@ describe('file-categorizer', () => {
       expect(map['hooks/skill-hint.cjs'].type).toBe('hook');
     });
 
+    it('includes slash-command helper scripts as scripts/<name> with type script', async () => {
+      const map = await buildTemplateHashMap();
+      expect(map['scripts/start-drift.sh']).toBeDefined();
+      expect(map['scripts/start-drift.sh'].type).toBe('script');
+      expect(map['scripts/start-drift.sh'].templatePath).toBe('scripts/start-drift.sh');
+      expect(map['scripts/sync-release-scope.sh'].type).toBe('script');
+      expect(map['scripts/test-coverage-changed-files.sh'].type).toBe('script');
+    });
+
     it('includes root/AGENTS.md with type root-file pointing at core/agents-md.md', async () => {
       const map = await buildTemplateHashMap();
       expect(map['root/AGENTS.md']).toBeDefined();
@@ -72,12 +81,13 @@ describe('file-categorizer', () => {
   });
 
   describe('isAlwaysScaffolded', () => {
-    it('returns true for universal-agent, command, universal-skill, hook, root-file', () => {
+    it('returns true for universal-agent, command, universal-skill, hook, script, root-file', () => {
       const meta = { optionalAgents: [] };
       expect(isAlwaysScaffolded({ type: 'universal-agent' }, meta)).toBe(true);
       expect(isAlwaysScaffolded({ type: 'command' }, meta)).toBe(true);
       expect(isAlwaysScaffolded({ type: 'universal-skill' }, meta)).toBe(true);
       expect(isAlwaysScaffolded({ type: 'hook' }, meta)).toBe(true);
+      expect(isAlwaysScaffolded({ type: 'script' }, meta)).toBe(true);
       expect(isAlwaysScaffolded({ type: 'root-file' }, meta)).toBe(true);
     });
 

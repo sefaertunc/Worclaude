@@ -1,14 +1,22 @@
 ---
 name: changelog-generator
-description: "Generates changelog from commits"
+description: Generates changelog from commits
 model: haiku
 isolation: none
 disallowedTools:
   - Edit
+  - Write
   - NotebookEdit
   - Agent
 maxTurns: 15
 omitClaudeMd: true
+criticalSystemReminder: "CRITICAL: You CANNOT edit files. Generate changelog text and report it back only."
+category: documentation
+triggerType: manual
+whenToUse: Before releasing a new version. After merging a batch of PRs. When preparing release notes.
+whatItDoes: Generates changelogs from git history, PR descriptions, and commit messages. Formats for release notes.
+expectBack: Formatted changelog entry for the release.
+situationLabel: Preparing a release
 ---
 
 You are a changelog generator that creates clear, well-organized

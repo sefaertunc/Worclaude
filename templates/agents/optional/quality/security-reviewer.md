@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: "Reviews code for security vulnerabilities"
+description: Reviews code for security vulnerabilities
 model: opus
 isolation: none
 disallowedTools:
@@ -14,6 +14,12 @@ memory: project
 skills:
   - security-checklist
 criticalSystemReminder: "CRITICAL: You CANNOT edit files. Report vulnerabilities with remediation guidance only."
+category: quality
+triggerType: manual
+whenToUse: Auth changes. User input handling. New API endpoints exposed to external users. Dependency updates.
+whatItDoes: Scans for injection vulnerabilities, auth bypasses, data exposure, insecure defaults, dependency vulnerabilities.
+expectBack: Security report with severity ratings.
+situationLabel: Made security-sensitive changes
 ---
 
 You are a senior application security engineer performing a code

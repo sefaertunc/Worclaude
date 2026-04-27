@@ -1,12 +1,30 @@
 ---
 name: test-writer
-description: "Writes comprehensive, meaningful tests for recently changed code"
+description: Writes comprehensive, meaningful tests for recently changed code
 model: sonnet
 isolation: worktree
 maxTurns: 50
 memory: project
 skills:
   - testing
+category: universal
+triggerType: automatic
+whenToUse: After completing implementation of any feature or module.
+whatItDoes: Writes unit tests, integration tests, edge case tests. Covers happy path, error cases, boundary conditions.
+expectBack: Test files committed to worktree branch. Merge when reviewed.
+situationLabel: Finished implementing a feature
+---
+
+## Worktree freshness preamble
+
+Before writing tests, synchronize this worktree to the parent checkout's committed state. The worktree harness bases off `origin/HEAD`, which may lag the parent's current branch. Follow these steps and report the result:
+
+1. Run `git fetch origin`.
+2. Run `git worktree list --porcelain`. Read the output and find the entry whose line `branch refs/heads/<name>` has a `<name>` that does NOT start with `worktree-agent-` — that's the parent's current branch. Strip the `refs/heads/` prefix and use it as `PARENT_BRANCH`.
+3. Run `git reset --hard "origin/${PARENT_BRANCH}"`.
+
+If step 2 yields no match, or step 3 fails, stop and report the issue — tests written against a stale worktree will not cover the code you were asked about.
+
 ---
 
 You are a test specialist. You write comprehensive, meaningful tests

@@ -8,9 +8,9 @@ import {
   scaffoldAgentsMd,
   mergeSettings,
   scaffoldHooks,
-  scaffoldPluginJson,
-  scaffoldMemoryDocs,
+  scaffoldScripts,
 } from './scaffolder.js';
+import { OPTIONAL_FEATURES } from '../data/optional-features.js';
 import { workflowRefRelPath } from './file-categorizer.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
@@ -28,7 +28,7 @@ import {
   NOTIFICATION_COMMANDS,
   SPEC_MD_TEMPLATE_MAP,
 } from '../data/agents.js';
-import { buildAgentRoutingSkill } from '../generators/agent-routing.js';
+import { buildAgentRoutingSkill, loadShippedAgents } from '../generators/agent-routing.js';
 import * as display from '../utils/display.js';
 
 // --- Settings builder (shared with Scenario A) ---
@@ -144,7 +144,7 @@ async function mergeSkills(projectRoot, existingScan, variables, report, selecti
 
   // Generated skill: agent-routing
   const skillsDir = path.join('.claude', 'skills');
-  const routingContent = buildAgentRoutingSkill(selections.selectedAgents, selections.projectTypes);
+  const routingContent = buildAgentRoutingSkill(await loadShippedAgents(selections.selectedAgents));
   const routingExistsAsDir = existingScan.existingSkillDirs.includes('agent-routing');
   const routingExistsAsFlat = existingScan.existingSkills.includes('agent-routing.md');
 
@@ -240,13 +240,21 @@ export async function mergeSettingsPermissionsAndHooks(
   const existingRaw = await readFile(path.join(projectRoot, '.claude', 'settings.json'));
   const existing = parseUserJson(existingRaw, '.claude/settings.json');
 
-  // Merge permissions (Tier 1)
+  // Merge permissions (Tier 1) — union-merge both allow and deny
   const existingAllow = existing.permissions?.allow || [];
   const workflowAllow = workflowSettings.permissions?.allow || [];
-  const newPerms = workflowAllow.filter((p) => !existingAllow.includes(p));
+  const newAllow = workflowAllow.filter((p) => !existingAllow.includes(p));
   if (!existing.permissions) existing.permissions = {};
-  existing.permissions.allow = [...existingAllow, ...newPerms];
-  report.added.permissions = newPerms.length;
+  existing.permissions.allow = [...existingAllow, ...newAllow];
+
+  const existingDeny = existing.permissions?.deny || [];
+  const workflowDeny = workflowSettings.permissions?.deny || [];
+  const newDeny = workflowDeny.filter((p) => !existingDeny.includes(p));
+  if (newDeny.length > 0 || existingDeny.length > 0) {
+    existing.permissions.deny = [...existingDeny, ...newDeny];
+  }
+
+  report.added.permissions = newAllow.length + newDeny.length;
 
   // Merge hooks (Tier 1 + Tier 3)
   if (!existing.hooks) existing.hooks = {};
@@ -333,7 +341,9 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
   if (!existingScan.hasSettingsJson) {
     // No existing settings — create fresh
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
-    report.added.permissions = workflowSettings.permissions?.allow?.length || 0;
+    report.added.permissions =
+      (workflowSettings.permissions?.allow?.length || 0) +
+      (workflowSettings.permissions?.deny?.length || 0);
     report.added.hooks = countHooks(workflowSettings.hooks);
     return;
   }
@@ -343,7 +353,9 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
   } catch {
     display.warn('Existing settings.json contains invalid JSON — creating fresh settings instead.');
     await writeFile(path.join(projectRoot, '.claude', 'settings.json'), settingsStr);
-    report.added.permissions = workflowSettings.permissions?.allow?.length || 0;
+    report.added.permissions =
+      (workflowSettings.permissions?.allow?.length || 0) +
+      (workflowSettings.permissions?.deny?.length || 0);
     report.added.hooks = countHooks(workflowSettings.hooks);
   }
 }
@@ -407,7 +419,8 @@ async function handleClaudeMd(projectRoot, existingScan, variables, selections, 
   // Tier 3 notice: if user opted into GTD memory AND their CLAUDE.md already has
   // a Memory Architecture section, the pointer bullets from the rendered template
   // won't be merged in automatically. Surface this so the user can add them manually.
-  if (selections.scaffoldGtdMemory && !missingSections.includes('Memory Architecture')) {
+  const optedIn = new Set(selections.optionalFeatures || []);
+  if (optedIn.has('gtd-memory') && !missingSections.includes('Memory Architecture')) {
     report.memoryArchitectureSectionExists = true;
   }
 
@@ -477,19 +490,28 @@ export async function performMerge(
   // Copy hook scripts (preserves existing user modifications)
   await scaffoldHooks(projectRoot);
 
+  // Copy slash-command helper scripts (preserves existing user modifications)
+  await scaffoldScripts(projectRoot);
+
   // Create learnings directory for correction capture
   await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
 
-  // Opt-in: plugin.json (idempotent — scaffolder skips if file exists)
-  if (selections.generatePluginJson) {
-    await scaffoldPluginJson(projectRoot, selections);
-  }
+  // Create scratch directory for SHA-keyed transient artifacts (gitignored)
+  await writeFile(path.join(projectRoot, '.claude', 'scratch', '.gitkeep'), '');
 
-  // Opt-in: GTD memory scaffold (idempotent per-file). Tier 3 notice for
-  // existing Memory Architecture section is handled inside handleClaudeMd,
-  // which already reads CLAUDE.md and runs section detection.
-  if (selections.scaffoldGtdMemory) {
-    await scaffoldMemoryDocs(projectRoot);
+  // Create plans directory for active work guidance (tracked)
+  await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
+
+  // Create observability directory for hook-captured event logs (gitignored)
+  await writeFile(path.join(projectRoot, '.claude', 'observability', '.gitkeep'), '');
+
+  // Opt-in scaffolders: each registry feature is idempotent. Tier 3 notices
+  // (e.g. existing Memory Architecture section for gtd-memory) are handled
+  // inside handleClaudeMd, which runs section detection.
+  const optedIn = new Set(selections.optionalFeatures || []);
+  for (const feature of OPTIONAL_FEATURES) {
+    if (!optedIn.has(feature.id)) continue;
+    await feature.scaffold(projectRoot, selections);
   }
 
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);

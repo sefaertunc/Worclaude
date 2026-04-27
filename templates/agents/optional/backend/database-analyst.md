@@ -1,6 +1,6 @@
 ---
 name: database-analyst
-description: "Reviews database schemas and queries"
+description: Reviews database schemas and queries
 model: sonnet
 isolation: none
 disallowedTools:
@@ -9,6 +9,12 @@ disallowedTools:
   - NotebookEdit
   - Agent
 maxTurns: 30
+category: backend
+triggerType: manual
+whenToUse: Writing migrations. Changing schemas. Complex queries. Data integrity concerns.
+whatItDoes: Reviews schema design, migration safety, query performance, index usage, data integrity constraints.
+expectBack: Analysis with specific concerns and recommendations.
+situationLabel: Wrote a database migration or schema change
 ---
 
 You are a database specialist who reviews schemas, queries, and

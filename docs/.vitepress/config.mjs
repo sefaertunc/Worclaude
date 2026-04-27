@@ -5,7 +5,12 @@ export default defineConfig({
   description: 'Professional Claude Code workflow system',
   base: '/Worclaude/',
 
-  srcExclude: ['spec/**', 'phases/**'],
+  srcExclude: ['spec/**', 'phases/**', 'archive/phases/**'],
+
+  // archive/phases/** are excluded from the build (per srcExclude above) but
+  // INDEX.md links to them as a repo-only reference. Skip dead-link checks
+  // for these targets so the catalog can keep its links.
+  ignoreDeadLinks: [/^\.?\/?phases\/2026-04\/phase-/],
 
   themeConfig: {
     nav: [
@@ -38,6 +43,7 @@ export default defineConfig({
             { text: 'CLAUDE.md Template', link: '/reference/claude-md' },
             { text: 'Hooks', link: '/reference/hooks' },
             { text: 'Learnings', link: '/reference/learnings' },
+            { text: 'Observability', link: '/reference/observability' },
             { text: 'Permissions', link: '/reference/permissions' },
             { text: 'Configuration', link: '/reference/configuration' },
             { text: 'Upstream Automation', link: '/reference/upstream-automation' },

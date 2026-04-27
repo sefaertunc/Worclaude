@@ -10,6 +10,10 @@ ONLY update shared-state files — do not resolve conflicts. That is
 /conflict-resolver's job. If you detect unresolved conflicts, stop
 and tell the user to run /conflict-resolver first.
 
+## Invocation Contract
+
+Run this command only when the human explicitly invokes it (typed `/sync` or one of the Trigger Phrases at the bottom of this file). Do not auto-launch after detecting that PRs were merged. The "ship/wait" prompt at step 9 is non-skippable. See CLAUDE.md Critical Rule 13.
+
 ## Pre-check
 
 1. Confirm you are on the develop branch. If not, stop and warn.
@@ -18,6 +22,26 @@ and tell the user to run /conflict-resolver first.
 3. Read git log to understand what was merged since the last sync
    or version tag. If nothing was merged, report "Nothing to sync"
    and stop.
+
+## Drift preflight
+
+3a. Run `worclaude doctor` to surface CLAUDE.md ↔ package.json drift
+    before any shared-state file writes:
+
+    ```bash
+    worclaude doctor
+    ```
+
+    The `## Documentation` section reports any tech-stack claims in
+    CLAUDE.md (e.g., `857 tests, 62 files`) that no longer match the
+    current test count. If a `CLAUDE.md test-file count drift` warning
+    appears, step 10c will fix the line when it refreshes tech-stack
+    metrics — note the actual count from the warning and proceed.
+
+    If the warning is surprising (claim doesn't exist, or the delta is
+    large enough to suggest a deleted/renamed suite), pause and inspect
+    before continuing. Other doctor warnings are advisory; only the
+    drift warning is load-bearing for this sync.
 
 ## Update PROGRESS.md
 
@@ -37,13 +61,18 @@ and tell the user to run /conflict-resolver first.
 
 ## Bootstrap: ensure a version tag exists
 
-6. Check for a version tag:
+6. Check for a version tag and capture its commit date. Run the helper as
+   a single command — do not unpack the script body.
 
    ```bash
-   LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+   bash .claude/scripts/sync-release-scope.sh
    ```
 
-   If no tag exists, prompt the user. Do NOT silently auto-tag:
+   The script prints two lines: `last_tag=<tag>` and `since=<YYYY-MM-DD>`.
+   Both empty when no tag exists. Read `last_tag` from the first line.
+
+   If no tag exists (`last_tag=` is empty), prompt the user. Do NOT
+   silently auto-tag:
 
    ```
    No version tag found. /sync needs a starting tag to compute release scope.
@@ -81,18 +110,30 @@ and tell the user to run /conflict-resolver first.
 
 ## Aggregate version bumps from merged PRs
 
+**Enforcement model.** `/commit-push-pr` prompts every PR author for a
+`Version bump:` declaration via `AskUserQuestion` and refuses to open a
+PR without one. This step catches stragglers — manual `gh pr create`
+calls, hot-fix branches that bypassed `/commit-push-pr`, or imports
+from outside the workflow. Missing declarations are treated as `none`
+**and surfaced permanently in the CHANGELOG** so under-documentation is
+visible rather than silent. Do NOT silently upgrade missing declarations
+to a higher level — the warning is the enforcement.
+
 7. Collect `Version bump:` declarations from all PRs merged into develop
    since the last version tag. Use `%as` for the date format (strict
    YYYY-MM-DD; `%ai` breaks GitHub search due to space separator and
    timezone offset). Pass `--limit 500` to avoid the `gh pr list` default
    cap of 30, which would silently truncate on repos with infrequent
-   tagging:
+   tagging.
+
+   The `since=<YYYY-MM-DD>` value from step 6's helper output is what you
+   pass below as `<SINCE>`. If you skipped step 6 (rare), re-run
+   `bash .claude/scripts/sync-release-scope.sh` and use its `since=` line.
 
    ```bash
-   SINCE=$(git log -1 --format=%as "$LAST_TAG")
    gh pr list --state merged --base develop \
      --limit 500 \
-     --search "merged:>=$SINCE" \
+     --search "merged:>=<SINCE>" \
      --json number,title,body,headRefName,baseRefName
    ```
 
@@ -196,6 +237,45 @@ and tell the user to run /conflict-resolver first.
        The warning list from step 9 MUST appear in the CHANGELOG entry as
        ⚠-prefixed bullets under `### Changed` — not just in the transient
        prompt. This is how under-documentation becomes permanent record.
+
+    c. Refresh tech-stack metrics in CLAUDE.md and AGENTS.md.
+
+       Both files commonly include a line like `Vitest (804 tests, 58 files)`
+       or `npm test    # Run tests (804 tests, 58 files)`. These drift
+       silently as tests are added or moved.
+
+       - Run the project's test runner with a JSON-capable reporter and
+         capture the totals. Examples:
+         - Node/Vitest: `npx vitest run --reporter=json --outputFile=/tmp/_vitest.json && jq '.numTotalTests, (.testResults | length)' /tmp/_vitest.json`
+         - Node/Jest: `npx jest --json --outputFile=/tmp/_jest.json && jq '.numTotalTests, (.testResults | length)' /tmp/_jest.json`
+         - Python/pytest: `pytest --json-report --json-report-file=/tmp/_pytest.json -q && jq '.summary.total, (.tests | map(.nodeid | split("::")[0]) | unique | length)' /tmp/_pytest.json`
+         - Cargo test: count lines from `cargo test --no-run --message-format=json | jq -s '[.[] | select(.profile.test == true)] | length'`
+
+       - Search CLAUDE.md and AGENTS.md for any line matching the pattern
+         `\d+ tests?, \d+ files?`. Update each match with the captured
+         counts. If neither file contains such a line, skip silently — not
+         every project surfaces these metrics.
+
+       - Do NOT add the metrics line if it isn't already there. This step
+         only refreshes existing claims; introducing new ones is a project
+         decision, not a `/sync` decision.
+
+## Regenerate agent-routing skill
+
+10b. Regenerate `.claude/skills/agent-routing/SKILL.md` from the project's
+     installed agent files so it reflects whatever was added/removed/renamed
+     across the merged PRs:
+
+     ```bash
+     worclaude regenerate-routing
+     ```
+
+     The regenerator reads `.claude/agents/*.md` frontmatter and replaces
+     only the content between `<!-- AUTO-GENERATED-START -->` and
+     `<!-- AUTO-GENERATED-END -->` markers — anything outside (frontmatter,
+     local notes) is preserved. If the file is missing or marker-less, a
+     fresh complete file is written. Stage the result alongside the other
+     `/sync` updates if it changed.
 
 ## Verify
 

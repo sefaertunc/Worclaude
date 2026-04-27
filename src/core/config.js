@@ -24,9 +24,12 @@ export function createWorkflowMeta({
   fileHashes = {},
   version,
   useDocker = false,
+  installation = null,
+  optionalFeatures = [],
+  optedOutFeatures = [],
 }) {
   const now = new Date().toISOString();
-  return {
+  const meta = {
     version: version || '1.0.0',
     installedAt: now,
     lastUpdated: now,
@@ -36,7 +39,13 @@ export function createWorkflowMeta({
     optionalAgents,
     useDocker,
     fileHashes,
+    optionalFeatures,
+    optedOutFeatures,
   };
+  if (installation) {
+    meta.installation = installation;
+  }
+  return meta;
 }
 
 export async function readWorkflowMeta(projectRoot) {

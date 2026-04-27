@@ -18,7 +18,7 @@ Additional runtime fields (`allowed-tools`, `model`, `context`, `agent`, `effort
 
 ## Universal Skills
 
-12 skills installed with every project. These cover workflow mechanics that apply regardless of tech stack. Additionally, 1 generated skill (`agent-routing`) is dynamically built from your agent selections during init.
+13 skills installed with every project. These cover workflow mechanics that apply regardless of tech stack. Additionally, 1 generated skill (`agent-routing`) is dynamically built from your agent selections during init.
 
 ### context-management
 
@@ -98,7 +98,7 @@ Teaches test philosophy (behavior not implementation), meaningful coverage vs li
 | **Description** | How Claude writes rules for itself, when to update CLAUDE.md, keeping it lean |
 | **When loaded** | When updating CLAUDE.md. Triggered by the `/update-claude-md` command.        |
 
-Explains the self-healing pattern (same mistake twice becomes a rule), the 50-line target for CLAUDE.md, what belongs in CLAUDE.md vs skills, Gotchas section format and maintenance, and when to prune. Distinguishes between CLAUDE.md (always loaded, instructions) and skills (loaded on demand, knowledge).
+Explains the self-healing pattern (same mistake twice becomes a rule), the 200-line target for CLAUDE.md (matches Claude Code's official guidance), what belongs in CLAUDE.md vs skills, Gotchas section format and maintenance, and when to prune. Distinguishes between CLAUDE.md (always loaded, instructions) and skills (loaded on demand, knowledge).
 
 ### coding-principles
 
@@ -139,6 +139,16 @@ A reference checklist (not an agent) covering the OWASP Top 10. Includes a quick
 | **When loaded** | When working with multiple agents or terminals in parallel, or breaking large tasks into sub-tasks   |
 
 Covers when to use multi-agent coordination (independent research + implementation, parallel file areas, verification alongside implementation), worker prompt best practices, the continue vs spawn decision framework, and parallel execution patterns. Explains how to structure coordinator prompts that break tasks into independently verifiable units.
+
+### memory-architecture
+
+|                 |                                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **File**        | `.claude/skills/memory-architecture/SKILL.md`                                                                                              |
+| **Description** | Five-layer memory architecture: where each fact lives, how layers interact, when to promote learnings                                      |
+| **When loaded** | When deciding where a new fact, rule, or preference belongs; when triaging a `[LEARN]` capture; when promoting from learnings to CLAUDE.md |
+
+Documents the five-layer model added in Phase 4 — `CLAUDE.md` (team, manual, stable), `.claude/rules/` (team, manual, optionally path-scoped — adoption deferred per BACKLOG.md), `.claude/learnings/` (team, hook-captured, append-only), `CLAUDE.local.md` (personal, gitignored, manual), and Claude Code's auto-memory at `~/.claude/projects/<proj>/memory/` (personal, autonomous). Includes the trigger-based routing contract (plain conversation → auto-memory; `/learn` or `[LEARN]` → `.claude/learnings/`) and the recurrence-threshold logic that drives `/update-claude-md` promotion candidates.
 
 ---
 
@@ -264,6 +274,7 @@ The `description` and `when_to_use` fields appear in Claude's skill listing, hel
   subagent-usage/SKILL.md           # universal (always loaded)
   security-checklist/SKILL.md       # universal (conditional: auth/security/**)
   coordinator-mode/SKILL.md         # universal (always loaded)
+  memory-architecture/SKILL.md      # universal (always loaded)
   agent-routing/SKILL.md            # generated (dynamic, based on agent selection)
   backend-conventions/SKILL.md      # template (conditional: src/**)
   frontend-design-system/SKILL.md   # template (conditional: components/**)
@@ -287,6 +298,7 @@ Skills can be customized after installation. Additional custom skills can be add
 | coding-principles      | Always      | —                                                                                                                |
 | subagent-usage         | Always      | —                                                                                                                |
 | coordinator-mode       | Always      | —                                                                                                                |
+| memory-architecture    | Always      | —                                                                                                                |
 | agent-routing          | Always      | —                                                                                                                |
 | verification           | Conditional | `test/**`, `tests/**`, `**/*.test.*`, `**/*.spec.*`                                                              |
 | testing                | Conditional | `test/**`, `tests/**`, `**/*.test.*`, `**/*.spec.*`, `__tests__/**`                                              |

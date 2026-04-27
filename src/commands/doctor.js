@@ -11,6 +11,7 @@ import {
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
 import { hasClaudeMdMemoryGuidance, readClaudeMd } from '../core/drift-checks.js';
+import { lintRepo } from '../utils/doc-lint.js';
 import { resolveKeyPath, isWorkflowRefFile } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 
@@ -96,6 +97,42 @@ function printResult(r) {
   if (r.detail && r.status !== PASS) {
     console.log(`    ${display.dimColor(r.detail)}`);
   }
+}
+
+function checkInstallationRationale(meta) {
+  // Old installs scaffolded before T3.6 lack the field — do not flag.
+  if (!meta || !meta.installation) return null;
+  const { rationale } = meta.installation;
+  if (typeof rationale !== 'string' || rationale.trim() === '') {
+    return result(WARN, 'Installation rationale', 'Field present but rationale is empty');
+  }
+  return result(PASS, `Installation rationale: ${rationale}`, null);
+}
+
+async function checkDocLint(projectRoot) {
+  const lint = await lintRepo(projectRoot);
+  if (lint.markerCount === 0) return null;
+  if (!lint.hasDrift) {
+    return result(PASS, `doc-lint: ${lint.markerCount} marker(s) match their source`, null);
+  }
+  const summary = lint.findings
+    .slice(0, 3)
+    .map((f) => {
+      if (f.kind === 'test-count-drift') {
+        return `${f.file}:${f.claimLine} claims ${f.claimed.files} files (actual ${f.actual.files})`;
+      }
+      if (f.kind === 'missing-npm-script') {
+        return `${f.file}:${f.markerLine} references missing script \`npm run ${f.scriptName}\``;
+      }
+      return `${f.file}:${f.markerLine} ${f.kind}`;
+    })
+    .join('; ');
+  const more = lint.findings.length > 3 ? ` (+${lint.findings.length - 3} more)` : '';
+  return result(
+    WARN,
+    `doc-lint: ${lint.findings.length} drift finding(s)`,
+    `${summary}${more}. Run /sync to refresh tech-stack metrics, or fix the cited section.`
+  );
 }
 
 async function checkWorkflowMeta(projectRoot) {
@@ -905,6 +942,41 @@ async function checkOriginHead(projectRoot) {
   );
 }
 
+const STALE_WORKTREE_THRESHOLD = 3;
+
+async function checkStaleWorktrees(projectRoot) {
+  const worktreesDir = path.join(projectRoot, '.claude', 'worktrees');
+  if (!(await fs.pathExists(worktreesDir))) {
+    return result(PASS, '.claude/worktrees/ (none)', null);
+  }
+
+  let entries;
+  try {
+    entries = await fs.readdir(worktreesDir);
+  } catch {
+    return result(PASS, '.claude/worktrees/ (unreadable, skipped)', null);
+  }
+
+  const dirs = [];
+  for (const name of entries) {
+    if (name.startsWith('.')) continue;
+    const stat = await fs.stat(path.join(worktreesDir, name)).catch(() => null);
+    if (stat && stat.isDirectory()) dirs.push(name);
+  }
+
+  if (dirs.length === 0) {
+    return result(PASS, '.claude/worktrees/ (empty)', null);
+  }
+  if (dirs.length <= STALE_WORKTREE_THRESHOLD) {
+    return result(PASS, `.claude/worktrees/ (${dirs.length} present)`, null);
+  }
+  return result(
+    WARN,
+    `.claude/worktrees/ has ${dirs.length} entries (threshold ${STALE_WORKTREE_THRESHOLD})`,
+    'Locked agent worktrees survive `git worktree prune`. Run `worclaude worktrees clean` to force-remove them.'
+  );
+}
+
 async function checkPendingReviewFiles(projectRoot) {
   const pending = [];
   try {
@@ -1000,6 +1072,10 @@ export async function doctorCommand(options = {}) {
   // Documentation
   section('Documentation');
   record('docs', await checkDocSpecs(projectRoot));
+  const rationaleCheck = checkInstallationRationale(meta);
+  if (rationaleCheck) record('docs', rationaleCheck);
+  const lintCheck = await checkDocLint(projectRoot);
+  if (lintCheck) record('docs', lintCheck);
   spacer();
 
   // Learnings
@@ -1017,6 +1093,7 @@ export async function doctorCommand(options = {}) {
   section('Integrity');
   record('integrity', await checkHashIntegrity(projectRoot, meta));
   record('integrity', await checkPendingReviewFiles(projectRoot));
+  record('integrity', await checkStaleWorktrees(projectRoot));
   spacer();
 
   // Exit code

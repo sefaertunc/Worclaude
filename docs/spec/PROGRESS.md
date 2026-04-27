@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.8.0
-**Last Updated:** 2026-04-24
+**Version:** 2.9.0
+**Last Updated:** 2026-04-28
 
 ## Completed
 
@@ -532,18 +532,55 @@
   - [x] Documentation: `subagent-usage` skill in both `.claude/skills/subagent-usage/SKILL.md` and the scaffold template `templates/skills/universal/subagent-usage.md` gains a "Base-branch gotcha" subsection linking to `worclaude doctor` and the `git remote set-head` remedy; the misleading "worktree from your current branch" line in the "How it works" list is corrected to "based on `origin/HEAD` (see gotcha below)". `docs/spec/SPEC.md`'s doctor section gains a new `### Git Integration` subsection documenting both the gitignore and origin/HEAD checks. +16 regression tests (4 doctor cases via a new offline git-setup helper that fabricates `refs/remotes/origin/*` without a real remote; 12 content-lock assertions on the agent preambles via a new `tests/templates/agent-preambles.test.js` file with `beforeAll`-cached reads).
   - [x] Release group: **PR #121** (`Version bump: minor`). Only PR since v2.7.1. v2.7.1 → v2.8.0. No missing declarations.
 
+- [x] v2.9.0 — Audit-driven workflow rebuild (Phases 1–7) + GitHub Action surface (2026-04-28)
+  - [x] **Pre-phase docs landing** (PR #125, ⚠ no `Version bump:` declaration — under-documented). The 2026-04 master architecture audit and the canonical 7-phase implementation plan landed as pure docs into `docs/phases/`, `docs/archive/audits/2026-04/`, and `docs/archive/decisions/2026-04/`. Establishes the deliberation history that subsequent phase PRs execute against; the phase plans were archived once the work shipped (see PR #149).
+  - [x] **Phase 1 — drift cleanup + foundational fixes** (PRs #126/127/128/129).
+    - **PR #126** (`Version bump: patch`) — text drift cleanup across CLAUDE.md and agent metadata; aligns frontmatter with current routing surface.
+    - **PR #127** (`Version bump: none`) — skill rewrite, BACKLOG migration to a single rolling file (no per-release archives), hooks gap-fill so every event documented in SPEC has a scaffolded handler.
+    - **PR #128** (`Version bump: minor`) — `/sync` now refreshes test/file metrics in CLAUDE.md and AGENTS.md, scaffolds default deniedDomains in `templates/settings/base.json`, ships `verify-app` agent improvements, and adds the `worclaude worktrees clean` subcommand for stale agent-worktree cleanup.
+    - **PR #129** (`Version bump: none`) — phase 1 retrospective in `docs/archive/`.
+  - [x] **Phase 2 — slash-command rebuild** (PRs #130/131/132/133/134).
+    - **PR #130** (`Version bump: minor`) — retired 3 slash commands superseded by other workflows; introduced the `e2e-runner` agent for end-to-end test orchestration.
+    - **PR #131** (`Version bump: minor`) — versioning enforcement: `/commit-push-pr` now uses `AskUserQuestion` to demand a `Version bump:` declaration on every PR (refuses to open without one), plus tweaks to `/verify`, `/conflict-resolver`, `/build-fix`.
+    - **PR #132** (`Version bump: minor`) — session-lifecycle redesign: `/start` and `/end` write distinct artifacts (forward-looking handoff vs backward-looking session summary) with `sha:` frontmatter for SHA-based drift detection. New `/learn` and `/update-claude-md` meta/memory commands.
+    - **PR #133** (`Version bump: minor`) — `.claude/scratch/` and `.claude/plans/` infrastructure: 5 dependent commands (`/review-changes`, `/refactor-clean`, `/review-plan`, `/test-coverage`, `/observability`) write SHA-tagged artifacts that `/start` surfaces and routes.
+    - **PR #134** (`Version bump: none`) — phase 2 retrospective.
+  - [x] **Phase 3 — docs contracts + agent-routing source-of-truth** (PRs #135/136/137/138/139).
+    - **PR #135** (`Version bump: none`) — docs contracts T3.4 (PR template), T3.5 (drift-allowed sentinel), T3.7 (consequence lines).
+    - **PR #136** (`Version bump: none`) — small wins T3.10 (handoff TTL), T3.11 (`sha:` dogfood across templates).
+    - **PR #137** (`Version bump: minor`) — T3.1 Path B: agent files become the routing source of truth via routing-fields frontmatter (`category`, `triggerType`, `whenToUse`, `whatItDoes`, `expectBack`, `situationLabel`). New `src/utils/agent-frontmatter.js` parser/validator, `src/generators/agent-routing.js` builder with `<!-- AUTO-GENERATED-START/END -->` markers preserving user prose, and `worclaude regenerate-routing` subcommand. `/sync` and `worclaude upgrade` auto-regenerate.
+    - **PR #138** (`Version bump: none`) — T3.6 installation rationale + T3.8 drift detect surfaces.
+    - **PR #139** (`Version bump: minor`) — T3.9 optional features registry: opt-in toggles for non-default flows surfaced through `init` and `upgrade`.
+  - [x] **Phase 4 — memory architecture** (PR #140, `Version bump: none`). Memory-architecture skill documenting the five-layer model (CLAUDE.md, learnings, scratch, sessions, auto-memory). New `/update-claude-md` promotion algorithm reviews learnings and proposes targeted CLAUDE.md edits with diff preview.
+  - [x] **Phase 5 — docs polish + doc-lint** (PRs #141/142).
+    - **PR #141** (`Version bump: none`) — Source-of-truth markers across templates, SPEC.md table-of-contents, PR template polish.
+    - **PR #142** (`Version bump: minor`) — T5.9: new `worclaude doc-lint` subcommand validates `<!-- references … -->` markers and surfaces tech-stack drift between code and prose.
+  - [x] **Phase 6a — observability** (PRs #143/144/145).
+    - **PR #143** (`Version bump: none`) — observability capture infrastructure: per-session signal capture wired into hooks.
+    - **PR #144** (`Version bump: minor`) — `worclaude observability` subcommand aggregates captured signals into a Markdown report; `/observability` slash command surfaces it in-session.
+    - **PR #145** (`Version bump: none`) — upgrade-path integration so existing installs pick up observability infra; VitePress observability docs.
+  - [x] **Phase 7 — @claude GitHub Action surface** (PR #146, `Version bump: none`). `init` opt-in scaffolds `.github/workflows/claude-code.yml` exposing the @claude GitHub Action; docs document the OIDC + token-exchange contract.
+  - [x] **Post-Phase polish** (PRs #147/148/149/150/151).
+    - **PR #147** (`Version bump: patch`) — fix(doc-lint): drop misleading static test count from drift display.
+    - **PR #148** (`Version bump: none`) — comprehensive docs refresh post-Phase-1-7: counts, new commands, observability flow.
+    - **PR #149** (`Version bump: none`) — archive completed phase plans (Phase 1, 2, 3, 4, 5, 6a, 7) under `docs/archive/phases/`.
+    - **PR #150** (`Version bump: minor`) — scaffolded rule: commit/push/PR only on explicit human invocation of `/commit-push-pr` or `/sync`. CLAUDE.md template Critical Rule #16 added; conversational "yes" no longer authorizes git writes.
+    - **PR #151** (`Version bump: minor`) — three POSIX helper scripts in `templates/scripts/` (`start-drift.sh`, `sync-release-scope.sh`, `test-coverage-changed-files.sh`) extract multi-line bash from `/start`, `/sync`, `/test-coverage` so each invocation matches a single allow rule. New `scaffoldScripts` function wired into Scenarios A/B/C. Expanded `base.json` allow list (`Bash(test:*)`, `Bash([:*)`, `Bash(bash:*)`, `WebFetch(...)`, `WebSearch`, `Skill(update-config)`, `Skill(fewer-permission-prompts)`). New "Why prompts still fire" section in `docs/reference/permissions.md`.
+  - [x] Release group: 27 PRs since v2.8.0. Highest declared bump: **minor** (11 PRs: #128/130/131/132/133/137/139/142/144/150/151). Patch declarations: #126, #147. None declarations: 13 (#127/129/134/135/136/138/140/141/143/145/146/148/149). ⚠ Missing declaration: **#125** (treated as `none`; surfaced permanently in CHANGELOG). v2.8.0 → v2.9.0.
+
 ## Stats
 
-- 10 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state
-- 6 universal agents + 20 optional agents (6 categories)
-- 18 slash commands
-- 12 universal skills + 3 template skills + 1 generated skill (agent-routing)
+- 14 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state, doc-lint, observability, regenerate-routing, worktrees
+- 6 universal agents + 6 optional agents (flat `optional/` directory after Phase 3 reorganization)
+- 16 slash commands
+- 13 universal skills + 1 template-skills directory + 1 generated skill (agent-routing)
 - 8 hook events scaffolded: SessionStart, PostToolUse, PostCompact, PreCompact, UserPromptSubmit, Stop, SessionEnd, Notification
 - 4 hook scripts: pre-compact-save.cjs, correction-detect.cjs, learn-capture.cjs, skill-hint.cjs
+- 3 scaffolded helper scripts: start-drift.sh, sync-release-scope.sh, test-coverage-changed-files.sh
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 804 tests across 58 test files
+- 947 tests across 69 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

@@ -32,14 +32,56 @@ the files in the current working directory.
 
 ## Process
 
+### 0. Check for fresh `/review-changes` output
+
+Before doing your own analysis, look for `.claude/scratch/last-review.md`:
+
+```bash
+test -f .claude/scratch/last-review.md && head -10 .claude/scratch/last-review.md
+```
+
+If the file exists AND its `sha:` frontmatter matches `git rev-parse HEAD`,
+**use the review as your work plan**. Skip steps 1-3 below; jump straight
+to step 4 with the review's findings as your candidate list.
+
+If the SHA doesn't match, the review is stale — ignore it and proceed
+with your own analysis.
+
+### 1-6. Self-analysis path (only if no fresh review)
+
 1. Identify changed files: `git diff --name-only` (unstaged) and
    `git diff --cached --name-only` (staged). If no changes, check
    `git diff --name-only HEAD~5` for recent commits.
 2. Read each changed file fully — understand context before changing
 3. Check CLAUDE.md for project-specific conventions
 4. Make one improvement at a time, smallest meaningful change first
-5. Run the full test suite after EVERY change
-6. If tests fail, revert immediately — your change broke behavior
+5. **Scoped tests after each change.** Run only the tests related to
+   the files you changed (don't run the whole suite each time):
+   - Vitest: `npx vitest run --related <changed-files>`
+   - Jest: `npx jest --findRelatedTests <changed-files>`
+   - Other runners: scope to the relevant test directory or file pattern
+6. If scoped tests fail, revert immediately — your change broke behavior
+
+### 7. Full-suite safety net
+
+After all individual changes pass their scoped tests, run the **full
+test suite once** as a regression net:
+
+- `npx vitest run` (or `npm test`, `pytest`, etc. — whatever the project
+  uses for the full suite)
+
+If the full suite fails but scoped tests passed, the regression is
+cross-cutting. Bisect the changes to find the offender, revert it.
+
+### 8. Invalidate the review artifact
+
+After completion, **delete `.claude/scratch/last-review.md`** (or write a
+short marker indicating it was consumed). This prevents a future
+`/refactor-clean` invocation from picking up an already-applied review.
+
+```bash
+rm -f .claude/scratch/last-review.md
+```
 
 ## Confidence Filtering
 

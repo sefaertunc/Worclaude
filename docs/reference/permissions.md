@@ -18,7 +18,7 @@ Each rule type handles a different point on the safety-vs-friction spectrum:
 
 **Evaluation order:** `deny` → `ask` → `allow`. The first matching rule wins. A command that matches both an `allow` pattern and a `deny` pattern will be denied, because `deny` is checked first.
 
-Worclaude installs `allow` rules only. `ask` and `deny` are user-managed policy — add them manually as your project requires.
+Worclaude installs `allow` rules and a small targeted `deny` set (see [Default Deny Rules](#default-deny-rules) below). `ask` rules are user-managed policy — add them manually as your project requires.
 
 ## Permission Syntax
 
@@ -30,6 +30,58 @@ Permissions use the format `Tool(pattern)` where the pattern supports wildcards:
 | `Edit(glob)`      | Allow editing files matching a glob pattern | `Edit(src/**)`       |
 
 The `*` wildcard matches any arguments. The `**` glob matches any path depth.
+
+## Why Prompts Still Fire
+
+Even with the right `allow` patterns, you will still see permission prompts in some situations. These are not bugs in your `settings.json` — they are gaps between how Claude Code's matcher works and how shell commands are actually shaped. Knowing the four common causes lets you redesign around them instead of accumulating one-off ad-hoc grants in `settings.local.json`.
+
+### 1. Env-var-prefix gotcha
+
+A bash command like:
+
+```bash
+LAST_SESSION=$(ls -t .claude/sessions/*.md | head -1)
+```
+
+will prompt **even when `Bash(ls:*)` is allowed**. Claude Code's matcher only bypasses env-var prefixes for a small hardcoded safe-list (`LANG`, `TZ`, `NO_COLOR`, etc.). Arbitrary `X=$(cmd)` is treated as a different command entirely.
+
+**Workaround:** bundle the bash into a helper script under `.claude/scripts/` and invoke it as a single line. Worclaude ships several helper scripts (`start-drift.sh`, `sync-release-scope.sh`, `test-coverage-changed-files.sh`) for exactly this reason — they collapse what was 6+ permission interactions per `/start` invocation into a single `Bash(bash:*)` match.
+
+### 2. Multi-line shell fragmentation
+
+Multi-line constructs like `for ... do ... done` or `if ... elif ... fi` get prompted **per shell-keyword line** when Claude generates them as separate executions. The fingerprint in `settings.local.json` is entries like `Bash(for cmd:*)`, `Bash(do echo:*)`, `Bash(done)` — these are never reusable; they are dead artifacts of one-time approvals.
+
+**Workaround:** same as above — bundle multi-line shell into a helper script. Each script invocation matches a single `Bash(...)` allow rule.
+
+### 3. Pipes and redirects in compound commands
+
+Commands with `|`, `2>&1`, `>` may still prompt even when each subcommand is allowed. Per Anthropic's changelog, the "don't ask again" dialog shows the full raw command for compound commands — the matcher and the prompt UX are designed to keep humans in the loop on chained operations.
+
+**Workaround:** wrap the pipeline in a helper script, or for hard enforcement use Claude Code's [sandbox](https://code.claude.com/docs/en/sandboxing) which gives OS-level filesystem and network restrictions independent of shell construction.
+
+### 4. Directory access is a separate layer
+
+The `Read(...)` allowlist gates what files Claude's Read tool can open by **pattern**. A separate `additionalDirectories` setting in `~/.claude.json` gates which directories the Read tool can access at all. If you see the prompt "allow reading from `<project-name>/` from this project," that is the directory-access layer — not your `settings.json` patterns.
+
+**Workaround:** add the project root (or any other directory you legitimately need to read from) to `additionalDirectories` in your global `~/.claude.json`:
+
+```json
+{
+  "additionalDirectories": ["~/projects/my-app", "/tmp/claude-scratch"]
+}
+```
+
+Avoid the workaround pattern of `Read(//absolute/path/**)` in `settings.local.json` — `additionalDirectories` is the canonical place for directory grants and persists across all projects on your machine.
+
+### Use the built-in `fewer-permission-prompts` skill
+
+Claude Code ships a built-in skill that scans your transcripts for common read-only Bash and MCP tool calls and proposes a prioritized allowlist for `.claude/settings.json`. Run it periodically when you notice friction:
+
+```
+/fewer-permission-prompts
+```
+
+Worclaude does NOT ship its own version — the built-in skill is the canonical tool. Worclaude's contribution is the curated base allowlist, the helper-script pattern that avoids the gotchas above, and this documentation.
 
 ## Universal Permissions (Base)
 
@@ -183,23 +235,77 @@ Example:
 
 Worclaude does not install any `ask` rules by default. Choosing which commands deserve a confirmation prompt is project policy, not scaffolding.
 
-## Deny Rules
+## Default Deny Rules
 
-The `permissions` object also supports a `deny` key for explicitly blocking commands. Deny rules are checked before `ask` and `allow`, so a matched `deny` pattern always wins. Worclaude does not install any deny rules by default, but they can be added manually:
+Worclaude scaffolds a small, targeted `deny` set into `templates/settings/base.json`. Deny rules take precedence over `allow` and `ask`, so a matched deny is a hard block. The default set covers three categories:
+
+### 1. Secret-file Read/Edit
+
+Blocks Claude's built-in Read and Edit tools from accessing common secret-file paths:
 
 ```json
-{
-  "permissions": {
-    "allow": [ ... ],
-    "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(curl:*)",
-      "Read(.env*)",
-      "Read(secrets/**)"
-    ]
-  }
-}
+"Read(./.env)", "Read(./.env.*)",
+"Read(./secrets/**)",
+"Edit(./.env)", "Edit(./.env.*)", "Edit(./secrets/**)",
+"Read(./*.pem)", "Read(./*.key)",
+"Read(./id_rsa)", "Read(./id_ed25519)",
+"Read(~/.ssh/**)",
+"Read(~/.aws/credentials)",
+"Read(~/.config/gh/hosts.yml)"
 ```
+
+These use gitignore-style matching and are the **most reliable** deny patterns Claude Code supports — the path-pattern matcher is well-defined, unlike Bash argument constraints.
+
+### 2. `.env`-targeting Bash file viewers
+
+Closes the gap that Read denies don't cover (`Read(./.env)` blocks the Read tool, not `cat .env` in Bash):
+
+```json
+"Bash(cat *.env*)", "Bash(head *.env*)", "Bash(tail *.env*)",
+"Bash(less *.env*)", "Bash(more *.env*)", "Bash(grep *.env*)"
+```
+
+These enumerate the **commands** users would run, not the arguments — which is the official guidance for robust matching. Compound-command awareness (`&&`, `|`, `;`) means each subcommand is matched independently, so `git diff && cat .env` is still blocked.
+
+### 3. Catastrophic `rm -rf` patterns
+
+```json
+"Bash(rm -rf /)", "Bash(rm -rf /*)",
+"Bash(rm -fr /)", "Bash(rm -fr /*)",
+"Bash(rm -rf ~)", "Bash(rm -rf ~/*)",
+"Bash(rm -rf $HOME)", "Bash(rm -rf $HOME/*)"
+```
+
+Claude Code's sandbox already prompts on `rm`/`rmdir` against `/`, `$HOME`, or "critical system paths" — these deny rules turn that prompt into a hard block.
+
+### Coverage limitations
+
+Worclaude is explicit about what these rules don't catch:
+
+- **Bash deny rules constraining arguments are inherently fragile** (per Claude Code's own docs). The `rm -rf /` set covers literal-match catastrophes; variants like `rm --recursive --force /`, `rm -fr //`, or shell-variable indirection (`RM=rm; $RM -rf /`) **evade**. Treat as defense against accidents, not a sandbox.
+- **The `.env` Bash family doesn't cover every read tool.** `awk`, `xxd`, `od`, `vim`, `python -c "print(open('.env').read())"`, and similar workarounds **evade**.
+- **Read/Edit denies apply to Claude's tools, not Bash subprocesses.** A `Read(./.env)` deny blocks the Read tool but does not prevent `cat .env` in Bash unless the matching Bash deny is also present.
+- **For OS-level enforcement that survives all of these,** enable Claude Code's [sandbox](https://code.claude.com/docs/en/sandboxing) — it gives filesystem and network restrictions that no shell command can bypass.
+
+### Hardening further
+
+Common additions teams pick up:
+
+```json
+"deny": [
+  // Network exfil — block curl/wget entirely; use WebFetch with allowlist instead
+  "Bash(curl *)", "Bash(wget *)",
+
+  // Pipe-to-shell antipattern (note: still fragile per docs)
+  "Bash(curl * | sh)", "Bash(curl * | bash)",
+
+  // Cloud-credential files specific to your toolchain
+  "Read(~/.docker/config.json)",
+  "Read(~/.kube/config)"
+]
+```
+
+If you take the `Bash(curl *)` route, remember to add a `WebFetch(domain:...)` allow rule for legitimate fetches, otherwise Claude can't reach the network at all.
 
 ---
 

@@ -185,11 +185,10 @@ These agents have `disallowedTools` that prevent file modifications. They analyz
 
 The `background: true` field enables agents to run asynchronously. When you invoke a background agent, Claude continues working while the agent runs its checks in parallel.
 
-| Agent             | Model  | What It Does in Background                                   |
-| ----------------- | ------ | ------------------------------------------------------------ |
-| `build-validator` | Haiku  | Runs build, tests, and linter. Reports pass/fail.            |
-| `verify-app`      | Sonnet | Tests the running application end-to-end.                    |
-| `e2e-runner`      | Sonnet | Writes and runs end-to-end tests for critical user journeys. |
+| Agent             | Model  | What It Does in Background                        |
+| ----------------- | ------ | ------------------------------------------------- |
+| `build-validator` | Haiku  | Runs build, tests, and linter. Reports pass/fail. |
+| `verify-app`      | Sonnet | Tests the running application end-to-end.         |
 
 Background agents are ideal for validation tasks that do not need user oversight. They run, collect results, and report back when finished.
 
@@ -274,6 +273,46 @@ Worclaude scaffolds an `AGENTS.md` file at the project root alongside `CLAUDE.md
 `worclaude init` writes both files from the same source template, so they start in sync. `worclaude upgrade` and `/sync` regenerate `AGENTS.md` whenever `CLAUDE.md` changes. If you edit either file by hand, the other is not auto-updated — keep them in sync manually or re-run `worclaude upgrade`.
 
 `worclaude doctor` checks that `AGENTS.md` exists and flags drift between the two files.
+
+## GitHub Action Integration (`@claude` pattern)
+
+Claude Code ships an official GitHub Action that lets you mention `@claude` in PR comments to trigger automatic CLAUDE.md updates. Worclaude does not provide this integration — it points at it. The pattern is one of Boris Cherny's "compounding engineering" recommendations.
+
+### What it does
+
+When the action is installed in a repository, a PR-comment like:
+
+```
+nit: use a string literal, not ts enum
+@claude add to CLAUDE.md to never use enums
+```
+
+triggers the action, which proposes a CLAUDE.md update reflecting the rule. The proposal lands as a commit on the PR branch (or as a separate PR, depending on the action's mode), so reviewers see the rule alongside the code change that prompted it.
+
+### Why it matters
+
+The friction this removes is real: rules captured during code review historically end up in three places (the comment thread, a follow-up "update CLAUDE.md" PR, or — most often — nowhere). The `@claude` marker compresses that to one step. Pair it with worclaude's local `[LEARN]` capture and `/update-claude-md` promotion algorithm and you get two complementary paths into CLAUDE.md: one driven by code review, one driven by session corrections.
+
+### How to enable
+
+Inside any Claude Code session, run:
+
+```
+/install-github-action
+```
+
+Claude Code installs the action's workflow file and any required secrets configuration. Worclaude does not run this — it is a Claude Code feature, and the install command lives there. Your repo's `.github/workflows/` gets one new file; nothing else worclaude scaffolds is affected.
+
+### How it composes with worclaude
+
+- The action commits CLAUDE.md updates automatically. Worclaude's existing `/sync` flow handles their incorporation into releases via the standard PR / version-bump declaration mechanics — no special-case handling needed.
+- When a PR with an action-driven CLAUDE.md update merges to develop, `/sync` rolls it forward to main like any other PR.
+- The CLAUDE.md scaffolded by `worclaude init` carries a brief note in its Memory Architecture section pointing at this pattern.
+
+### Reference
+
+- Anthropic's official Claude Code docs cover the action's full options, secrets configuration, and security model.
+- Boris Cherny's `howborisusesclaudecode.com` is where the `@claude`-as-PR-comment pattern was first documented.
 
 ## Learnings System
 

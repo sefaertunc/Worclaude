@@ -76,6 +76,8 @@ export async function updateGitignore(projectDir) {
     '.claude/learnings/',
     '.claude/.stop-hook-active',
     '.claude/cache/',
+    '.claude/scratch/',
+    '.claude/observability/',
   ];
   const header = '# Worclaude (generated workflow files)';
 
@@ -126,6 +128,30 @@ export async function scaffoldHooks(projectRoot) {
     // Ensure consistent exec bits on POSIX. Windows has no chmod semantics
     // worth enforcing; node+fs-extra no-ops there anyway, but guard to keep
     // the intent obvious.
+    if (process.platform !== 'win32') {
+      try {
+        await fs.chmod(destPath, 0o755);
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+    }
+  }
+}
+
+export async function scaffoldScripts(projectRoot) {
+  const scriptsTemplateDir = path.join(getTemplatesDir(), 'scripts');
+  if (!(await fs.pathExists(scriptsTemplateDir))) return;
+  const destDir = path.join(projectRoot, '.claude', 'scripts');
+  await fs.ensureDir(destDir);
+
+  const entries = await fs.readdir(scriptsTemplateDir);
+  for (const entry of entries) {
+    if (!entry.endsWith('.sh')) continue;
+    const destPath = path.join(destDir, entry);
+    await fs.copy(path.join(scriptsTemplateDir, entry), destPath, {
+      overwrite: false,
+      errorOnExist: false,
+    });
     if (process.platform !== 'win32') {
       try {
         await fs.chmod(destPath, 0o755);

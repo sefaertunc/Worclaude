@@ -4,13 +4,17 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 
 ## Tech Stack
 
+<!-- references package.json -->
+
 - Node.js 18+ (pure ESM, no build step)
 - Commander.js, Inquirer.js, Chalk, Ora, fs-extra
-- Vitest (497 tests, 31 files)
+- Vitest (947 tests, 69 files)
 - ESLint flat config + Prettier
 - VitePress for docs
 
 ## Build & Test Commands
+
+<!-- references package.json -->
 
 ```bash
 npm test                        # Run tests
@@ -30,7 +34,7 @@ node src/index.js <command>     # Test a CLI command locally
 
 ## Project Structure
 
-- `src/commands/` — CLI command handlers (init, upgrade, status, doctor, backup, restore, diff, delete)
+- `src/commands/` — CLI command handlers (init, upgrade, status, doctor, backup, restore, diff, delete, doc-lint, observability, regenerate-routing, scan, setup-state, worktrees)
 - `src/core/` — config, merger, scaffolder, workflow-meta
 - `src/data/` — agent catalogs, stack definitions, routing metadata
 - `src/generators/` — dynamic file generators (agent-routing.md, etc.)

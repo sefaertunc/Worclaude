@@ -19,6 +19,26 @@ and tell the user to run /conflict-resolver first.
    or version tag. If nothing was merged, report "Nothing to sync"
    and stop.
 
+## Drift preflight
+
+3a. Run `worclaude doctor` to surface CLAUDE.md ↔ package.json drift
+    before any shared-state file writes:
+
+    ```bash
+    worclaude doctor
+    ```
+
+    The `## Documentation` section reports any tech-stack claims in
+    CLAUDE.md (e.g., `857 tests, 62 files`) that no longer match the
+    current test count. If a `CLAUDE.md test-file count drift` warning
+    appears, step 10c will fix the line when it refreshes tech-stack
+    metrics — note the actual count from the warning and proceed.
+
+    If the warning is surprising (claim doesn't exist, or the delta is
+    large enough to suggest a deleted/renamed suite), pause and inspect
+    before continuing. Other doctor warnings are advisory; only the
+    drift warning is load-bearing for this sync.
+
 ## Update PROGRESS.md
 
 4. Update docs/spec/PROGRESS.md:
@@ -80,6 +100,15 @@ and tell the user to run /conflict-resolver first.
    a first-release bootstrap, not an error.
 
 ## Aggregate version bumps from merged PRs
+
+**Enforcement model.** `/commit-push-pr` prompts every PR author for a
+`Version bump:` declaration via `AskUserQuestion` and refuses to open a
+PR without one. This step catches stragglers — manual `gh pr create`
+calls, hot-fix branches that bypassed `/commit-push-pr`, or imports
+from outside the workflow. Missing declarations are treated as `none`
+**and surfaced permanently in the CHANGELOG** so under-documentation is
+visible rather than silent. Do NOT silently upgrade missing declarations
+to a higher level — the warning is the enforcement.
 
 7. Collect `Version bump:` declarations from all PRs merged into develop
    since the last version tag. Use `%as` for the date format (strict
@@ -196,6 +225,45 @@ and tell the user to run /conflict-resolver first.
        The warning list from step 9 MUST appear in the CHANGELOG entry as
        ⚠-prefixed bullets under `### Changed` — not just in the transient
        prompt. This is how under-documentation becomes permanent record.
+
+    c. Refresh tech-stack metrics in CLAUDE.md and AGENTS.md.
+
+       Both files commonly include a line like `Vitest (804 tests, 58 files)`
+       or `npm test    # Run tests (804 tests, 58 files)`. These drift
+       silently as tests are added or moved.
+
+       - Run the project's test runner with a JSON-capable reporter and
+         capture the totals. Examples:
+         - Node/Vitest: `npx vitest run --reporter=json --outputFile=/tmp/_vitest.json && jq '.numTotalTests, (.testResults | length)' /tmp/_vitest.json`
+         - Node/Jest: `npx jest --json --outputFile=/tmp/_jest.json && jq '.numTotalTests, (.testResults | length)' /tmp/_jest.json`
+         - Python/pytest: `pytest --json-report --json-report-file=/tmp/_pytest.json -q && jq '.summary.total, (.tests | map(.nodeid | split("::")[0]) | unique | length)' /tmp/_pytest.json`
+         - Cargo test: count lines from `cargo test --no-run --message-format=json | jq -s '[.[] | select(.profile.test == true)] | length'`
+
+       - Search CLAUDE.md and AGENTS.md for any line matching the pattern
+         `\d+ tests?, \d+ files?`. Update each match with the captured
+         counts. If neither file contains such a line, skip silently — not
+         every project surfaces these metrics.
+
+       - Do NOT add the metrics line if it isn't already there. This step
+         only refreshes existing claims; introducing new ones is a project
+         decision, not a `/sync` decision.
+
+## Regenerate agent-routing skill
+
+10b. Regenerate `.claude/skills/agent-routing/SKILL.md` from the project's
+     installed agent files so it reflects whatever was added/removed/renamed
+     across the merged PRs:
+
+     ```bash
+     worclaude regenerate-routing
+     ```
+
+     The regenerator reads `.claude/agents/*.md` frontmatter and replaces
+     only the content between `<!-- AUTO-GENERATED-START -->` and
+     `<!-- AUTO-GENERATED-END -->` markers — anything outside (frontmatter,
+     local notes) is preserved. If the file is missing or marker-less, a
+     fresh complete file is written. Stage the result alongside the other
+     `/sync` updates if it changed.
 
 ## Verify
 

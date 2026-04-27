@@ -137,7 +137,7 @@ This is a two-step process. First, you select agent **categories**. The categori
   ◼ Backend         — api-designer, database-analyst, auth-auditor
   ◻ Frontend        — ui-reviewer, style-enforcer
   ◻ DevOps          — ci-fixer, docker-helper, deploy-validator, dependency-manager
-  ◼ Quality         — bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer, e2e-runner
+  ◼ Quality         — bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer
   ◻ Documentation   — doc-writer, changelog-generator
   ◻ Data / AI       — data-pipeline-reviewer, ml-experiment-tracker, prompt-engineer
 ```
@@ -185,9 +185,10 @@ Once you confirm, Worclaude creates all the files:
   ✓ .claude/settings.json
   ✓ .claude/workflow-meta.json
   ✓ .claude/agents/ (6 universal + 6 optional)
-  ✓ .claude/commands/ (18)
-  ✓ .claude/skills/ (12 universal + 3 templates + 1 generated)
-  ✓ .claude/hooks/ (4 lifecycle scripts)
+  ✓ .claude/commands/ (16)
+  ✓ .claude/skills/ (13 universal + 3 templates + 1 generated)
+  ✓ .claude/hooks/ (7 lifecycle scripts: 4 core + 3 observability)
+  ✓ .claude/observability/ (gitignored signal capture)
   ✓ .claude/learnings/ (gitignored store for personal rules)
   ✓ .mcp.json
   ✓ docs/spec/PROGRESS.md
@@ -208,6 +209,19 @@ Once you confirm, Worclaude creates all the files:
 ```
 
 If `docs/spec/PROGRESS.md` or `docs/spec/SPEC.md` already exist in your project, Worclaude skips them rather than overwriting your content.
+
+### GitHub Action prompt (Phase 7)
+
+Toward the end of the interview, Worclaude offers to surface Claude Code's `/install-github-action` flow:
+
+```
+? Install Claude Code's GitHub Action for the @claude
+  "compounding engineering" workflow?
+  ❯ Yes — show me the install instructions now
+    No — I'll do it later
+```
+
+Picking **Yes** prints the next step (run `/install-github-action` inside Claude Code). Worclaude itself never shells out to the install command — it only points you at it. The action enables the `@claude` pattern from Boris Cherny's "compounding engineering" recipe: mention `@claude` in PR comments and the action automatically proposes CLAUDE.md updates. See [Claude Code Integration → GitHub Action](/guide/claude-code-integration#github-action-integration-claude-pattern).
 
 ## Understanding the Output
 

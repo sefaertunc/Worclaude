@@ -68,12 +68,6 @@ export const AGENT_CATALOG = {
     category: 'quality',
     description: 'Diagnoses and fixes build failures',
   },
-  'e2e-runner': {
-    model: 'sonnet',
-    isolation: 'worktree',
-    category: 'quality',
-    description: 'Writes and runs end-to-end tests',
-  },
   'dependency-manager': {
     model: 'haiku',
     isolation: 'none',
@@ -138,7 +132,6 @@ export const CATEGORY_RECOMMENDATIONS = {
     'security-reviewer',
     'bug-fixer',
     'doc-writer',
-    'e2e-runner',
   ],
   'Backend / API': [
     'api-designer',
@@ -149,13 +142,7 @@ export const CATEGORY_RECOMMENDATIONS = {
     'performance-auditor',
     'build-fixer',
   ],
-  'Frontend / UI': [
-    'ui-reviewer',
-    'style-enforcer',
-    'performance-auditor',
-    'bug-fixer',
-    'e2e-runner',
-  ],
+  'Frontend / UI': ['ui-reviewer', 'style-enforcer', 'performance-auditor', 'bug-fixer'],
   'CLI tool': ['bug-fixer', 'doc-writer', 'dependency-manager', 'build-fixer'],
   'Data / ML / AI': [
     'data-pipeline-reviewer',
@@ -183,10 +170,8 @@ export const COMMAND_FILES = [
   'end',
   'commit-push-pr',
   'review-plan',
-  'techdebt',
   'verify',
   'compact-safe',
-  'status',
   'update-claude-md',
   'setup',
   'sync',
@@ -196,7 +181,7 @@ export const COMMAND_FILES = [
   'refactor-clean',
   'test-coverage',
   'learn',
-  'upstream-check',
+  'observability',
 ];
 
 export const UNIVERSAL_SKILLS = [
@@ -208,6 +193,7 @@ export const UNIVERSAL_SKILLS = [
   'verification',
   'testing',
   'claude-md-maintenance',
+  'memory-architecture',
   'coding-principles',
   'subagent-usage',
   'security-checklist',
@@ -220,7 +206,15 @@ export const TEMPLATE_SKILLS = [
   'project-patterns',
 ];
 
-export const HOOK_FILES = ['pre-compact-save', 'correction-detect', 'learn-capture', 'skill-hint'];
+export const HOOK_FILES = [
+  'pre-compact-save',
+  'correction-detect',
+  'learn-capture',
+  'skill-hint',
+  'obs-skill-loads',
+  'obs-command-invocations',
+  'obs-agent-events',
+];
 
 export const PROJECT_TYPES = [
   'Full-stack web application',
@@ -275,16 +269,8 @@ export const AGENT_CATEGORIES = {
     description: 'ci-fixer, docker-helper, deploy-validator, dependency-manager',
   },
   Quality: {
-    agents: [
-      'bug-fixer',
-      'security-reviewer',
-      'performance-auditor',
-      'refactorer',
-      'build-fixer',
-      'e2e-runner',
-    ],
-    description:
-      'bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer, e2e-runner',
+    agents: ['bug-fixer', 'security-reviewer', 'performance-auditor', 'refactorer', 'build-fixer'],
+    description: 'bug-fixer, security-reviewer, performance-auditor, refactorer, build-fixer',
   },
   Documentation: {
     agents: ['doc-writer', 'changelog-generator'],

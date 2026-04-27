@@ -10,6 +10,12 @@
 {tech_stack_filled_during_init}
 
 ## Commands
+
+<!-- references package.json (or equivalent for non-Node stacks) -->
+The verification commands below are filled during init from the project's
+package manager scripts. Reference them by script name; do not restate the
+underlying tool invocations.
+
 {commands_filled_during_init}
 
 ## Skills (read on demand, not upfront)
@@ -35,6 +41,7 @@ See `.claude/skills/` — load only what's relevant:
 **Feature branch:** /start → work → /verify → /commit-push-pr
 **After merging PRs:** git checkout develop → git pull → /conflict-resolver (if needed) → /sync
 **Mid-task stop:** /end (writes handoff file)
+**Trigger discipline:** /commit-push-pr and /sync execute only when the human types them. They do not run autonomously after work "feels done."
 
 ## Critical Rules
 1. SPEC.md is source of truth. Do not invent features.
@@ -49,6 +56,7 @@ See `.claude/skills/` — load only what's relevant:
 10. Surgical changes only — every changed line must trace to the request. Don't "improve" adjacent code, comments, or formatting.
 11. Push back when simpler approaches exist. Present alternatives, don't pick silently.
 12. Transform tasks to success criteria. "Fix the bug" → "Write a failing test, then make it pass."
+13. Commit, push, and PR only when the human explicitly invokes /commit-push-pr or /sync. Never run git commit, git push, or gh pr create on your own initiative, never invoke those slash commands without an explicit human trigger, and never auto-answer the Version bump: question — refuse to proceed without a human-selected option.
 
 ## Memory Architecture
 
@@ -58,6 +66,7 @@ See `.claude/skills/` — load only what's relevant:
 - Path-scoped rules: `.claude/rules/` with YAML frontmatter.
 - Session state: `.claude/sessions/` (gitignored).{memory_architecture_extras}
 - Do NOT write session learnings or auto-captured patterns here.
+- If your repository has the Claude Code GitHub Action installed (run `/install-github-action`), `@claude` mentions in PR comments will automatically propose CLAUDE.md updates.
 
 ## Learnings
 
