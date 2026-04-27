@@ -624,13 +624,16 @@ The SessionStart hook has **no profile gate** — it always fires because losing
 
 Written automatically by `/commit-push-pr` (after committing) and `/end` (mid-task handoff). Stored in `.claude/sessions/` with naming: `YYYY-MM-DD-HHMM-{short-branch-name}.md`. Summaries include a `## Workflow Observability` section listing agents invoked, commands used, and verification result.
 
+The second line of each summary is `sha: {full HEAD SHA at the time of writing}`. The line MUST start at column 0 with the literal string `sha:` (case-sensitive, no markdown formatting around it) so `/start` can match it with `grep -oP '^sha:\s*\K[a-f0-9]+'` and use the value as the lower bound of `git log <sha>..HEAD` drift detection.
+
 ### Drift Detection
 
-The `/start` command supplements SessionStart with git history drift:
+The `/start` command supplements SessionStart with git history drift. It prefers SHA-based drift when the most recent session summary records a `sha:` line and the SHA is reachable; otherwise it falls back to date-based drift.
 
-- Extracts session date from the most recent session file
-- Counts commits since that date (max 15 one-liners)
-- Reports as non-interpreted signals (no warnings or analysis)
+- **SHA-based** (preferred): `git log <sha>..HEAD --oneline` from the recorded SHA to the current HEAD.
+- **Date-based** (fallback): commits since the session date parsed from the filename.
+- Either path caps the listed commits at 15 one-liners.
+- Reports as non-interpreted signals (no warnings or analysis).
 
 ---
 

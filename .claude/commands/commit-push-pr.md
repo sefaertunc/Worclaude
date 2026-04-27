@@ -17,11 +17,17 @@ If you are in a git worktree session:
 Feature branches contain ONLY the task changes. Do NOT touch shared-state
 files (see git-conventions.md for the canonical list).
 
-1. Write a session summary to .claude/sessions/:
-   - Filename: YYYY-MM-DD-HHMM-{short-branch-name}.md
+1. Stage all changes: `git add -A`
+2. Write a clear, conventional commit message and create the commit.
+3. Capture the new HEAD SHA: `git rev-parse HEAD` — this is the value to
+   embed in the session summary's `sha:` line so the next `/start` can
+   compute drift accurately (`git log <sha>..HEAD`).
+4. Write a session summary to `.claude/sessions/`:
+   - Filename: `YYYY-MM-DD-HHMM-{short-branch-name}.md`
    - Content format:
      ```
      # Session: {date}
+     sha: {full HEAD SHA captured in step 3}
      **Branch:** {current branch}
      **Task:** {one-line summary of what was worked on}
 
@@ -39,12 +45,14 @@ files (see git-conventions.md for the canonical list).
      - **Commands used:** {all slash commands run earlier in this session, e.g. /start, /verify, /refactor-clean. Do NOT include the current /commit-push-pr or /end that is writing this summary. Write "none" if no other commands were used.}
      - **Verification result:** {if /verify was run: passed/failed with brief summary; otherwise "not run".}
      ```
+   - The `sha:` line MUST be its own line starting with `sha:` (case-
+     sensitive, no leading whitespace, no markdown formatting around it).
+     `/start` parses it with `grep -oP '^sha:\s*\K[a-f0-9]+'`.
    - Keep it concise — this is for machine consumption at session start,
-     not a detailed report
-2. Stage all changes: git add -A
-3. Write a clear, conventional commit message
-4. Push to the current branch
-5. **Required: prompt for `Version bump:` declaration via AskUserQuestion.**
+     not a detailed report.
+   - The `.claude/sessions/` directory is gitignored; do not stage it.
+5. Push to the current branch.
+6. **Required: prompt for `Version bump:` declaration via AskUserQuestion.**
    Use AskUserQuestion with these four options and one-line descriptions:
 
    ```
@@ -66,7 +74,7 @@ files (see git-conventions.md for the canonical list).
    If the user's answer is genuinely ambiguous after seeing the four
    options (rare), ask one targeted clarifying question, then re-prompt.
 
-6. Create the PR with `gh pr create --base develop`. The PR description
+7. Create the PR with `gh pr create --base develop`. The PR description
    MUST include this line on its own, verbatim:
 
    ```
@@ -75,7 +83,7 @@ files (see git-conventions.md for the canonical list).
 
    `/sync` parses this string exactly — other phrasings will be ignored.
 
-7. Include in PR description: title, changes, testing done, reviewer notes
+8. Include in PR description: title, changes, testing done, reviewer notes
 
 ## On develop
 
@@ -85,13 +93,13 @@ Versioning happens in `/sync`, not here. The release PR body is pre-written
 by `/sync` with the aggregated bump summary and the list of feature PRs
 included in the release.
 
-1. Write a session summary to .claude/sessions/:
-   - Filename: YYYY-MM-DD-HHMM-{short-branch-name}.md
-   - Same format as the feature branch session summary above
-2. Stage all changes: git add -A
-3. Write a clear, conventional commit message
-4. Push to develop
-5. Create a PR targeting main: gh pr create --base main
+1. Stage all changes: `git add -A`
+2. Write a clear, conventional commit message and create the commit.
+3. Capture the new HEAD SHA: `git rev-parse HEAD`.
+4. Write a session summary to `.claude/sessions/` using the same format as
+   the feature branch session summary above (including the `sha:` line).
+5. Push to develop.
+6. Create a PR targeting main: `gh pr create --base main`.
 
 ## On any other branch
 

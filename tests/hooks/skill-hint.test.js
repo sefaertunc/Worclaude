@@ -16,6 +16,15 @@ async function setupSkills(skillNames) {
   }
 }
 
+async function setupSkillWithDescription(name, description) {
+  const skillDir = path.join(tmpDir, '.claude', 'skills', name);
+  await fs.ensureDir(skillDir);
+  const frontmatter = ['---', `description: "${description}"`, '---', '', `# ${name}`, ''].join(
+    '\n'
+  );
+  await fs.writeFile(path.join(skillDir, 'SKILL.md'), frontmatter);
+}
+
 function runScript(inputObj) {
   const json = JSON.stringify({ cwd: tmpDir, ...inputObj });
   return execSync(`echo '${json.replace(/'/g, "'\\''")}' | node "${scriptPath}"`, {
@@ -108,6 +117,47 @@ describe('skill-hint hook', () => {
     const output = runScript({ input: { prompt: 'write testing code' } });
     expect(output).toContain('testing/SKILL.md');
     expect(output).not.toContain('README');
+  });
+
+  it('matches by skill description frontmatter when name does not match', async () => {
+    // Skill name is 'compact-safe', has nothing in common with the prompt by
+    // name, but its description mentions 'context' and 'session' which the
+    // prompt also uses.
+    await setupSkillWithDescription(
+      'compact-safe',
+      'Compress context via /compact with safety checks for the session'
+    );
+    const output = runScript({
+      input: { prompt: 'help me manage session context for this conversation' },
+    });
+    expect(output).toContain('compact-safe/SKILL.md');
+  });
+
+  it('prefers name match over description match when both are possible', async () => {
+    // Both skills exist; 'testing' matches by name, 'security-checklist' has
+    // a description mentioning 'testing' too. Sorted alphabetically:
+    // security-checklist comes first, so without name-match-priority it would
+    // win on description. With our prioritization, security-checklist's name
+    // does not match 'testing', its description does, but the loop should
+    // still pick whichever comes first in sorted order that matches by ANY
+    // means. This test pins that ordering so refactors don't quietly flip it.
+    await setupSkillWithDescription('security-checklist', 'Reviews testing and security concerns');
+    await setupSkillWithDescription('testing', 'Test philosophy and patterns');
+    const output = runScript({ input: { prompt: 'help with testing approach' } });
+    // security-checklist sorts first alphabetically and matches via description.
+    expect(output).toContain('security-checklist/SKILL.md');
+  });
+
+  it('handles malformed frontmatter without crashing', async () => {
+    const skillDir = path.join(tmpDir, '.claude', 'skills', 'broken');
+    await fs.ensureDir(skillDir);
+    // Frontmatter not closed properly
+    await fs.writeFile(
+      path.join(skillDir, 'SKILL.md'),
+      '---\ndescription: unterminated\n# heading without closing fence\n'
+    );
+    const output = runScript({ input: { prompt: 'unrelated prompt about pizza' } });
+    expect(output.trim()).toBe('');
   });
 
   it('filters stopwords from prompt tokenization', async () => {

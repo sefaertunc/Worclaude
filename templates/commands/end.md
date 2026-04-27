@@ -48,21 +48,29 @@ both harder to consume.
    - **Open questions** — anything ambiguous that the next session needs to
      resolve before continuing
 
-2. **Write the session summary** at `.claude/sessions/YYYY-MM-DD-HHMM-{short-branch-name}.md`
+2. `git add -A`
+
+3. `git commit -m "wip: handoff for [task description]"`
+   Use exactly this message format — no trailers or Co-Authored-By lines.
+
+4. Capture the new HEAD SHA: `git rev-parse HEAD`. Embed it as the
+   `sha:` line in the session summary so the next `/start` can compute
+   drift accurately (`git log <sha>..HEAD`).
+
+5. **Write the session summary** at `.claude/sessions/YYYY-MM-DD-HHMM-{short-branch-name}.md`
    using the same format as `/commit-push-pr` session summaries:
+   - First line: `# Session: {date}`
+   - Second line: `sha: {full HEAD SHA captured in step 4}` — own line,
+     case-sensitive, no leading whitespace, no markdown formatting around it.
    - Mark the task as "IN PROGRESS" since `/end` means work is unfinished
    - Fill in `## Completed` with what got done this session
    - Fill in `## Files Modified`
    - Fill in `## Workflow Observability`: agents invoked, slash commands
      used so far (excluding the current `/end`), verification result
    - Do NOT duplicate the handoff's forward-looking content here
+   - The `.claude/sessions/` directory is gitignored; do not stage it.
 
-3. `git add -A`
-
-4. `git commit -m "wip: handoff for [task description]"`
-   Use exactly this message format — no trailers or Co-Authored-By lines.
-
-5. **Required: prompt for push consent via `AskUserQuestion`.**
+6. **Required: prompt for push consent via `AskUserQuestion`.**
 
    ```
    Question: "Push the WIP commit to remote?"
@@ -75,7 +83,7 @@ both harder to consume.
    if the user declines — pushing WIP commits to remote is sometimes unwanted
    (work-in-progress visible to collaborators, broken intermediate state).
 
-6. On `yes`: `git push`. On `no`: skip push, report "WIP commit local-only.
+7. On `yes`: `git push`. On `no`: skip push, report "WIP commit local-only.
    Run `git push` when you resume."
 
 ## Trigger Phrases
