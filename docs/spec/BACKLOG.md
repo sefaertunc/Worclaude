@@ -12,37 +12,6 @@ decision docs under `docs/archive/decisions/`.
 
 ## Pending follow-ups
 
-### Skill-hint frontmatter enrichment
-
-`templates/hooks/skill-hint.cjs` matches user-prompt keywords against skill
-directory names only. Reading each skill's `description:` frontmatter would
-produce richer keyword coverage and a higher auto-activation hit rate.
-
-**Source:** discovered during Phase 4 implementation. Implementation tracked
-under Phase 3 T3.10 in
-[`docs/phases/phase-3-cross-cutting-infrastructure.md`](../phases/phase-3-cross-cutting-infrastructure.md).
-
-### Claude Code plugin validator CI
-
-Once `worclaude init --plugin-json` is exercised in CI, add a step that runs
-`claude plugin validate` on the generated `.claude-plugin/plugin.json` to
-catch schema drift as Claude Code evolves.
-
-**Source:** discovered during Phase 4 implementation. Implementation tracked
-under Phase 3 T3.11.
-
-### Optional-features registry
-
-A first-class registry for opt-in scaffolding extras (plugin.json, GTD
-memory, future additions) that supersedes the rejected
-`worclaude upgrade --with-plugin` / `--with-memory` per-feature flags.
-Centralizes the opt-in surface so adding a new optional feature does not
-require a new flag.
-
-**Source:** [`decisions/2026-04/05-analysis-cluster.md`](../archive/decisions/2026-04/05-analysis-cluster.md);
-implementation tracked under Phase 3 T3.9 in
-[`docs/phases/phase-3-cross-cutting-infrastructure.md`](../phases/phase-3-cross-cutting-infrastructure.md).
-
 ### Sandbox defaults in scaffolded settings
 
 Claude Code 2.1.113 added `sandbox.network.deniedDomains` — a per-project
@@ -77,6 +46,44 @@ whether this is fixable from Worclaude's side (symlinks, documentation,
 workaround) or is a Claude Code behavior to document as a limitation.
 
 **Priority:** investigation only — implementation depends on findings.
+
+### `.claude/rules/` adoption — deferred
+
+Claude Code's official docs recommend `.claude/rules/` for topic-organized,
+optionally path-scoped team rules. Worclaude **defers** scaffolding it for
+now. The reasoning:
+
+- Worclaude already ships `CLAUDE.md` + `.claude/skills/` + `.claude/learnings/`.
+  Adding empty `.claude/rules/` templates introduces drift surface for
+  unclear value.
+- Path-scoped rules pay back in monorepos. Worclaude's typical user is a
+  single-repo project; the path-scoping benefit is theoretical until
+  observed.
+
+Revisit when Phase 6a observability ships skill-load telemetry that can show
+whether path-scoped rules would actually be loaded. If yes, scaffold a
+starter set; if no, leave the convention as user-configurable.
+
+**Source:** Phase 4 T4.3 decision (recorded 2026-04-27).
+**Priority:** revisit after Phase 6a.
+
+### Usage-signal mechanism for `/update-claude-md` recurrence — pending Phase 6a
+
+Phase 1 removed the dead `times_applied` field from learnings frontmatter.
+Phase 4 ships time-based recurrence (last touched within 14 days) and
+file-scan recurrence (3+ `**Rule:**` blocks in the same category file) for
+`/update-claude-md`'s promotion algorithm. A richer count-based signal —
+"how often does this learning's category get re-mentioned in transcripts" —
+needs a real mechanism that worclaude does not have today.
+
+The decision: **pull-based via Phase 6a.** When `worclaude observability`
+lands, it will already traverse session transcripts; computing per-category
+re-mention frequency at observe-time is a natural addition. No new write
+paths in the meantime.
+
+**Source:** Phase 4 T4.5 decision (recorded 2026-04-27); cross-references
+[`decisions/2026-04/06-meta-memory.md`](../archive/decisions/2026-04/06-meta-memory.md).
+**Priority:** dependent on Phase 6a; do not implement standalone.
 
 ---
 
