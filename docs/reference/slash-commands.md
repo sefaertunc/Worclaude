@@ -6,14 +6,14 @@ Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /start
 
-**Load session context, check for handoff files, detect drift since last session.**
+**Load session context, check for handoffs, detect drift, surface scratch + plans.**
 
-|                  |                                                                                                                                                                                                                                                                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/start.md`                                                                                                                                                                                                                                                                                                                         |
-| **When to use**  | At the start of every Claude Code session                                                                                                                                                                                                                                                                                                           |
-| **What it does** | The SessionStart hook has already loaded CLAUDE.md, PROGRESS.md, and the last session summary. This command supplements that with drift detection (commits since last session), handoff file checks matching the current branch, active implementation prompts, and agent routing. Reports what was last completed, what is next, and any blockers. |
-| **Key behavior** | Read-only. Does not modify files.                                                                                                                                                                                                                                                                                                                   |
+|                  |                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/start.md`                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **When to use**  | At the start of every Claude Code session, or mid-session to re-orient ("what's the status", "where am I", "what am I working on" — inherited from the retired `/status`)                                                                                                                                                                                                                                                                    |
+| **What it does** | Supplements the SessionStart-hook context with: **SHA-based drift** (commits since the last session's recorded HEAD), forward-looking **handoff** vs backward-looking **session summary** (read as distinct artifacts, not merged), **`.claude/scratch/` artifacts surfaced with SHA freshness**, and **`.claude/plans/` discovery** (folder convention; no filename patterns). Reports what was last completed, what is next, and blockers. |
+| **Key behavior** | Read-only. Plan and scratch discovery are folder-based — anything dropped in `.claude/plans/` or `.claude/scratch/` surfaces without spec changes. Stale scratch (SHA mismatch) is flagged but not deleted.                                                                                                                                                                                                                                  |
 
 ---
 
@@ -45,14 +45,14 @@ Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. T
 
 ### /review-plan
 
-**Send implementation plan to plan-reviewer agent for staff-level review.**
+**Auto-detect plans from `.claude/plans/` and send to plan-reviewer with project context.**
 
-|                  |                                                                                                                                                                                  |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/review-plan.md`                                                                                                                                                |
-| **When to use**  | After writing an implementation plan, before starting implementation                                                                                                             |
-| **What it does** | Sends the current plan to the `plan-reviewer` agent (Opus). The reviewer checks for ambiguity, missing verification steps, unrealistic scope, edge cases, and SPEC.md alignment. |
-| **Key behavior** | Blocks implementation until all feedback is addressed. The plan should be updated with revisions before proceeding.                                                              |
+|                  |                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **File**         | `.claude/commands/review-plan.md`                                                                                                                                                                                                                                                                                                                            |
+| **When to use**  | After dropping a plan into `.claude/plans/`, before starting implementation                                                                                                                                                                                                                                                                                  |
+| **What it does** | Reads `.claude/plans/`. Refuses to dispatch if empty. With one plan, uses it directly; with multiple, prompts via `AskUserQuestion`. Auto-loads CLAUDE.md and SPEC.md as context for the agent. Dispatches to `plan-reviewer` (Opus). Persists the review to `.claude/scratch/last-plan-review.md` (SHA-keyed) so the next session surfaces it via `/start`. |
+| **Key behavior** | Plan-existence gate — does not invoke the agent without a plan file. Folder-based discovery replaces filename patterns (`PLAN-*.md`, `IMPLEMENTATION-*.md`, `PHASE-*-PROMPT.md`).                                                                                                                                                                            |
 
 ---
 
@@ -165,12 +165,12 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 **Code review -- reports findings as prioritized table without modifying files.**
 
-|                  |                                                                                                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/review-changes.md`                                                                                                                                |
-| **When to use**  | After implementing changes, before committing                                                                                                                       |
-| **What it does** | Reads recent git diff. Checks for duplication, complexity, pattern inconsistency, CLAUDE.md compliance. Reports as prioritized table with Fix/Skip recommendations. |
-| **Key behavior** | Strictly read-only. Never edits, stages, or commits. For automated fixes, use `/refactor-clean` which runs a focused inline cleanup pass.                           |
+|                  |                                                                                                                                                                                                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/review-changes.md`                                                                                                                                                                                                                                                   |
+| **When to use**  | After implementing changes, before committing                                                                                                                                                                                                                                          |
+| **What it does** | Reads recent git diff. Checks for duplication, complexity, pattern inconsistency, CLAUDE.md compliance. Reports as prioritized table with Fix/Skip recommendations, **and writes the findings to `.claude/scratch/last-review.md`** (SHA-keyed) so `/refactor-clean` can pick them up. |
+| **Key behavior** | Strictly read-only on source files. Writes one scratch artifact (`last-review.md`); never edits source, stages, or commits. For automated fixes, use `/refactor-clean` which consumes the scratch artifact when SHA matches.                                                           |
 
 ---
 
@@ -191,12 +191,12 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 **Focused cleanup pass on recently changed code.**
 
-|                  |                                                                                                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/refactor-clean.md`                                                                                                                             |
-| **When to use**  | After implementing a feature, before `/verify` and `/commit-push-pr`                                                                                             |
-| **What it does** | Reads uncommitted changes. Removes dead code, extracts duplicated logic, reduces complexity, and enforces naming consistency. Runs tests after every change.     |
-| **Key behavior** | Runs inline (not in a worktree). Leaves changes uncommitted for `/commit-push-pr`. Reverts immediately if tests fail. Only changes with >80% confidence applied. |
+|                  |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/refactor-clean.md`                                                                                                                                                                                                                                                                                                                                                                                         |
+| **When to use**  | After implementing a feature, before `/verify` and `/commit-push-pr`                                                                                                                                                                                                                                                                                                                                                         |
+| **What it does** | First checks `.claude/scratch/last-review.md` — if its SHA matches HEAD, **uses the review as a work plan** (skipping its own analysis). Otherwise analyzes from scratch. Removes dead code, extracts duplicated logic, reduces complexity. Uses **scoped tests** after each change (`vitest --related`, `jest --findRelatedTests`); full-suite run only as a final safety net. Deletes `last-review.md` after consuming it. |
+| **Key behavior** | Runs inline (not in a worktree). Leaves changes uncommitted for `/commit-push-pr`. Reverts immediately if scoped tests fail. Only changes with >80% confidence applied.                                                                                                                                                                                                                                                      |
 
 ---
 
@@ -204,12 +204,12 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 **Analyze test coverage and fill gaps in recently changed code.**
 
-|                  |                                                                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **File**         | `.claude/commands/test-coverage.md`                                                                                                                            |
-| **When to use**  | Before a release, after a large feature, or when coverage drops below project threshold                                                                        |
-| **What it does** | Measures current coverage, identifies gaps prioritized by risk (auth > business logic > formatting), writes missing tests following existing project patterns. |
-| **Key behavior** | Reports a before/after table per file. Tests behavior, not implementation. Flags bugs found during testing without fixing them in this pass.                   |
+|                  |                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/test-coverage.md`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **When to use**  | Before a release, after a large feature, or when coverage drops below project threshold                                                                                                                                                                                                                                                                                                                                                                                 |
+| **What it does** | Reads project coverage thresholds from config (`vitest.config`, `jest.config`, `pytest.ini`). Measures current coverage. Anchors "recently changed" to **the last release tag** (`git log $(git describe --tags --abbrev=0)..HEAD`). Presents prioritized gap list and **prompts via `AskUserQuestion` (≤4) or numbered list** for user to confirm which to close. **Delegates confirmed gaps to the `test-writer` agent in a worktree** — does NOT write tests inline. |
+| **Key behavior** | Confirm-then-delegate; never writes tests directly. Threshold from config, not guessed. Flags bugs found during testing without fixing them in this pass.                                                                                                                                                                                                                                                                                                               |
 
 ---
 

@@ -528,6 +528,12 @@ export async function upgradeCommand(options = {}) {
     // Ensure sessions directory exists for session persistence
     await writeFile(path.join(projectRoot, '.claude', 'sessions', '.gitkeep'), '');
 
+    // Ensure scratch directory exists for SHA-keyed transient artifacts (gitignored)
+    await writeFile(path.join(projectRoot, '.claude', 'scratch', '.gitkeep'), '');
+
+    // Ensure plans directory exists for active work guidance (tracked)
+    await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
+
     // Hash refresh — files we just wrote (repair restored, repair migrated,
     // autoUpdate, templateNewFiles). Modified / conflict / unchanged /
     // userAdded / missingUntracked keep their prior hash; missingUntracked

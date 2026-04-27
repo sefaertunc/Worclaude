@@ -421,6 +421,14 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'learnings', '.gitkeep'), '');
     spinner.text = 'Created .claude/learnings/';
 
+    // Create scratch directory for SHA-keyed transient artifacts (gitignored)
+    await writeFile(path.join(projectRoot, '.claude', 'scratch', '.gitkeep'), '');
+    spinner.text = 'Created .claude/scratch/';
+
+    // Create plans directory for active work guidance (tracked)
+    await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
+    spinner.text = 'Created .claude/plans/';
+
     // Opt-in: plugin.json for Claude Code marketplace compatibility
     if (selections.generatePluginJson) {
       await scaffoldPluginJson(projectRoot, selections);
