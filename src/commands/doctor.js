@@ -11,6 +11,7 @@ import {
   TEMPLATE_SKILLS,
 } from '../data/agents.js';
 import { hasClaudeMdMemoryGuidance, readClaudeMd } from '../core/drift-checks.js';
+import { detectClaudeMdTestCountDrift } from '../utils/drift-detect.js';
 import { resolveKeyPath, isWorkflowRefFile } from '../core/file-categorizer.js';
 import * as display from '../utils/display.js';
 
@@ -96,6 +97,32 @@ function printResult(r) {
   if (r.detail && r.status !== PASS) {
     console.log(`    ${display.dimColor(r.detail)}`);
   }
+}
+
+function checkInstallationRationale(meta) {
+  // Old installs scaffolded before T3.6 lack the field — do not flag.
+  if (!meta || !meta.installation) return null;
+  const { rationale } = meta.installation;
+  if (typeof rationale !== 'string' || rationale.trim() === '') {
+    return result(WARN, 'Installation rationale', 'Field present but rationale is empty');
+  }
+  return result(PASS, `Installation rationale: ${rationale}`, null);
+}
+
+async function checkClaudeMdTestCountDrift(projectRoot) {
+  const drift = await detectClaudeMdTestCountDrift(projectRoot);
+  if (drift.reason === 'no-claude-md' || drift.reason === 'no-claims') return null;
+  if (!drift.hasDrift) {
+    return result(PASS, `CLAUDE.md file count matches (${drift.actual.files} test files)`, null);
+  }
+  const lines = drift.mismatches
+    .map((m) => `line ${m.lineNumber} claims ${m.claimedFiles} files`)
+    .join('; ');
+  return result(
+    WARN,
+    'CLAUDE.md test-file count drift',
+    `Actual ${drift.actual.files} test files; ${lines}. Run /sync to refresh.`
+  );
 }
 
 async function checkWorkflowMeta(projectRoot) {
@@ -1035,6 +1062,10 @@ export async function doctorCommand(options = {}) {
   // Documentation
   section('Documentation');
   record('docs', await checkDocSpecs(projectRoot));
+  const rationaleCheck = checkInstallationRationale(meta);
+  if (rationaleCheck) record('docs', rationaleCheck);
+  const driftCheck = await checkClaudeMdTestCountDrift(projectRoot);
+  if (driftCheck) record('docs', driftCheck);
   spacer();
 
   // Learnings

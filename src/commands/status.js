@@ -73,6 +73,20 @@ export async function statusCommand() {
   display.barLine(`${'Skills'.padEnd(11)}${display.white(String(skillCount))}`);
   display.newline();
 
+  // Installation rationale (T3.6) — recorded at init time. Older installs
+  // pre-dating this field gracefully degrade: nothing surfaces.
+  if (meta.installation && meta.installation.rationale) {
+    display.info('Installation rationale:');
+    display.dim(`    ${meta.installation.rationale}`);
+    if (
+      Array.isArray(meta.installation.selectedCategories) &&
+      meta.installation.selectedCategories.length > 0
+    ) {
+      display.dim(`    Categories: ${meta.installation.selectedCategories.join(', ')}`);
+    }
+    display.newline();
+  }
+
   // Customized files
   const customized = [];
   for (const [key, storedHash] of Object.entries(meta.fileHashes || {})) {

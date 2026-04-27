@@ -19,6 +19,26 @@ and tell the user to run /conflict-resolver first.
    or version tag. If nothing was merged, report "Nothing to sync"
    and stop.
 
+## Drift preflight
+
+3a. Run `worclaude doctor` to surface CLAUDE.md ↔ package.json drift
+    before any shared-state file writes:
+
+    ```bash
+    worclaude doctor
+    ```
+
+    The `## Documentation` section reports any tech-stack claims in
+    CLAUDE.md (e.g., `857 tests, 62 files`) that no longer match the
+    current test count. If a `CLAUDE.md test-file count drift` warning
+    appears, step 10c will fix the line when it refreshes tech-stack
+    metrics — note the actual count from the warning and proceed.
+
+    If the warning is surprising (claim doesn't exist, or the delta is
+    large enough to suggest a deleted/renamed suite), pause and inspect
+    before continuing. Other doctor warnings are advisory; only the
+    drift warning is load-bearing for this sync.
+
 ## Update PROGRESS.md
 
 4. Update docs/spec/PROGRESS.md:
