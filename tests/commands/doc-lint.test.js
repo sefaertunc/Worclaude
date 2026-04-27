@@ -55,7 +55,7 @@ describe('worclaude doc-lint', () => {
     const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(output).toContain('Drift');
     expect(output).toMatch(/CLAUDE\.md/);
-    expect(output).toMatch(/claims 10 tests, 5 files/);
+    expect(output).toMatch(/claims 5 test files \(actual 1\)/);
     expect(process.exitCode).toBe(originalExitCode);
   });
 
