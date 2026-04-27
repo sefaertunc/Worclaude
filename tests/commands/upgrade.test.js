@@ -82,6 +82,8 @@ async function seedCompleteInstall(tmpDir, currentVersion) {
     optionalAgents: [],
     useDocker: false,
     fileHashes,
+    optionalFeatures: [],
+    optedOutFeatures: ['plugin-json', 'gtd-memory'],
   };
   await fs.writeFile(
     path.join(tmpDir, '.claude', 'workflow-meta.json'),

@@ -27,6 +27,7 @@ import {
   migrateWorkflowRefLocation,
 } from '../core/migration.js';
 import { regenerateRoutingForProject } from './regenerate-routing.js';
+import { availableOptionalFeatures } from '../data/optional-features.js';
 
 const CONFLICT_CHECK_TYPES = new Set(['hook', 'root-file']);
 
@@ -324,10 +325,61 @@ async function runRepairOnlyFlow({
       display.newline();
       display.barLine(`Review files under .claude/workflow-ref/ and merge what's useful.`);
     }
+
+    const features = await promptAndScaffoldOptionalFeatures(projectRoot, meta, { yes, dryRun });
+    if (features.scaffolded.length + features.declined.length > 0) {
+      await writeWorkflowMeta(projectRoot, meta);
+    }
   } catch (err) {
     spinner.fail('Repair failed.');
     display.error(err.message);
   }
+}
+
+async function promptAndScaffoldOptionalFeatures(projectRoot, meta, { yes, dryRun }) {
+  const empty = { scaffolded: [], declined: [] };
+  if (yes || dryRun) return empty;
+
+  const available = await availableOptionalFeatures(projectRoot, meta);
+  if (available.length === 0) return empty;
+
+  const upgradeSelections = {
+    projectName: path.basename(projectRoot),
+    selectedAgents: meta.optionalAgents || [],
+  };
+
+  display.newline();
+  display.barLine('Optional features available:');
+
+  const scaffolded = [];
+  const declined = [];
+
+  for (const feature of available) {
+    const { accept } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'accept',
+        message: feature.label,
+        choices: [
+          { name: 'Yes', value: true },
+          { name: 'No, skip (will not ask again)', value: false },
+        ],
+      },
+    ]);
+
+    if (accept) {
+      await feature.scaffold(projectRoot, upgradeSelections);
+      scaffolded.push(feature.id);
+      display.success(feature.successPath);
+    } else {
+      declined.push(feature.id);
+    }
+  }
+
+  meta.optionalFeatures = [...new Set([...(meta.optionalFeatures || []), ...scaffolded])];
+  meta.optedOutFeatures = [...new Set([...(meta.optedOutFeatures || []), ...declined])];
+
+  return { scaffolded, declined };
 }
 
 export async function upgradeCommand(options = {}) {
@@ -403,7 +455,14 @@ export async function upgradeCommand(options = {}) {
 
   // Version match + no repair + no template work + no ref relocation → up to date.
   if (versionMatch && !repairWork && !templateWork && !refWork) {
-    display.success(`Already up to date (v${currentVersion}).`);
+    const features = await promptAndScaffoldOptionalFeatures(projectRoot, meta, { yes, dryRun });
+    if (features.scaffolded.length + features.declined.length > 0) {
+      meta.lastUpdated = new Date().toISOString();
+      await writeWorkflowMeta(projectRoot, meta);
+    }
+    if (features.scaffolded.length === 0) {
+      display.success(`Already up to date (v${currentVersion}).`);
+    }
     return;
   }
 
@@ -637,6 +696,11 @@ export async function upgradeCommand(options = {}) {
     ) {
       display.newline();
       display.barLine(`Review files under .claude/workflow-ref/ and merge what's useful.`);
+    }
+
+    const features = await promptAndScaffoldOptionalFeatures(projectRoot, meta, { yes, dryRun });
+    if (features.scaffolded.length + features.declined.length > 0) {
+      await writeWorkflowMeta(projectRoot, meta);
     }
   } catch (err) {
     spinner.fail('Upgrade failed.');

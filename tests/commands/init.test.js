@@ -39,7 +39,7 @@ function setupDefaultMocks() {
     { selectedAgents: ['bug-fixer'] }, // 6: fine-tune Quality
     { selectedAgents: ['doc-writer'] }, // 7: fine-tune Documentation
     { additionalCategories: [] }, // 8: unselected categories offer
-    { generatePluginJson: false, scaffoldGtdMemory: false }, // 9: optional extras
+    { 'plugin-json': false, 'gtd-memory': false }, // 9: optional extras
     { confirmation: 'yes' }, // 10: confirmation
   ];
   let callCount = 0;
@@ -289,12 +289,12 @@ describe('init command', () => {
     expect(hookEvents).toContain('SessionEnd');
   });
 
-  it('does NOT create .claude-plugin/ when generatePluginJson is false (default)', async () => {
+  it('does NOT create .claude-plugin/ when plugin-json is opted out (default)', async () => {
     await initCommand();
     expect(await fs.pathExists(path.join(tmpDir, '.claude-plugin'))).toBe(false);
   });
 
-  it('does NOT create docs/memory/ when scaffoldGtdMemory is false (default)', async () => {
+  it('does NOT create docs/memory/ when gtd-memory is opted out (default)', async () => {
     await initCommand();
     expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory'))).toBe(false);
   });
@@ -306,7 +306,7 @@ describe('init command', () => {
     expect(content).not.toContain('docs/memory/preferences.md');
   });
 
-  it('creates docs/memory/decisions.md + preferences.md when scaffoldGtdMemory is true', async () => {
+  it('creates docs/memory/decisions.md + preferences.md when gtd-memory opt-in is true', async () => {
     const responses = [
       { projectName: 'mem-app', description: 'With memory' },
       { projectTypes: ['CLI tool'] },
@@ -314,7 +314,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: true },
+      { 'plugin-json': false, 'gtd-memory': true },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -325,7 +325,7 @@ describe('init command', () => {
     expect(await fs.pathExists(path.join(tmpDir, 'docs', 'memory', 'preferences.md'))).toBe(true);
   });
 
-  it('CLAUDE.md contains memory pointer bullets when scaffoldGtdMemory is true', async () => {
+  it('CLAUDE.md contains memory pointer bullets when gtd-memory opt-in is true', async () => {
     const responses = [
       { projectName: 'mem-app', description: 'With memory' },
       { projectTypes: ['CLI tool'] },
@@ -333,7 +333,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: true },
+      { 'plugin-json': false, 'gtd-memory': true },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -346,7 +346,7 @@ describe('init command', () => {
     expect(content).toContain('version-controlled, shared');
   });
 
-  it('creates .claude-plugin/plugin.json when generatePluginJson opt-in is true', async () => {
+  it('creates .claude-plugin/plugin.json when plugin-json opt-in is true', async () => {
     const responses = [
       { projectName: 'my-app', description: 'Cool app' },
       { projectTypes: ['CLI tool'] },
@@ -354,7 +354,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: true, scaffoldGtdMemory: false },
+      { 'plugin-json': true, 'gtd-memory': false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -390,9 +390,7 @@ describe('init command', () => {
     const optionalExtrasCall = inquirer.prompt.mock.calls.find((call) => {
       const specs = Array.isArray(call[0]) ? call[0] : [];
       return (
-        specs.length === 2 &&
-        specs[0]?.name === 'generatePluginJson' &&
-        specs[1]?.name === 'scaffoldGtdMemory'
+        specs.length === 2 && specs[0]?.name === 'plugin-json' && specs[1]?.name === 'gtd-memory'
       );
     });
 
@@ -428,7 +426,7 @@ describe('init command', () => {
       { selectedCategories: ['Quality'] },
       { selectedAgents: ['bug-fixer'] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: false },
+      { 'plugin-json': false, 'gtd-memory': false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -452,7 +450,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: false },
+      { 'plugin-json': false, 'gtd-memory': false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -472,7 +470,7 @@ describe('init command', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: false },
+      { 'plugin-json': false, 'gtd-memory': false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -507,7 +505,7 @@ describe('init command', () => {
       { useDocker: true },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: false },
+      { 'plugin-json': false, 'gtd-memory': false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -544,7 +542,7 @@ describe('init command', () => {
         { selectedCategories: ['Quality'] }, // categories
         { selectedAgents: ['bug-fixer'] }, // fine-tune
         { additionalCategories: [] }, // extra categories
-        { generatePluginJson: false, scaffoldGtdMemory: false }, // optional extras
+        { 'plugin-json': false, 'gtd-memory': false }, // optional extras
         { confirmation: 'yes' }, // confirm
         { choice: 'keep' }, // CLAUDE.md handling
       ];
@@ -607,7 +605,7 @@ describe('init command', () => {
       expect(claudeMd).toBe('# My Project');
     });
 
-    it('creates .claude-plugin/plugin.json in Scenario B when generatePluginJson opt-in is true', async () => {
+    it('creates .claude-plugin/plugin.json in Scenario B when plugin-json opt-in is true', async () => {
       await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
 
       const responses = [
@@ -618,7 +616,7 @@ describe('init command', () => {
         { useDocker: false },
         { selectedCategories: [] },
         { additionalCategories: [] },
-        { generatePluginJson: true, scaffoldGtdMemory: false },
+        { 'plugin-json': true, 'gtd-memory': false },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];
@@ -632,7 +630,7 @@ describe('init command', () => {
       expect(parsed.name).toBe('existing-app-workflow');
     });
 
-    it('creates docs/memory/ in Scenario B when scaffoldGtdMemory opt-in is true', async () => {
+    it('creates docs/memory/ in Scenario B when gtd-memory opt-in is true', async () => {
       await fs.writeFile(path.join(tmpDir, 'CLAUDE.md'), '# Existing');
 
       const responses = [
@@ -643,7 +641,7 @@ describe('init command', () => {
         { useDocker: false },
         { selectedCategories: [] },
         { additionalCategories: [] },
-        { generatePluginJson: false, scaffoldGtdMemory: true },
+        { 'plugin-json': false, 'gtd-memory': true },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];
@@ -669,7 +667,7 @@ describe('init command', () => {
         { useDocker: false },
         { selectedCategories: [] },
         { additionalCategories: [] },
-        { generatePluginJson: false, scaffoldGtdMemory: true },
+        { 'plugin-json': false, 'gtd-memory': true },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];
@@ -698,7 +696,7 @@ describe('init command', () => {
         { useDocker: false },
         { selectedCategories: [] },
         { additionalCategories: [] },
-        { generatePluginJson: true, scaffoldGtdMemory: false },
+        { 'plugin-json': true, 'gtd-memory': false },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];

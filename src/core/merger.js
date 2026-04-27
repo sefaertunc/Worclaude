@@ -8,9 +8,8 @@ import {
   scaffoldAgentsMd,
   mergeSettings,
   scaffoldHooks,
-  scaffoldPluginJson,
-  scaffoldMemoryDocs,
 } from './scaffolder.js';
+import { OPTIONAL_FEATURES } from '../data/optional-features.js';
 import { workflowRefRelPath } from './file-categorizer.js';
 import { promptHookConflict } from '../prompts/conflict-resolution.js';
 import {
@@ -419,7 +418,8 @@ async function handleClaudeMd(projectRoot, existingScan, variables, selections, 
   // Tier 3 notice: if user opted into GTD memory AND their CLAUDE.md already has
   // a Memory Architecture section, the pointer bullets from the rendered template
   // won't be merged in automatically. Surface this so the user can add them manually.
-  if (selections.scaffoldGtdMemory && !missingSections.includes('Memory Architecture')) {
+  const optedIn = new Set(selections.optionalFeatures || []);
+  if (optedIn.has('gtd-memory') && !missingSections.includes('Memory Architecture')) {
     report.memoryArchitectureSectionExists = true;
   }
 
@@ -498,16 +498,13 @@ export async function performMerge(
   // Create plans directory for active work guidance (tracked)
   await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
 
-  // Opt-in: plugin.json (idempotent — scaffolder skips if file exists)
-  if (selections.generatePluginJson) {
-    await scaffoldPluginJson(projectRoot, selections);
-  }
-
-  // Opt-in: GTD memory scaffold (idempotent per-file). Tier 3 notice for
-  // existing Memory Architecture section is handled inside handleClaudeMd,
-  // which already reads CLAUDE.md and runs section detection.
-  if (selections.scaffoldGtdMemory) {
-    await scaffoldMemoryDocs(projectRoot);
+  // Opt-in scaffolders: each registry feature is idempotent. Tier 3 notices
+  // (e.g. existing Memory Architecture section for gtd-memory) are handled
+  // inside handleClaudeMd, which runs section detection.
+  const optedIn = new Set(selections.optionalFeatures || []);
+  for (const feature of OPTIONAL_FEATURES) {
+    if (!optedIn.has(feature.id)) continue;
+    await feature.scaffold(projectRoot, selections);
   }
 
   await mergeDocSpecs(projectRoot, existingScan, variables, selections, report);
