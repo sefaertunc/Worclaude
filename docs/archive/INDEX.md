@@ -9,7 +9,8 @@ The structure: `docs/archive/{topic}/{YYYY-MM}/{slug}.md`.
 
 - **decisions/** — implemented or in-flight friction-decision records.
 - **audits/** — point-in-time architectural snapshots.
-- **retrospectives/** — phase-end reviews (future).
+- **retrospectives/** — phase-end reviews.
+- **phases/** — completed phase plans (active plans live in `docs/phases/`).
 
 `docs/spec/BACKLOG.md` is a single rolling file (items removed when
 scheduled into a phase). It is not archived per release.
@@ -65,6 +66,45 @@ scheduled into a phase). It is not archived per release.
   CI-vs-local-tests lesson from PR G, and the dogfood pattern that
   validated T2.2 across consecutive PRs.
 
+### Phases — 2026-04
+
+The 2026-04 audit-prompt project. Phase 6b (cross-user aggregation) is
+deferred and remains active in `docs/phases/`.
+
+- [phase-1-drift-cleanup.md](phases/2026-04/phase-1-drift-cleanup.md)
+  — Tech-stack drift fixes, CLAUDE.md hygiene, BACKLOG migration,
+  VitePress reference-docs sweep, agent metadata + permission policy
+  housekeeping. Acceptance: `worclaude doctor` clean.
+- [phase-2-command-refinements.md](phases/2026-04/phase-2-command-refinements.md)
+  — 14 commands reformed, 3 retired (`/status`, `/techdebt`,
+  `/upstream-check`), 1 agent retired (`e2e-runner`); VitePress
+  lockstep. Acceptance: friction-decision specs honored end-to-end.
+- [phase-3-cross-cutting-infrastructure.md](phases/2026-04/phase-3-cross-cutting-infrastructure.md)
+  — Auto-regenerate `agent-routing`, discoverable
+  `.claude/scratch/` and `.claude/plans/` folders, hook contracts in
+  SPEC, `package.json` as canonical for verification commands,
+  workflow-meta `installation` rationale, optional-features registry,
+  drift-detection (subsumed into Phase 5 doc-lint).
+- [phase-4-memory-layer.md](phases/2026-04/phase-4-memory-layer.md)
+  — Five-layer memory architecture skill, `/update-claude-md`
+  promotion algo reading from `.claude/learnings/`,
+  `.claude/rules/` adoption deferred per BACKLOG.
+- [phase-5-doc-architecture.md](phases/2026-04/phase-5-doc-architecture.md)
+  — Single-source-of-truth assignments, archive structure with
+  INDEX, SoT markers (`<!-- references package.json -->`), SPEC.md
+  ToC, doc-lint script + CI gate, PR-template VitePress alignment.
+- [phase-6a-local-observability.md](phases/2026-04/phase-6a-local-observability.md)
+  — Per-project `.claude/observability/*.jsonl` capture (3 hooks +
+  4 pull-based signals; the `hook-firings.jsonl` signal from the
+  original 9-signal plan was dropped), `worclaude observability`
+  CLI + `/observability` slash command, init/upgrade integration,
+  VitePress reference page.
+- [phase-7-boris-github-action.md](phases/2026-04/phase-7-boris-github-action.md)
+  — Surface Claude Code's `/install-github-action` via init opt-in
+  prompt + `## GitHub Action Integration (@claude pattern)`
+  section in the integration guide + CLAUDE.md template note.
+  Worclaude never shells out to the install command.
+
 ## Conventions
 
 - New entries appended in the same PR that archives content.
@@ -72,3 +112,5 @@ scheduled into a phase). It is not archived per release.
   their header (added at merge time).
 - Don't delete archived content. To revoke a decision, add a new
   decision that supersedes it and link both ways.
+- Phase plans move from `docs/phases/` to `docs/archive/phases/{YYYY-MM}/`
+  when the phase ships. Deferred phases stay in `docs/phases/`.
