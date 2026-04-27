@@ -67,7 +67,7 @@ function setupFreshMocks({ allAgents = false, multiStack = false } = {}) {
   // runOptionalExtras (Phase 4) — opt-outs for plugin.json + GTD memory.
   // Omitting this response caused `showConfirmation` to loop on an
   // undefined confirmation value, leaking memory until OOM.
-  responses.push({ generatePluginJson: false, scaffoldGtdMemory: false });
+  responses.push({ 'plugin-json': false, 'gtd-memory': false });
 
   responses.push({ confirmation: 'yes' });
 
@@ -439,7 +439,7 @@ describe('E2E Audit — Scenario B (existing project)', () => {
       { useDocker: false },
       { selectedCategories: [] },
       { additionalCategories: [] },
-      { generatePluginJson: false, scaffoldGtdMemory: false },
+      { 'plugin-json': false, 'gtd-memory': false },
       { confirmation: 'yes' },
     ];
     let i = 0;

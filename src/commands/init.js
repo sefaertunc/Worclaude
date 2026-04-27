@@ -6,9 +6,8 @@ import {
   scaffoldAgentsMd,
   updateGitignore,
   scaffoldHooks,
-  scaffoldPluginJson,
-  scaffoldMemoryDocs,
 } from '../core/scaffolder.js';
+import { OPTIONAL_FEATURES } from '../data/optional-features.js';
 import {
   computeFileHashes,
   createWorkflowMeta,
@@ -81,29 +80,20 @@ async function runAgents(selections) {
 }
 
 async function runOptionalExtras(selections) {
-  const { generatePluginJson, scaffoldGtdMemory } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'generatePluginJson',
-      message: 'Generate .claude-plugin/plugin.json for marketplace compatibility?',
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-      default: selections.generatePluginJson === true ? 0 : 1,
-    },
-    {
-      type: 'list',
-      name: 'scaffoldGtdMemory',
-      message: 'Scaffold structured memory files (decisions.md, preferences.md)?',
-      choices: [
-        { name: 'Yes', value: true },
-        { name: 'No', value: false },
-      ],
-      default: selections.scaffoldGtdMemory === true ? 0 : 1,
-    },
-  ]);
-  return { ...selections, generatePluginJson, scaffoldGtdMemory };
+  const previouslySelected = new Set(selections.optionalFeatures || []);
+  const questions = OPTIONAL_FEATURES.map((feature) => ({
+    type: 'list',
+    name: feature.id,
+    message: feature.label,
+    choices: [
+      { name: 'Yes', value: true },
+      { name: 'No', value: false },
+    ],
+    default: previouslySelected.has(feature.id) ? 0 : 1,
+  }));
+  const answers = await inquirer.prompt(questions);
+  const optionalFeatures = OPTIONAL_FEATURES.filter((f) => answers[f.id]).map((f) => f.id);
+  return { ...selections, optionalFeatures };
 }
 
 const STEP_RUNNERS = {
@@ -148,9 +138,8 @@ async function showConfirmation(selections) {
     `  ${'Agents'.padEnd(10)}${display.white(`${universalCount} universal + ${optionalCount} optional`)} ${display.dimColor(`(${totalCount} total)`)}`
   );
 
-  const extrasLabels = [];
-  if (selections.generatePluginJson) extrasLabels.push('plugin.json');
-  if (selections.scaffoldGtdMemory) extrasLabels.push('memory docs');
+  const opted = new Set(selections.optionalFeatures || []);
+  const extrasLabels = OPTIONAL_FEATURES.filter((f) => opted.has(f.id)).map((f) => f.extrasLabel);
   if (extrasLabels.length > 0) {
     console.log(`  ${'Extras'.padEnd(10)}${display.white(extrasLabels.join(', '))}`);
   }
@@ -183,8 +172,7 @@ function createInitialSelections(projectRoot) {
     languages: [],
     useDocker: false,
     selectedAgents: [],
-    generatePluginJson: false,
-    scaffoldGtdMemory: false,
+    optionalFeatures: [],
   };
 }
 
@@ -269,7 +257,7 @@ function buildTemplateVariables(selections) {
   );
   const skillsText = skillsLines.join('\n');
 
-  const memoryArchitectureExtras = selections.scaffoldGtdMemory
+  const memoryArchitectureExtras = (selections.optionalFeatures || []).includes('gtd-memory')
     ? '\n- Team decisions: `docs/memory/decisions.md` (version-controlled, shared).\n- Team preferences: `docs/memory/preferences.md` (version-controlled, shared).'
     : '';
 
@@ -349,6 +337,10 @@ async function computeAndWriteWorkflowMeta(projectRoot, selections, version) {
     useDocker: selections.useDocker || false,
     fileHashes,
     installation: buildInstallationRationale(selections),
+    optionalFeatures: selections.optionalFeatures || [],
+    optedOutFeatures: OPTIONAL_FEATURES.filter(
+      (f) => !(selections.optionalFeatures || []).includes(f.id)
+    ).map((f) => f.id),
   });
   await writeWorkflowMeta(projectRoot, meta);
 }
@@ -486,16 +478,13 @@ async function scaffoldFresh(projectRoot, selections, variables, settingsStr, ve
     await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
     spinner.text = 'Created .claude/plans/';
 
-    // Opt-in: plugin.json for Claude Code marketplace compatibility
-    if (selections.generatePluginJson) {
-      await scaffoldPluginJson(projectRoot, selections);
-      spinner.text = 'Created .claude-plugin/plugin.json';
-    }
-
-    // Opt-in: GTD memory scaffold (docs/memory/decisions.md, preferences.md)
-    if (selections.scaffoldGtdMemory) {
-      await scaffoldMemoryDocs(projectRoot);
-      spinner.text = 'Created docs/memory/';
+    // Opt-in: scaffold each optional feature the user selected. Scaffolders
+    // are idempotent — if a file already exists they skip it.
+    const optedIn = new Set(selections.optionalFeatures || []);
+    for (const feature of OPTIONAL_FEATURES) {
+      if (!optedIn.has(feature.id)) continue;
+      await feature.scaffold(projectRoot, selections);
+      spinner.text = `Created ${feature.successPath}`;
     }
 
     await computeAndWriteWorkflowMeta(projectRoot, selections, version);
@@ -524,11 +513,16 @@ function displayFreshSuccess(selections, skipped) {
   display.success(`.claude/skills/${display.dimColor(`        ${totalSkills} skills`)}`);
   display.success('.claude/sessions/');
   display.success('.claude/hooks/');
-  if (selections.generatePluginJson) {
-    display.success('.claude-plugin/plugin.json');
-  }
-  if (selections.scaffoldGtdMemory) {
-    display.success('docs/memory/' + display.dimColor('           decisions.md, preferences.md'));
+  const optedIn = new Set(selections.optionalFeatures || []);
+  for (const feature of OPTIONAL_FEATURES) {
+    if (!optedIn.has(feature.id)) continue;
+    if (feature.successDetail) {
+      display.success(
+        `${feature.successPath}${display.dimColor(`           ${feature.successDetail}`)}`
+      );
+    } else {
+      display.success(feature.successPath);
+    }
   }
   display.success('.mcp.json');
   display.success('.gitignore');
