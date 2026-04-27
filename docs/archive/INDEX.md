@@ -57,6 +57,13 @@ scheduled into a phase). It is not archived per release.
   explicit decision points in phase docs; verify external docs
   before proposing implementation; audit acceptance criteria need
   reality-check; A/B/C slicing works).
+- [phase-2.md](retrospectives/2026-04/phase-2.md)
+  — Phase 2 (command refinements) shipped across PRs #130/#131/#132/
+  #133 over two days. 22/22 tasks plus T3.2/T3.3 pulled forward
+  from Phase 3. Captures 5 deviations (notably the upstream-check
+  classification-rules move and T2.20 spread across 3 PRs), the
+  CI-vs-local-tests lesson from PR G, and the dogfood pattern that
+  validated T2.2 across consecutive PRs.
 
 ## Conventions
 
