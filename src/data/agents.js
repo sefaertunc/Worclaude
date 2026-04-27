@@ -181,6 +181,7 @@ export const COMMAND_FILES = [
   'refactor-clean',
   'test-coverage',
   'learn',
+  'observability',
 ];
 
 export const UNIVERSAL_SKILLS = [

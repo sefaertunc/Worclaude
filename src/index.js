@@ -15,6 +15,7 @@ import { setupStateCommand } from './commands/setup-state.js';
 import { worktreesCleanCommand } from './commands/worktrees.js';
 import { regenerateRoutingCommand } from './commands/regenerate-routing.js';
 import { docLintCommand } from './commands/doc-lint.js';
+import { observabilityCommand } from './commands/observability.js';
 
 const program = new Command();
 
@@ -79,6 +80,13 @@ program
   .description('Lint <!-- references X --> markers across .md files for drift against their source')
   .option('--strict', 'Exit non-zero on any drift (for CI)')
   .action((options) => docLintCommand(options));
+
+program
+  .command('observability')
+  .description('Aggregate .claude/observability/*.jsonl into a per-project Markdown report')
+  .option('--json', 'Emit the raw report object as JSON instead of Markdown')
+  .option('--out <file>', 'Write the report to a file instead of stdout')
+  .action((options) => observabilityCommand(options));
 
 program
   .command('scan')
