@@ -50,24 +50,37 @@ jobs:
         run: npx prettier --check .
 
   plugin-validate:
-    # Skip the entire job when no plugin manifest is present. The worclaude
-    # repo itself does not currently scaffold one for itself, so this job is
-    # a no-op until/unless the file is added. The acceptance criterion is
-    # "CI fails on plugin.json schema breakage; passes when schema is valid
-    # (or file absent)" — this guard satisfies the absent case at zero cost.
-    if: hashFiles('.claude-plugin/plugin.json') != ''
+    # Validates `.claude-plugin/plugin.json` (when present) against the Claude
+    # Code plugin schema. The worclaude repo itself does not currently scaffold
+    # one for itself, so all post-checkout steps short-circuit on file absence.
+    # `hashFiles()` cannot be used at job level — it requires the runner
+    # workspace, which is not present at job-scheduling time — so the gate
+    # lives in a step that sets an output other steps consume.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Detect plugin manifest
+        id: manifest
+        run: |
+          if [ -f .claude-plugin/plugin.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No .claude-plugin/plugin.json — skipping validation."
+          fi
+
       - name: Setup Node
+        if: steps.manifest.outputs.exists == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 20
 
       - name: Install Claude Code CLI
+        if: steps.manifest.outputs.exists == 'true'
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Validate plugin manifest
+        if: steps.manifest.outputs.exists == 'true'
         run: claude plugin validate .claude-plugin/plugin.json
