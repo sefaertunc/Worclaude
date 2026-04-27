@@ -4,6 +4,59 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.9.0] — 2026-04-28
+
+Audit-driven workflow rebuild executing the canonical 7-phase plan derived from the 2026-04 master architecture audit, plus the @claude GitHub Action surface and post-phase polish. Phase 1 cleaned drift and gap-filled hooks. Phase 2 rebuilt the slash-command surface, retired three superseded commands, and split `/start`/`/end` into distinct forward-looking-handoff and backward-looking-session-summary artifacts with `sha:` frontmatter for SHA-based drift detection. Phase 3 made agent files the routing source of truth via a new frontmatter contract (`category`, `triggerType`, `whenToUse`, `whatItDoes`, `expectBack`, `situationLabel`) regenerated on every `/sync` and `worclaude upgrade`. Phase 4 introduced the memory-architecture skill and the `/update-claude-md` promotion algorithm. Phase 5 added the `worclaude doc-lint` subcommand. Phase 6a shipped end-to-end observability — capture, the `worclaude observability` aggregator, and the `/observability` slash command. Phase 7 added an `init` opt-in for the @claude GitHub Action workflow. Post-phase polish required explicit human invocation of `/commit-push-pr` or `/sync` for any git write (no more conversational "yes" authorizations) and extracted multi-line bash from three slash commands into POSIX helper scripts under `templates/scripts/` so each invocation matches a single allow rule. Test surface grew from 804/58 files to 947/69 files.
+
+### Added
+
+- **`worclaude observability` subcommand + `/observability` slash command** (PR #144) — aggregates per-session captured signals into a Markdown report; `/observability` surfaces it in-session.
+- **Observability capture infrastructure** (PR #143) — per-session signal capture wired into hooks; foundation that PR #144 reads from.
+- **Observability upgrade-path integration + VitePress docs** (PR #145) — existing installs pick up observability infra; new VitePress page documents the flow.
+- **`worclaude doc-lint` subcommand** (PR #142) — validates `<!-- references … -->` markers and surfaces tech-stack drift between code and prose; T5.9 of the canonical plan.
+- **`worclaude regenerate-routing` subcommand** (PR #137, T3.1 Path B) — rebuilds `.claude/skills/agent-routing/SKILL.md` from agent-file routing-fields frontmatter (`category`, `triggerType`, `whenToUse`, `whatItDoes`, `expectBack`, `situationLabel`). Preserves user prose outside `<!-- AUTO-GENERATED-START/END -->` markers. Auto-runs during `/sync` and `worclaude upgrade`. New `src/utils/agent-frontmatter.js` parser/validator and `src/generators/agent-routing.js` builder.
+- **`worclaude worktrees clean` subcommand** (PR #128) — removes stale agent worktrees left behind by Claude Code's worktree harness.
+- **`/sync` refreshes test/file metrics in CLAUDE.md and AGENTS.md** (PR #128) — fixes silent drift of `\d+ tests, \d+ files` claims.
+- **Default `sandbox.network.deniedDomains` in `templates/settings/base.json`** (PR #128) — opinionated baseline deny-list shipped to every fresh init.
+- **`e2e-runner` agent** (PR #130) — end-to-end test orchestration; new bundled agent.
+- **`Version bump:` enforcement in `/commit-push-pr`** (PR #131) — uses `AskUserQuestion` to demand a declaration on every PR; refuses to open without one.
+- **Session-lifecycle redesign** (PR #132) — `/start` and `/end` write distinct artifacts: handoff (forward-looking, `docs/handoffs/HANDOFF-{branch}-{date}.md`) vs session summary (backward-looking, `.claude/sessions/{YYYY-MM-DD-HHMM}-{branch}.md`). Both carry `sha:` frontmatter for drift detection. New `/learn` and `/update-claude-md` meta/memory commands.
+- **`.claude/scratch/` and `.claude/plans/` infrastructure** (PR #133) — five dependent commands (`/review-changes`, `/refactor-clean`, `/review-plan`, `/test-coverage`, `/observability`) write SHA-tagged artifacts that `/start` surfaces, distinguishing fresh from stale findings.
+- **T3.6 installation rationale + T3.8 drift detect surfaces** (PR #138) — exposes detection signals to slash commands.
+- **T3.9 optional features registry** (PR #139) — opt-in toggles for non-default flows surfaced through `init` and `upgrade`.
+- **Memory-architecture skill + `/update-claude-md` promotion algorithm** (PR #140) — five-layer memory model (CLAUDE.md, learnings, scratch, sessions, auto-memory). `/update-claude-md` reviews learnings and proposes targeted CLAUDE.md edits with diff preview.
+- **`@claude` GitHub Action surface via `init` opt-in** (PR #146) — scaffolds `.github/workflows/claude-code.yml` exposing the @claude bot; docs document the OIDC + token-exchange contract.
+- **POSIX helper scripts under `templates/scripts/`** (PR #151) — `start-drift.sh`, `sync-release-scope.sh`, `test-coverage-changed-files.sh` extract multi-line bash from `/start`, `/sync`, `/test-coverage` so each invocation matches a single allow rule. New `scaffoldScripts` function wired into Scenarios A/B/C (init, merger, upgrade flows). New `'script'` file class.
+- **Expanded `templates/settings/base.json` allow list** (PR #151) — `Bash(test:*)`, `Bash([:*)`, `Bash(bash:*)`, `WebFetch(domain:docs.anthropic.com|docs.claude.com|github.com|api.github.com)`, `WebSearch`, `Skill(update-config)`, `Skill(fewer-permission-prompts)` — closes the most common in-session permission-prompt fragmentation paths.
+- **CLAUDE.md Critical Rule #16** (PR #150) — commit/push/PR only when the human invokes `/commit-push-pr` or `/sync` explicitly. Conversational "yes" no longer authorizes git writes; agents refuse without a slash-command trigger.
+
+### Changed
+
+- ⚠ **PR #125 — 2026-04 master architecture audit + canonical 7-phase plan** — no `Version bump:` declaration (under-documented; treated as `none`). Pure docs landing into `docs/phases/`, `docs/archive/audits/2026-04/master-architecture-audit.md`, and `docs/archive/decisions/2026-04/`. Establishes the deliberation history that subsequent PRs execute against.
+- **Retired 3 slash commands** (PR #130) — superseded by other workflows; net slash-command count drops from 18 to 16.
+- **`/verify`, `/conflict-resolver`, `/build-fix` polished** (PR #131) — alongside the versioning enforcement work.
+- **BACKLOG.md is rolling** (PR #127) — single file, items removed when scheduled; no per-release archive, no version-suffixed BACKLOG files.
+- **Skill rewrite + hooks gap-fill** (PR #127) — every hook event documented in SPEC has a scaffolded handler; skills updated to current voice.
+
+### Fixed
+
+- **Misleading static test count in drift display** (PR #147) — `worclaude doc-lint` no longer reports a hard-coded test count when the actual count differs.
+- **Phase 1 PR A drift cleanup — text + agent metadata** (PR #126) — aligns scaffold-template prose and agent frontmatter with the routing-fields contract.
+
+### Tests
+
+- **947 tests across 69 files** (was 804/58 at v2.8.0 release). Net +143 tests across the seven phases.
+
+### Docs
+
+- **Comprehensive post-Phase-1-7 docs refresh** (PR #148) — counts, new commands, observability flow surfaced consistently across CLAUDE.md, README, VitePress site.
+- **Phase plans archived under `docs/archive/phases/`** (PR #149) — Phase 1, 2, 3, 4, 5, 6a, 7 deliberation history preserved post-execution.
+- **Phase 1 + Phase 2 retrospectives** (PRs #129, #134) — what landed vs what slipped, lessons forward.
+- **Phase 3 PR A — docs contracts T3.4/T3.5/T3.7** (PR #135) — PR template, drift-allowed sentinel, consequence lines.
+- **Phase 3 PR B — small wins T3.10/T3.11** (PR #136) — handoff TTL + `sha:` frontmatter dogfood across templates.
+- **Phase 5 PR A — SoT markers, SPEC ToC, PR template** (PR #141) — source-of-truth markers across templates.
+- **`docs/reference/permissions.md` — "Why prompts still fire" section** (PR #151) — env-var-prefix gotcha, multi-line fragmentation, pipes/redirects, the `additionalDirectories` directory-access layer, and pointer to Claude Code's built-in `/fewer-permission-prompts` skill.
+
 ## [2.8.0] — 2026-04-24
 
 Fixes a long-standing agent worktree correctness bug. Both `claude --worktree` and the `Agent` tool's `isolation: "worktree"` option create their isolated checkout from `origin/HEAD` — which on most worclaude-convention repos resolves to `origin/main`. When the working branch (typically `develop`) is ahead of main (the normal state mid-release-cycle), agent worktrees get a stale checkout that misses recent commits, producing "missing develop files" symptoms easy to misattribute to tooling flakiness. This release ships two complementary fixes: a new `worclaude doctor` check that detects and warns on the at-risk configuration with a local, reversible remedy (`git remote set-head origin <branch>`), and a freshness preamble on the three bundled worktree agents (`bug-fixer`, `verify-app`, `test-writer`) that resets the worktree to match the parent's current branch regardless of `origin/HEAD`. Documentation in `subagent-usage` now correctly describes the harness behavior instead of the previous "creates a worktree from your current branch" claim.
