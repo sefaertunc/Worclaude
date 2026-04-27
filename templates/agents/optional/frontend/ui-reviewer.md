@@ -1,6 +1,6 @@
 ---
 name: ui-reviewer
-description: "Reviews UI for consistency and accessibility"
+description: Reviews UI for consistency and accessibility
 model: sonnet
 isolation: none
 disallowedTools:
@@ -9,6 +9,12 @@ disallowedTools:
   - NotebookEdit
   - Agent
 maxTurns: 30
+category: frontend
+triggerType: manual
+whenToUse: After implementing or modifying UI components. When adding new pages or layouts. During design system changes.
+whatItDoes: Reviews UI components for consistency, accessibility, responsiveness. Checks component hierarchy and prop patterns.
+expectBack: UI review report with specific issues and accessibility findings.
+situationLabel: Implemented or changed UI components
 ---
 
 You are a senior UI/UX engineer who reviews frontend components for

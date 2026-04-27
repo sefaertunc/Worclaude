@@ -981,6 +981,58 @@ stays in the file every session reads.
 
 ---
 
+## Agent Routing Skill (auto-regeneration)
+
+The agent-routing skill at `.claude/skills/agent-routing/SKILL.md` is generated
+from the project's `.claude/agents/*.md` frontmatter, not from a centralized
+JS registry. Each agent file is the single source of truth for its routing
+metadata. The required frontmatter fields are:
+
+| Field            | Type                    | Notes                                                   |
+| ---------------- | ----------------------- | ------------------------------------------------------- |
+| `name`           | string                  | Already required by Claude Code's runtime               |
+| `description`    | string                  | Already required by Claude Code's runtime               |
+| `model`          | `opus`/`sonnet`/`haiku` | Already required by Claude Code's runtime               |
+| `isolation`      | `none` / `worktree`     | Already required by Claude Code's runtime               |
+| `category`       | string                  | `universal`, `frontend`, `backend`, `quality`, etc.     |
+| `triggerType`    | `automatic` / `manual`  | Drives Automatic-vs-Manual section partitioning         |
+| `triggerCommand` | string \| omitted       | Slash command that invokes the agent, if any            |
+| `whenToUse`      | string                  | Surfaces under `**When:**` in the routing entry         |
+| `whatItDoes`     | string                  | Surfaces under `**What it does:**`                      |
+| `expectBack`     | string                  | Surfaces under `**Expect back:**`                       |
+| `situationLabel` | string                  | Decision-matrix row label                               |
+| `status`         | `reserved` \| omitted   | Routes the agent into `## Reserved` instead of triggers |
+
+The generator (`src/generators/agent-routing.js`) emits a complete file:
+
+```
+---
+description: "Agent Routing Guide — when to spawn each installed agent"
+---
+
+<!-- AUTO-GENERATED-START -->
+# Agent Routing Guide
+…canonical content…
+<!-- AUTO-GENERATED-END -->
+```
+
+Regeneration only touches content between the AUTO-GENERATED markers — any
+user-authored prose above or below the markers is preserved. If the file
+exists without markers (older scaffolds, hand-edited files), regeneration
+replaces the whole file with the marker-wrapped form.
+
+**Run automatically:** during `worclaude upgrade` (after the upgrade write
+phase) and during `/sync` (step 10b, after PROGRESS/SPEC updates).
+
+**Run manually:** `worclaude regenerate-routing` reads the project's
+`.claude/agents/` and rewrites the skill file in place.
+
+**Init/scaffold:** generates the routing skill from
+`templates/agents/**/*.md` (worclaude's source-side templates) filtered to
+the agents the user selected during init.
+
+---
+
 ## Universal Agents
 
 ### plan-reviewer.md

@@ -1,12 +1,19 @@
 ---
 name: verify-app
-description: "Verifies the running application end-to-end — tests actual behavior, not just code reading"
+description: Verifies the running application end-to-end — tests actual behavior, not just code reading
 model: sonnet
 isolation: worktree
 background: true
 maxTurns: 50
-initialPrompt: "/start"
+initialPrompt: /start
 criticalSystemReminder: "CRITICAL: You are verification-only. Do NOT edit or fix code. Report findings with exact reproduction steps."
+category: universal
+triggerType: manual
+triggerCommand: /verify
+whenToUse: Before creating a PR. After major changes.
+whatItDoes: Full end-to-end verification. Runs the app, tests all major flows, checks for regressions. More thorough than build-validator.
+expectBack: Detailed verification report. Blocking issues listed.
+situationLabel: Finished a task, ready for PR
 ---
 
 ## Worktree freshness preamble

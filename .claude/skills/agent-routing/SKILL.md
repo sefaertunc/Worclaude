@@ -1,3 +1,8 @@
+---
+description: "Agent Routing Guide — when to spawn each installed agent"
+---
+
+<!-- AUTO-GENERATED-START -->
 # Agent Routing Guide
 
 Read this file at the start of every session. It tells you which agents are available and when to use them.
@@ -34,6 +39,13 @@ file would have, and a lock would block the legitimate parallel-agents case.
 
 These agents should be spawned without being asked when their trigger condition is met.
 
+### build-validator
+- **Model:** Haiku | **Isolation:** None
+- **When:** Before every commit. After merging worktree branches.
+- **Trigger:** Automatic — spawn when trigger condition is met
+- **What it does:** Quick validation — tests pass, build succeeds, lint clean. Fast and cheap (Haiku model).
+- **Expect back:** Pass/fail with specific errors if failed.
+
 ### code-simplifier
 - **Model:** Sonnet | **Isolation:** Worktree
 - **When:** After a feature is implemented and tests pass. Also when you notice growing complexity or duplication.
@@ -47,33 +59,11 @@ These agents should be spawned without being asked when their trigger condition 
 - **Trigger:** Automatic — spawn when trigger condition is met
 - **What it does:** Writes unit tests, integration tests, edge case tests. Covers happy path, error cases, boundary conditions.
 - **Expect back:** Test files committed to worktree branch. Merge when reviewed.
-
-### build-validator
-- **Model:** Haiku | **Isolation:** None
-- **When:** Before every commit. After merging worktree branches.
-- **Trigger:** Automatic — spawn when trigger condition is met
-- **What it does:** Quick validation — tests pass, build succeeds, lint clean. Fast and cheap (Haiku model).
-- **Expect back:** Pass/fail with specific errors if failed.
-
 ---
 
 ## Manual Triggers
 
 These agents are spawned when you or the user explicitly requests them.
-
-### plan-reviewer
-- **Model:** Opus | **Isolation:** None
-- **When:** Before executing any implementation prompt. Always.
-- **Trigger:** Manual — /review-plan
-- **What it does:** Reviews implementation plans as a senior staff engineer. Challenges assumptions, finds ambiguity, checks verification strategy, identifies missing edge cases.
-- **Expect back:** Refined plan with concerns addressed, or list of blocking questions.
-
-### verify-app
-- **Model:** Sonnet | **Isolation:** Worktree
-- **When:** Before creating a PR. After major changes.
-- **Trigger:** Manual — /verify
-- **What it does:** Full end-to-end verification. Runs the app, tests all major flows, checks for regressions. More thorough than build-validator.
-- **Expect back:** Detailed verification report. Blocking issues listed.
 
 ### bug-fixer
 - **Model:** Sonnet | **Isolation:** Worktree
@@ -110,6 +100,13 @@ These agents are spawned when you or the user explicitly requests them.
 - **What it does:** Profiles code, identifies bottlenecks, checks database query efficiency, measures response times, suggests optimizations.
 - **Expect back:** Performance report with benchmarks and recommendations.
 
+### plan-reviewer
+- **Model:** Opus | **Isolation:** None
+- **When:** Before executing any implementation prompt. Always.
+- **Trigger:** Manual — /review-plan
+- **What it does:** Reviews implementation plans as a senior staff engineer. Challenges assumptions, finds ambiguity, checks verification strategy, identifies missing edge cases.
+- **Expect back:** Refined plan with concerns addressed, or list of blocking questions.
+
 ### refactorer
 - **Model:** Sonnet | **Isolation:** Worktree
 - **When:** Large-scale renames. Architectural pattern changes. Library migrations. Moving code between modules.
@@ -124,6 +121,12 @@ These agents are spawned when you or the user explicitly requests them.
 - **What it does:** Scans for injection vulnerabilities, auth bypasses, data exposure, insecure defaults, dependency vulnerabilities.
 - **Expect back:** Security report with severity ratings.
 
+### verify-app
+- **Model:** Sonnet | **Isolation:** Worktree
+- **When:** Before creating a PR. After major changes.
+- **Trigger:** Manual — /verify
+- **What it does:** Full end-to-end verification. Runs the app, tests all major flows, checks for regressions. More thorough than build-validator.
+- **Expect back:** Detailed verification report. Blocking issues listed.
 ---
 
 ## Reserved
@@ -135,25 +138,24 @@ These agents are spawned when you or the user explicitly requests them.
 - **Do NOT spawn this agent in regular sessions.** It exists for scheduled
   automation (CI/Actions) and for future revival; spawning it manually has no
   defined entry path today.
-
 ---
 
 ## Decision Matrix
 
 | You just... | Spawn this | Auto? |
 |---|---|---|
-| Got an implementation prompt | plan-reviewer | Manual |
-| Notice code getting complex | code-simplifier | Yes |
-| Finished implementing a feature | test-writer | Yes |
-| Are about to commit | build-validator | Yes |
-| Finished a task, ready for PR | verify-app | Manual |
 | Got a bug report mid-task | bug-fixer | Manual |
 | Build or tests are broken | build-fixer | Manual |
+| Are about to commit | build-validator | Yes |
 | Preparing a release | changelog-generator | Manual |
+| Notice code getting complex | code-simplifier | Yes |
 | Need docs updated after implementation | doc-writer | Manual |
 | Suspect performance issues | performance-auditor | Manual |
+| Got an implementation prompt | plan-reviewer | Manual |
 | Need large-scale refactoring | refactorer | Manual |
 | Made security-sensitive changes | security-reviewer | Manual |
+| Finished implementing a feature | test-writer | Yes |
+| Finished a task, ready for PR | verify-app | Manual |
 
 ---
 
@@ -164,3 +166,4 @@ These agents are spawned when you or the user explicitly requests them.
 4. Non-worktree agents share your context — don't edit the same files they're reading.
 5. When in doubt, spawn the agent. A wasted agent run costs less than a missed bug.
 6. If you spawn an agent and it's not useful, tell the user — they may remove it.
+<!-- AUTO-GENERATED-END -->

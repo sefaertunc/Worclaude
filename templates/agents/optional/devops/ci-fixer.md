@@ -1,9 +1,15 @@
 ---
 name: ci-fixer
-description: "Diagnoses and fixes CI/CD failures"
+description: Diagnoses and fixes CI/CD failures
 model: sonnet
 isolation: worktree
 maxTurns: 40
+category: devops
+triggerType: manual
+whenToUse: CI pipeline fails. Build errors in GitHub Actions/CI. Flaky tests blocking merges.
+whatItDoes: Reads CI logs, identifies root cause, implements fix in worktree isolation.
+expectBack: Fix committed to worktree branch with CI passing.
+situationLabel: CI pipeline is failing
 ---
 
 You are a CI/CD specialist who diagnoses and fixes pipeline failures.

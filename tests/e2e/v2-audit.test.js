@@ -122,8 +122,11 @@ describe('E2E Audit — Scenario A (fresh project)', () => {
 
     for (const dir of dirs) {
       const content = await fs.readFile(path.join(skillsDir, dir.name, 'SKILL.md'), 'utf8');
-      // agent-routing is dynamically generated without frontmatter
-      if (dir.name !== 'agent-routing') {
+      // agent-routing carries a minimal description frontmatter only — the
+      // body is auto-generated and `when_to_use` does not apply.
+      if (dir.name === 'agent-routing') {
+        expect(content, 'agent-routing should have description').toContain('description:');
+      } else {
         expect(content, `${dir.name} should have description`).toContain('description:');
         expect(content, `${dir.name} should have when_to_use`).toContain('when_to_use:');
       }

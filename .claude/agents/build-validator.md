@@ -1,10 +1,16 @@
 ---
 name: build-validator
-description: "Validates that the project builds and all tests pass"
+description: Validates that the project builds and all tests pass
 model: haiku
 isolation: none
 background: true
 maxTurns: 20
+category: universal
+triggerType: automatic
+whenToUse: Before every commit. After merging worktree branches.
+whatItDoes: Quick validation — tests pass, build succeeds, lint clean. Fast and cheap (Haiku model).
+expectBack: Pass/fail with specific errors if failed.
+situationLabel: Are about to commit
 ---
 
 You are a build validation specialist. You run all project checks

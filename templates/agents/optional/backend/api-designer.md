@@ -1,6 +1,6 @@
 ---
 name: api-designer
-description: "Reviews API design for RESTful conventions"
+description: Reviews API design for RESTful conventions
 model: opus
 isolation: none
 disallowedTools:
@@ -8,6 +8,12 @@ disallowedTools:
   - NotebookEdit
   - Agent
 maxTurns: 30
+category: backend
+triggerType: manual
+whenToUse: Designing new API endpoints. Changing existing API contracts. Adding new routes or modifying request/response shapes.
+whatItDoes: Reviews API design for RESTful conventions, naming consistency, backward compatibility, request/response shape validation.
+expectBack: Design review with specific recommendations.
+situationLabel: Designed a new API endpoint
 ---
 
 You are a senior API architect who reviews API designs for

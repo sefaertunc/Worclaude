@@ -1,9 +1,15 @@
 ---
 name: refactorer
-description: "Refactors code to improve maintainability"
+description: Refactors code to improve maintainability
 model: sonnet
 isolation: worktree
 maxTurns: 50
+category: quality
+triggerType: manual
+whenToUse: Large-scale renames. Architectural pattern changes. Library migrations. Moving code between modules.
+whatItDoes: Handles large-scale refactoring in worktree isolation. Renames, architectural changes, pattern migrations with full test verification.
+expectBack: Refactored code on worktree branch with all tests passing.
+situationLabel: Need large-scale refactoring
 ---
 
 You are a refactoring specialist. You improve code structure and

@@ -78,7 +78,7 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 7. Never do JSON text substitution on stringified JSON — always operate on parsed objects.
 8. Never use `console.log` for user output — use `display.*` functions.
 9. Never leave Ora spinner running when Inquirer prompt fires.
-10. Always add new agents to `agents.js`, `agent-registry.js`, AND regenerate `.claude/skills/agent-routing/SKILL.md` (built by `src/generators/agent-routing.js` from registry metadata).
+10. New agents are added by dropping a markdown file with the routing-fields frontmatter (`category`, `triggerType`, `whenToUse`, `whatItDoes`, `expectBack`, `situationLabel`, optional `triggerCommand` / `status`) into `templates/agents/<category>/`. Add the slug to `AGENT_CATALOG` in `src/data/agents.js` for selection-time UI; everything else flows from the file's frontmatter. After adding/removing/renaming, run `worclaude regenerate-routing` (or it runs automatically during `/sync` and `worclaude upgrade`) to refresh `.claude/skills/agent-routing/SKILL.md`.
 11. Always add new template files to both scaffolder AND workflow-meta hash computation.
 12. Always handle the "Other / None" language edge case in stack-related code.
 13. Every merge to `main` is a user-visible release and carries a version bump (`patch`, `minor`, or `major`). `/sync` aggregates per-PR `Version bump:` declarations from develop and only opens a PR to `main` when at least one declared bump is above `none`. Internal-only work (`none`-only batches) updates shared-state files on develop but never reaches `main`. Always publish from `main` via the `release.yml` workflow (triggered by creating a GitHub Release), never directly from `develop`. See git-conventions.md Versioning Policy.
@@ -87,9 +87,10 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 
 ## Key Directories
 
-- `src/data/agents.js` — All catalogs, tech stacks, formatters, categories
-- `src/data/agent-registry.js` — Routing metadata for all 26 agents (used by generator)
-- `src/generators/agent-routing.js` — Builds agent-routing.md dynamically from selected agents
+- `src/data/agents.js` — Selection-time catalogs, tech stacks, formatters, categories
+- `src/utils/agent-frontmatter.js` — Parser + validator for agent-file routing frontmatter (single source of truth)
+- `src/generators/agent-routing.js` — Builds agent-routing skill content from a directory of agent files; supports `<!-- AUTO-GENERATED-START/END -->` markers so user prose survives regen
+- `src/commands/regenerate-routing.js` — `worclaude regenerate-routing` and shared regenerator used by `/sync` and `worclaude upgrade`
 - `src/utils/display.js` — Bold + Badges visual system for CLI output
 - `src/utils/npm.js` — Shared npm registry check (used by upgrade + status)
 - `src/core/config.js` — Version readers (sync + async), workflow-meta management
