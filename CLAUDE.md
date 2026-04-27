@@ -28,26 +28,38 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 <!-- references package.json -->
 
 ```bash
-node src/index.js init          # Test init command locally
-node src/index.js upgrade       # Test upgrade command
-node src/index.js status        # Test status command
-node src/index.js doctor        # Test doctor command (workflow health check)
-node src/index.js backup        # Test backup command
-node src/index.js restore       # Test restore command
-node src/index.js diff          # Test diff command
-node src/index.js delete        # Test delete command
-npm test                        # Run tests (804 tests, 58 files)
-npm run lint                    # Lint
-npm run format                  # Format
-npm run docs:dev                # VitePress dev server
-npm run docs:build              # Build docs for deployment
-/sync                           # Update PROGRESS.md, SPEC.md, version after merging PRs (run on develop)
-/conflict-resolver              # Resolve merge conflicts (run on develop before /sync)
+node src/index.js init                # Test init command locally
+node src/index.js upgrade             # Test upgrade command
+node src/index.js status              # Test status command
+node src/index.js doctor              # Test doctor command (workflow health check)
+node src/index.js backup              # Test backup command
+node src/index.js restore             # Test restore command
+node src/index.js diff                # Test diff command
+node src/index.js delete              # Test delete command
+node src/index.js doc-lint            # Validate `<!-- references … -->` markers and surface tech-stack drift
+node src/index.js observability       # Aggregate per-project signals into a Markdown report
+node src/index.js regenerate-routing  # Rebuild .claude/skills/agent-routing/SKILL.md from agent files
+node src/index.js scan                # Detect project type/stack via project-scanner detectors
+node src/index.js setup-state show    # Inspect /setup interview persistence
+node src/index.js worktrees clean     # Remove stale agent worktrees
+npm test                              # Run tests (804 tests, 58 files)
+npm run lint                          # Lint
+npm run format                        # Format
+npm run docs:dev                      # VitePress dev server
+npm run docs:build                    # Build docs for deployment
+/sync                                 # Update PROGRESS.md, SPEC.md, version after merging PRs (run on develop)
+/conflict-resolver                    # Resolve merge conflicts (run on develop before /sync)
 ```
 
 ## Skills (read on demand)
 
-See `.claude/skills/` for project-specific guidance.
+See `.claude/skills/` for project-specific guidance. Universal skills cover
+context management, git conventions, planning-with-files, review-and-handoff,
+prompt engineering, verification, testing, claude-md-maintenance, coding
+principles, subagent usage, security checklist, coordinator mode, and
+memory architecture (the five-layer model added in Phase 4). The
+`agent-routing` skill is regenerated from `templates/agents/` whenever
+agents change.
 
 ## Session Protocol
 

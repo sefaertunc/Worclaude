@@ -111,13 +111,13 @@ Tests the actual running application behavior, not just unit tests. Starts the a
 
 ### upstream-watcher
 
-|                |                                              |
-| -------------- | -------------------------------------------- |
-| **Model**      | sonnet                                       |
-| **Isolation**  | none                                         |
-| **Invoked by** | `/upstream-check` (paired command)           |
-| **Read-only**  | `disallowedTools: Edit, Write, NotebookEdit` |
-| **Memory**     | project                                      |
+|                |                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model**      | sonnet                                                                                                                                                                                |
+| **Isolation**  | none                                                                                                                                                                                  |
+| **Invoked by** | `.github/workflows/upstream-check.yml` (scheduled cron). The in-session `/upstream-check` slash command was retired in Phase 2; the agent definition is preserved for future revival. |
+| **Read-only**  | `disallowedTools: Edit, Write, NotebookEdit`                                                                                                                                          |
+| **Memory**     | project                                                                                                                                                                               |
 
 Cross-references new Anthropic upstream changes (Claude Code releases, Agent SDK changelogs, Anthropic docs, the engineering blog, the status page — 16 sources total) against the project's scaffolded `.claude/` infrastructure. Fetches `run-report.json` and `all.json` from the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds at runtime via `curl` (no npm dependencies). Produces a three-part report: direct-impact items (which scaffolded agent, command, hook, or skill is affected and why), informational items, and concrete recommended actions. Read-only by enforcement — reports findings, never edits files.
 

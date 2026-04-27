@@ -1,6 +1,14 @@
 # CLI Commands
 
-Worclaude commands are primarily interactive — input is collected through Inquirer.js prompts at runtime. A few commands accept flags for scripting and CI use: `worclaude upgrade` takes `--dry-run`, `--yes`, and `--repair-only`; `worclaude doctor` takes `--json`. Aside from these, no command accepts positional arguments.
+Worclaude ships 14 top-level subcommands. Most are interactive — input is collected through Inquirer.js prompts at runtime. A few commands accept flags for scripting and CI use:
+
+- `worclaude upgrade` — `--dry-run`, `--yes`, `--repair-only`
+- `worclaude doctor` — `--json`
+- `worclaude doc-lint` — `--strict` (exit non-zero on drift)
+- `worclaude observability` — `--json`, `--out <path>`
+- `worclaude scan` — `--json`
+
+Aside from these, no command accepts positional arguments. The `worclaude setup-state` and `worclaude worktrees` commands have nested subcommands (`show`/`save`/`reset`/`resume-info` and `clean`, respectively).
 
 ## worclaude init
 
@@ -38,8 +46,8 @@ Creates all of the following:
 - `CLAUDE.md` -- populated with project name, description, tech stack, and commands
 - `.claude/settings.json` -- permissions and hooks for the selected stack
 - `.claude/agents/` -- 6 universal + selected optional agents
-- `.claude/commands/` -- 18 slash commands
-- `.claude/skills/` -- 12 universal + 3 template + 1 generated skills (directory format)
+- `.claude/commands/` -- 16 slash commands
+- `.claude/skills/` -- 13 universal + 3 template + 1 generated skills (directory format), plus the observability hook scripts under `.claude/hooks/`
 - `.claude/workflow-meta.json` -- installation metadata with file hashes
 - `.mcp.json` -- empty MCP server configuration
 - `docs/spec/PROGRESS.md` -- if not already present
@@ -443,8 +451,245 @@ worclaude doctor --json | jq '.summary'
 
 ---
 
+## worclaude doc-lint
+
+Validates `<!-- references <source> -->` markers across the repository's Markdown files and surfaces drift against the cited source.
+
+**Syntax**
+
+```bash
+worclaude doc-lint
+worclaude doc-lint --strict       # exit 1 on drift (CI-friendly)
+```
+
+**Behavior**
+
+1. Walks Markdown files in the project root (excluding `node_modules`, `.git`, `dist`, `coverage`, `.vitest`, `docs/.vitepress/dist`, `docs/.vitepress/cache`).
+2. For each `<!-- references <source> -->` marker, inspects the section that follows (until the next `## ` heading).
+3. When the source is `package.json`, validates two things:
+   - **Test-file count drift** — compares any line matching `\d+ tests?, \d+ files?` against `find tests -name '*.test.*'`. Reports the file-count drift only (the static test-call count is a heuristic; runtime-accurate refresh is the responsibility of `/sync` step 10c).
+   - **Missing npm scripts** — checks that every `npm run <name>` referenced in the section actually exists in `package.json`.
+4. Prints findings grouped by location.
+
+**Exit codes**
+
+- `0` — no drift, OR drift detected without `--strict`
+- `1` — drift detected with `--strict`
+
+**Examples**
+
+```bash
+worclaude doc-lint
+# → "Drift in 3 location(s): … Fix by running /sync …"
+
+worclaude doc-lint --strict
+echo $?
+# → 1 if any drift exists
+```
+
+**Notes**
+
+- Runs as part of `worclaude doctor` regardless of `--strict`.
+- The companion `/sync` step 10c uses the test runner directly (`vitest --reporter=json`) for runtime-accurate counts; doc-lint surfaces drift but does not auto-fix.
+
+---
+
+## worclaude observability
+
+Aggregates per-project signals captured under `.claude/observability/*.jsonl` into a Markdown report.
+
+**Syntax**
+
+```bash
+worclaude observability
+worclaude observability --json
+worclaude observability --out <path>
+```
+
+**Flags**
+
+| Flag           | Effect                                                              |
+| -------------- | ------------------------------------------------------------------- |
+| `--json`       | Emit a structured JSON report instead of Markdown                   |
+| `--out <path>` | Write the (Markdown by default) report to a file; suppresses stdout |
+
+**Inputs**
+
+- `.claude/observability/skill-loads.jsonl` (captured by the InstructionsLoaded hook)
+- `.claude/observability/command-invocations.jsonl` (captured by the UserPromptSubmit hook for `/`-prefixed prompts)
+- `.claude/observability/agent-events.jsonl` (captured by SubagentStart/SubagentStop)
+- `.claude/skills/` directory (for "skills installed in this project" cross-check)
+
+**Output sections**
+
+- **Captured Volume** — total counts of skill loads, command invocations, raw agent events
+- **Top Skills** — most-loaded skills (by count)
+- **Top Commands** — most-invoked slash commands
+- **Agent Invocations** — start/stop pair count per agent, with success/failure rates
+- **Anomalies** — installed-but-never-loaded skills, agents that fail more than they succeed
+- **Suggestions** — actionable hints (e.g., "skill X never loaded in 30 days — consider retiring")
+
+**Exit codes**
+
+- `0` always — observability is read-only and never blocks
+
+**Examples**
+
+```bash
+worclaude observability
+# → Markdown report on stdout
+
+worclaude observability --json | jq '.counts'
+# → {"skillLoads": 142, "commandInvocations": 87, "agentInvocations": 23}
+
+worclaude observability --out reports/obs-2026-04.md
+# → Writes Markdown report; stdout shows only the success line
+```
+
+**Notes**
+
+- `.claude/observability/` is gitignored by default.
+- Capture is silent (no prompts during normal sessions). Disable via `WORCLAUDE_HOOK_PROFILE=minimal`.
+- Zero data leaves the machine.
+
+---
+
+## worclaude regenerate-routing
+
+Rebuilds `.claude/skills/agent-routing/SKILL.md` from the agent files in `templates/agents/` (or the project's `.claude/agents/` after install). Preserves any prose between the `<!-- AUTO-GENERATED-START -->` and `<!-- AUTO-GENERATED-END -->` markers outside the auto-block.
+
+**Syntax**
+
+```bash
+worclaude regenerate-routing
+```
+
+**Behavior**
+
+1. Reads each `templates/agents/<category>/<agent>.md` file's frontmatter (`name`, `model`, `category`, `triggerType`, `whenToUse`, `whatItDoes`, `expectBack`, `situationLabel`, optional `triggerCommand` / `status`).
+2. Validates the frontmatter via `src/utils/agent-frontmatter.js`.
+3. Generates the Automatic Triggers, Manual Triggers, Reserved, and Decision Matrix sections.
+4. Replaces the content between the AUTO-GENERATED markers in the target skill file; manually-edited sections outside the markers survive.
+
+**Examples**
+
+```bash
+worclaude regenerate-routing
+# → "✓ agent-routing/SKILL.md regenerated (5 universal + 7 optional)"
+```
+
+**Notes**
+
+- Runs automatically during `worclaude upgrade` and `/sync`.
+- Adding/removing/renaming an agent file requires a regeneration to update the skill — the catalog in `src/data/agents.js` only drives the selection-time UI.
+
+---
+
+## worclaude scan
+
+Detects project type and tech stack via the project-scanner detectors (lockfiles, manifest files, framework signatures).
+
+**Syntax**
+
+```bash
+worclaude scan
+worclaude scan --json
+```
+
+**Behavior**
+
+Runs the 14 Tier-1 detectors across the project root and reports findings: project type guesses (Backend / Frontend / Full-stack / CLI / Library / Data / DevOps), language guesses with confidence, framework hints (Next.js, Django, FastAPI, etc.), and any timeout / exception details from individual detectors.
+
+**Examples**
+
+```bash
+worclaude scan
+# → Confidence-ranked findings with each detector's contribution
+
+worclaude scan --json | jq '.results[].name'
+```
+
+**Notes**
+
+- Used internally by `worclaude init` to pre-select tech-stack and agent recommendations.
+- Pure detection; never modifies files.
+
+---
+
+## worclaude setup-state
+
+Manages persistence for the `/setup` interview so users can pause and resume across sessions.
+
+**Syntax**
+
+```bash
+worclaude setup-state show
+worclaude setup-state save
+worclaude setup-state reset
+worclaude setup-state resume-info
+```
+
+**Subcommands**
+
+| Subcommand    | Effect                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `show`        | Print the current `.claude/setup-state.json` contents (which sections answered, which remaining)    |
+| `save`        | Persist the current interview state from environment-provided answers to `.claude/setup-state.json` |
+| `reset`       | Remove `.claude/setup-state.json` so the next `/setup` starts from scratch                          |
+| `resume-info` | Print a one-line summary of where to resume (used by the `/setup` slash command)                    |
+
+Unknown or typo-like subcommands exit 2 with an actionable error.
+
+**Examples**
+
+```bash
+worclaude setup-state show
+worclaude setup-state reset
+```
+
+**Notes**
+
+- The `/setup` slash command is the primary user-facing entry; this CLI is for inspection and recovery.
+
+---
+
+## worclaude worktrees
+
+Manages agent worktrees (the directories `.claude/worktrees/agent-<id>` created by Claude Code's worktree-isolated agents).
+
+**Syntax**
+
+```bash
+worclaude worktrees clean
+```
+
+**Subcommands**
+
+| Subcommand | Effect                                                                |
+| ---------- | --------------------------------------------------------------------- |
+| `clean`    | Remove stale `.claude/worktrees/agent-*` entries (locked or orphaned) |
+
+**Behavior**
+
+Claude Code locks each agent worktree with the agent's pid; the lock survives agent completion. `git worktree prune` does NOT remove locked worktrees — `worclaude worktrees clean` runs `git worktree remove -f -f` for each entry under `.claude/worktrees/`.
+
+**Examples**
+
+```bash
+worclaude worktrees clean
+# → Removed 3 stale worktree(s)
+```
+
+**Notes**
+
+- `worclaude doctor` reports stale worktrees as a warning when the count exceeds 3.
+- See the [agent-routing skill](/reference/skills) for background-agent concurrency conventions.
+
+---
+
 ## See Also
 
 - [Getting Started](/guide/getting-started) -- first-time setup walkthrough
 - [Existing Projects](/guide/existing-projects) -- Scenario B merge details
 - [Upgrading](/guide/upgrading) -- version update workflow
+- [Observability](/reference/observability) -- the signal layer powering `worclaude observability`

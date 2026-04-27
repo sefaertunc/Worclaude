@@ -1,11 +1,11 @@
 # Hooks
 
-Worclaude configures Claude Code hooks in `.claude/settings.json`. Hooks are commands that run automatically in response to Claude's actions. Worclaude scaffolds nine hook entries across eight events, plus a strict-only hook that activates with the `strict` [hook profile](#hook-profiles).
+Worclaude configures Claude Code hooks in `.claude/settings.json`. Hooks are commands that run automatically in response to Claude's actions. Worclaude scaffolds **14 hook entries across 11 events**, plus a strict-only TypeScript check that activates with the `strict` [hook profile](#hook-profiles).
 
 Two kinds of hook bodies ship with Worclaude:
 
 - **Inline shell** — short commands embedded directly in `settings.json` (SessionStart, PostCompact, PostToolUse formatter and TypeScript check, SessionEnd/Notification notification command).
-- **Hook scripts** — Node.js files under `.claude/hooks/` that are invoked from `settings.json` via `node .claude/hooks/<name>.cjs`. Four scripts are installed by default: `correction-detect.cjs`, `skill-hint.cjs`, `learn-capture.cjs`, and `pre-compact-save.cjs`. They share a defensive contract: never block the host event, always exit 0, and silently no-op if the script is missing.
+- **Hook scripts** — Node.js files under `.claude/hooks/` that are invoked from `settings.json` via `node .claude/hooks/<name>.cjs`. **Seven scripts are installed by default:** `correction-detect.cjs`, `skill-hint.cjs`, `learn-capture.cjs`, `pre-compact-save.cjs`, plus the three Phase 6a observability scripts `obs-skill-loads.cjs`, `obs-command-invocations.cjs`, and `obs-agent-events.cjs` (see [Observability](/reference/observability) for the per-script signal schema). They share a defensive contract: never block the host event, always exit 0, and silently no-op if the script is missing.
 
 ## Installed Hooks
 
@@ -288,18 +288,22 @@ The OS is detected during `worclaude init` and the matching command substituted 
 
 The `WORCLAUDE_HOOK_PROFILE` environment variable controls which hooks fire. The default is `standard`.
 
-| Hook                                  | `minimal` | `standard` | `strict` |
-| ------------------------------------- | --------- | ---------- | -------- |
-| SessionStart: Context                 | Yes       | Yes        | Yes      |
-| PostToolUse: Formatter                | No        | Yes        | Yes      |
-| PostToolUse: TypeScript Check         | No        | No         | Yes      |
-| PostCompact: Context                  | Yes       | Yes        | Yes      |
-| PreCompact: Snapshot (script)         | Yes       | Yes        | Yes      |
-| UserPromptSubmit: Correction (script) | No        | Yes        | Yes      |
-| UserPromptSubmit: Skill Hint (script) | No        | Yes        | Yes      |
-| Stop: Learning Capture (script)       | No        | Yes        | Yes      |
-| SessionEnd: Notification              | No        | Yes        | Yes      |
-| Notification: Attention               | No        | Yes        | Yes      |
+| Hook                                                              | `minimal` | `standard` | `strict` |
+| ----------------------------------------------------------------- | --------- | ---------- | -------- |
+| SessionStart: Context                                             | Yes       | Yes        | Yes      |
+| PostToolUse: Formatter                                            | No        | Yes        | Yes      |
+| PostToolUse: TypeScript Check                                     | No        | No         | Yes      |
+| PostCompact: Context                                              | Yes       | Yes        | Yes      |
+| PreCompact: Snapshot (`pre-compact-save.cjs`)                     | Yes       | Yes        | Yes      |
+| UserPromptSubmit: Correction (`correction-detect.cjs`)            | No        | Yes        | Yes      |
+| UserPromptSubmit: Skill Hint (`skill-hint.cjs`)                   | No        | Yes        | Yes      |
+| UserPromptSubmit: Command Capture (`obs-command-invocations.cjs`) | No        | Yes        | Yes      |
+| Stop: Learning Capture (`learn-capture.cjs`)                      | No        | Yes        | Yes      |
+| InstructionsLoaded: Skill Loads (`obs-skill-loads.cjs`)           | No        | Yes        | Yes      |
+| SubagentStart: Agent Events (`obs-agent-events.cjs`)              | No        | Yes        | Yes      |
+| SubagentStop: Agent Events (`obs-agent-events.cjs`)               | No        | Yes        | Yes      |
+| SessionEnd: Notification                                          | No        | Yes        | Yes      |
+| Notification: Attention                                           | No        | Yes        | Yes      |
 
 **Design rationale:** SessionStart, PostCompact, and PreCompact always fire because losing project context (or losing the chance to snapshot it) is never desirable. The formatter, notification, learning-capture, correction-detection, and skill-hint hooks can be disabled for environments where they cause issues (CI runners, constrained machines, or when the formatter is too slow). The TypeScript check is strict-only because it adds latency after every edit.
 

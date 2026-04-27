@@ -79,13 +79,14 @@ See `.claude/skills/` — load only what's relevant:
 - subagent-usage/SKILL.md — When and how to use subagents
 - security-checklist/SKILL.md — Security review checklist
 - coordinator-mode/SKILL.md — Multi-agent orchestration
+- memory-architecture/SKILL.md — Five-layer memory model (Phase 4); promotion thresholds for /update-claude-md
 - agent-routing/SKILL.md — When and how to use each installed agent (READ EVERY SESSION)
 - backend-conventions/SKILL.md — Run /setup to fill automatically
 - frontend-design-system/SKILL.md — Run /setup to fill automatically
 - project-patterns/SKILL.md — Run /setup to fill automatically
 ````
 
-Lists all 12 universal skills, 1 generated skill (agent-routing), and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern. The exception is `agent-routing/SKILL.md`, which is marked "READ EVERY SESSION" because Claude needs to know which agents to use from the start.
+Lists all 13 universal skills, 1 generated skill (agent-routing), and 3 template skills. The "read on demand, not upfront" instruction tells Claude not to load every skill at session start -- only when the current task needs it. This is the progressive disclosure pattern. The exception is `agent-routing/SKILL.md`, which is marked "READ EVERY SESSION" because Claude needs to know which agents to use from the start.
 
 ### Session Protocol
 

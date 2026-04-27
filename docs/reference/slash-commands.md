@@ -1,6 +1,8 @@
 # Slash Commands
 
-Worclaude installs 18 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
+Worclaude installs 16 slash commands as Markdown files in `.claude/commands/`. These are invoked inside a Claude Code session by typing the command name (e.g., `/start`). Each command gives Claude a specific instruction set for that task.
+
+The Phase 1/2 audit retired three commands: `/status` (its trigger phrases moved to `/start`), `/techdebt` (rolled into `/review-changes`), and `/upstream-check` (the `upstream-watcher` agent stays for the scheduled GitHub Actions workflow). Phase 6a added `/observability`.
 
 ## Command Reference
 
@@ -213,6 +215,21 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
 
 ---
 
+### /observability
+
+**Per-project observability report — signal frequencies, anomalies, suggestions.**
+
+|                  |                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **File**         | `.claude/commands/observability.md`                                                                                                                                                                                                                                                                                                                                                           |
+| **When to use**  | Before a release, when reviewing skill or agent usage patterns, when answering "what's actually getting used in this project?"                                                                                                                                                                                                                                                                |
+| **What it does** | Mirror of the `worclaude observability` CLI for in-session use. Reads `.claude/observability/skill-loads.jsonl`, `.claude/observability/command-invocations.jsonl`, and `.claude/observability/agent-events.jsonl`. Surfaces top skills/commands, agent invocation pairs, anomalies (skills installed but never loaded, agents that fail more than they succeed), and actionable suggestions. |
+| **Key behavior** | Read-only. Does not capture new data — capture is silent and continuous via the InstructionsLoaded, SubagentStart/Stop, and UserPromptSubmit hooks (Phase 6a). Disable via `WORCLAUDE_HOOK_PROFILE=minimal` or by deleting `.claude/observability/`.                                                                                                                                          |
+
+See [Observability reference](/reference/observability) for the full signal schema and capture details.
+
+---
+
 ## Command File Location
 
 ```
@@ -232,6 +249,7 @@ See [Learnings](/reference/learnings) for the full learnings system documentatio
   build-fix.md
   refactor-clean.md
   test-coverage.md
+  observability.md
 ```
 
 Commands can be customized after installation. Additional custom commands can be added to the same directory.

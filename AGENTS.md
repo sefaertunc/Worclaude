@@ -34,7 +34,7 @@ node src/index.js <command>     # Test a CLI command locally
 
 ## Project Structure
 
-- `src/commands/` — CLI command handlers (init, upgrade, status, doctor, backup, restore, diff, delete)
+- `src/commands/` — CLI command handlers (init, upgrade, status, doctor, backup, restore, diff, delete, doc-lint, observability, regenerate-routing, scan, setup-state, worktrees)
 - `src/core/` — config, merger, scaffolder, workflow-meta
 - `src/data/` — agent catalogs, stack definitions, routing metadata
 - `src/generators/` — dynamic file generators (agent-routing.md, etc.)
