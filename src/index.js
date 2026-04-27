@@ -14,6 +14,7 @@ import { scanCommand } from './commands/scan.js';
 import { setupStateCommand } from './commands/setup-state.js';
 import { worktreesCleanCommand } from './commands/worktrees.js';
 import { regenerateRoutingCommand } from './commands/regenerate-routing.js';
+import { docLintCommand } from './commands/doc-lint.js';
 
 const program = new Command();
 
@@ -72,6 +73,12 @@ program
     'Regenerate .claude/skills/agent-routing/SKILL.md from .claude/agents/*.md frontmatter'
   )
   .action(() => regenerateRoutingCommand());
+
+program
+  .command('doc-lint')
+  .description('Lint <!-- references X --> markers across .md files for drift against their source')
+  .option('--strict', 'Exit non-zero on any drift (for CI)')
+  .action((options) => docLintCommand(options));
 
 program
   .command('scan')
