@@ -183,6 +183,15 @@ After you confirm, Worclaude:
   Review files under .claude/workflow-ref/ and merge what's useful.
 ```
 
+## Optional Features and Observability (Phase 3 + 6a)
+
+`worclaude upgrade` can scaffold features that did not exist when the project was originally initialized:
+
+- **Optional features registry** (Phase 3 T3.9): when the upgrade detects that the project lacks an opt-in feature shipped by the current CLI (e.g., the GitHub Action plugin scaffold or a memory-architecture template), it prompts via `AskUserQuestion`. Decline once and it stops asking — the choice is remembered in `workflow-meta.json` under `optedOutFeatures`.
+- **Observability infrastructure** (Phase 6a PR C): existing installs from before v2.7 receive `.claude/observability/` (with `.gitkeep`), the three observability hook scripts (`obs-skill-loads.cjs`, `obs-command-invocations.cjs`, `obs-agent-events.cjs`), and the `InstructionsLoaded`/`SubagentStart`/`SubagentStop` settings entries via the standard auto-update path. Capture is gated by `WORCLAUDE_HOOK_PROFILE` — `minimal` skips it, `standard` and `strict` enable it. See [Observability](/reference/observability).
+
+Both flows are silent when nothing applies. Both honor `--yes` for non-interactive runs.
+
 ## Upgrading from v1.x to v2.0.0
 
 v2.0.0 introduces Claude Code runtime integration. Two structural changes require migration:
