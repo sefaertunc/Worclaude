@@ -38,6 +38,7 @@ export default defineConfig({
             { text: 'CLAUDE.md Template', link: '/reference/claude-md' },
             { text: 'Hooks', link: '/reference/hooks' },
             { text: 'Learnings', link: '/reference/learnings' },
+            { text: 'Observability', link: '/reference/observability' },
             { text: 'Permissions', link: '/reference/permissions' },
             { text: 'Configuration', link: '/reference/configuration' },
             { text: 'Upstream Automation', link: '/reference/upstream-automation' },
