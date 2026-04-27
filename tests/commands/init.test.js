@@ -40,6 +40,7 @@ function setupDefaultMocks() {
     { selectedAgents: ['doc-writer'] }, // 7: fine-tune Documentation
     { additionalCategories: [] }, // 8: unselected categories offer
     { 'plugin-json': false, 'gtd-memory': false }, // 9: optional extras
+    { installGithubAction: false },
     { confirmation: 'yes' }, // 10: confirmation
   ];
   let callCount = 0;
@@ -252,6 +253,46 @@ describe('init command', () => {
     }
   });
 
+  it('prompts about installing the Claude Code GitHub Action', async () => {
+    await initCommand();
+    const ghPrompt = inquirer.prompt.mock.calls.find((call) => {
+      const specs = Array.isArray(call[0]) ? call[0] : [];
+      return specs.some((s) => s?.name === 'installGithubAction');
+    });
+    expect(ghPrompt).toBeDefined();
+    const spec = ghPrompt[0].find((s) => s.name === 'installGithubAction');
+    expect(spec.type).toBe('list');
+    expect(spec.message).toMatch(/GitHub Action/);
+    expect(spec.choices.map((c) => c.value).sort()).toEqual([false, true]);
+  });
+
+  it('prints install instructions when GitHub Action prompt is accepted', async () => {
+    const responses = [
+      { projectName: 'gh-app', description: 'GH action test' },
+      { projectTypes: ['CLI tool'] },
+      { languages: ['node'] },
+      { useDocker: false },
+      { selectedCategories: [] },
+      { additionalCategories: [] },
+      { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: true },
+      { confirmation: 'yes' },
+    ];
+    let i = 0;
+    inquirer.prompt.mockImplementation(() => Promise.resolve(responses[i++] || {}));
+
+    await initCommand();
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('/install-github-action');
+    expect(output).toContain('claude-code-integration');
+  });
+
+  it('does NOT print install instructions when GitHub Action prompt is declined', async () => {
+    await initCommand();
+    const output = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).not.toContain('/install-github-action');
+  });
+
   it('creates AGENTS.md with cross-tool content', async () => {
     await initCommand();
     const content = await fs.readFile(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
@@ -335,6 +376,7 @@ describe('init command', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': true },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -354,6 +396,7 @@ describe('init command', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': true },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -375,6 +418,7 @@ describe('init command', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': true, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -447,6 +491,7 @@ describe('init command', () => {
       { selectedAgents: ['bug-fixer'] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -471,6 +516,7 @@ describe('init command', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -491,6 +537,7 @@ describe('init command', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -526,6 +573,7 @@ describe('init command', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;
@@ -563,6 +611,7 @@ describe('init command', () => {
         { selectedAgents: ['bug-fixer'] }, // fine-tune
         { additionalCategories: [] }, // extra categories
         { 'plugin-json': false, 'gtd-memory': false }, // optional extras
+        { installGithubAction: false },
         { confirmation: 'yes' }, // confirm
         { choice: 'keep' }, // CLAUDE.md handling
       ];
@@ -637,6 +686,7 @@ describe('init command', () => {
         { selectedCategories: [] },
         { additionalCategories: [] },
         { 'plugin-json': true, 'gtd-memory': false },
+        { installGithubAction: false },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];
@@ -662,6 +712,7 @@ describe('init command', () => {
         { selectedCategories: [] },
         { additionalCategories: [] },
         { 'plugin-json': false, 'gtd-memory': true },
+        { installGithubAction: false },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];
@@ -688,6 +739,7 @@ describe('init command', () => {
         { selectedCategories: [] },
         { additionalCategories: [] },
         { 'plugin-json': false, 'gtd-memory': true },
+        { installGithubAction: false },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];
@@ -717,6 +769,7 @@ describe('init command', () => {
         { selectedCategories: [] },
         { additionalCategories: [] },
         { 'plugin-json': true, 'gtd-memory': false },
+        { installGithubAction: false },
         { confirmation: 'yes' },
         { choice: 'keep' },
       ];

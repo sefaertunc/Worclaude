@@ -68,6 +68,8 @@ function setupFreshMocks({ allAgents = false, multiStack = false } = {}) {
   // Omitting this response caused `showConfirmation` to loop on an
   // undefined confirmation value, leaking memory until OOM.
   responses.push({ 'plugin-json': false, 'gtd-memory': false });
+  // Phase 7 — GitHub Action opt-out
+  responses.push({ installGithubAction: false });
 
   responses.push({ confirmation: 'yes' });
 
@@ -440,6 +442,7 @@ describe('E2E Audit — Scenario B (existing project)', () => {
       { selectedCategories: [] },
       { additionalCategories: [] },
       { 'plugin-json': false, 'gtd-memory': false },
+      { installGithubAction: false },
       { confirmation: 'yes' },
     ];
     let i = 0;

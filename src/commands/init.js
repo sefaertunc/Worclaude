@@ -93,7 +93,37 @@ async function runOptionalExtras(selections) {
   }));
   const answers = await inquirer.prompt(questions);
   const optionalFeatures = OPTIONAL_FEATURES.filter((f) => answers[f.id]).map((f) => f.id);
-  return { ...selections, optionalFeatures };
+
+  // GitHub Action (`@claude` PR-comment workflow). Worclaude does NOT run
+  // the install — Claude Code provides /install-github-action and we point
+  // at it. Phase 7 T7.3.
+  const { installGithubAction } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'installGithubAction',
+      message:
+        'Install Claude Code\'s GitHub Action for the @claude "compounding engineering" workflow?',
+      choices: [
+        { name: 'Yes — show me the install instructions now', value: true },
+        { name: "No — I'll do it later", value: false },
+      ],
+      default: 1,
+    },
+  ]);
+
+  return { ...selections, optionalFeatures, installGithubAction };
+}
+
+function displayGithubActionHint(selections) {
+  if (!selections.installGithubAction) return;
+  display.newline();
+  display.barLine('GitHub Action setup:');
+  display.barLine(
+    `  Run ${display.white('/install-github-action')} inside Claude Code to enable the @claude workflow.`
+  );
+  display.barLine(
+    `  See ${display.dimColor('docs/guide/claude-code-integration.md#github-action-integration-claude-pattern')} for details.`
+  );
 }
 
 const STEP_RUNNERS = {
@@ -769,6 +799,7 @@ export async function initCommand() {
     const { settingsStr } = await buildSettingsJson(selections.languages, selections.useDocker);
     const skipped = await scaffoldFresh(projectRoot, selections, variables, settingsStr, version);
     displayFreshSuccess(selections, skipped);
+    displayGithubActionHint(selections);
   } else {
     // Scenario B: merge
     const spinner = ora('Merging workflow...').start();
@@ -780,6 +811,7 @@ export async function initCommand() {
       await computeAndWriteWorkflowMeta(projectRoot, selections, version);
       spinner.succeed('Workflow merged successfully!');
       displayMergeReport(report, backupPath);
+      displayGithubActionHint(selections);
     } catch (err) {
       spinner.fail('Failed to merge workflow');
       display.error(err.message);
