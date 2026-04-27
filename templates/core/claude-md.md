@@ -64,6 +64,7 @@ See `.claude/skills/` — load only what's relevant:
 - Path-scoped rules: `.claude/rules/` with YAML frontmatter.
 - Session state: `.claude/sessions/` (gitignored).{memory_architecture_extras}
 - Do NOT write session learnings or auto-captured patterns here.
+- If your repository has the Claude Code GitHub Action installed (run `/install-github-action`), `@claude` mentions in PR comments will automatically propose CLAUDE.md updates.
 
 ## Learnings
 
