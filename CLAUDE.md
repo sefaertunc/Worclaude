@@ -97,6 +97,12 @@ Set `WORCLAUDE_HOOK_PROFILE` to control hook strictness:
 
 ## Verification
 
+<!-- references package.json -->
+
+The canonical verification commands are npm scripts defined in `package.json`.
+Reference them by script name; do not restate the underlying tool invocations
+(e.g., write `npm test`, not `vitest run --reporter=...`).
+
 ```bash
 npm test && npm run lint          # Primary — run before every commit
 npm run format                    # Auto-fix formatting (or rely on PostToolUse hook)

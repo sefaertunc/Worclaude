@@ -10,6 +10,12 @@
 {tech_stack_filled_during_init}
 
 ## Commands
+
+<!-- references package.json (or equivalent for non-Node stacks) -->
+The verification commands below are filled during init from the project's
+package manager scripts. Reference them by script name; do not restate the
+underlying tool invocations.
+
 {commands_filled_during_init}
 
 ## Skills (read on demand, not upfront)

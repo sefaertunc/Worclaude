@@ -638,20 +638,86 @@ The `/start` command supplements SessionStart with git history drift:
 
 Set `WORCLAUDE_HOOK_PROFILE` to control which hooks execute:
 
-| Hook                           | minimal | standard (default) | strict |
-| ------------------------------ | ------- | ------------------ | ------ |
-| SessionStart: Context          | always  | always             | always |
-| PostToolUse: Formatter         | skip    | run                | run    |
-| PostToolUse: Stop Notification | skip    | run                | run    |
-| PostToolUse: TypeScript Check  | skip    | skip               | run    |
-| PostCompact: Context           | always  | always             | always |
+| Hook                          | minimal | standard (default) | strict |
+| ----------------------------- | ------- | ------------------ | ------ |
+| SessionStart: Context         | always  | always             | always |
+| PostToolUse: Formatter        | skip    | run                | run    |
+| PostToolUse: TypeScript Check | skip    | skip               | run    |
+| PostCompact: Context          | always  | always             | always |
+| PreCompact: pre-compact-save  | always  | always             | always |
+| UserPromptSubmit: correction  | skip    | run                | run    |
+| UserPromptSubmit: skill-hint  | skip    | run                | run    |
+| Stop: learn-capture           | skip    | run                | run    |
+| SessionEnd: Notification      | skip    | run                | run    |
+| Notification                  | skip    | run                | run    |
 
-SessionStart and PostCompact always fire (no profile gate). Formatter and notification hooks gate via shell `case` statement. TypeScript check is strict-only.
+SessionStart, PostCompact, and PreCompact:pre-compact-save always fire (no
+profile gate). Formatter, notification, correction, skill-hint, and
+learn-capture gate via a shell `case` statement that exits 0 on `minimal`.
+TypeScript check runs only on `strict`.
 
 ```bash
 WORCLAUDE_HOOK_PROFILE=minimal claude          # Per-session
 export WORCLAUDE_HOOK_PROFILE=strict           # Persistent
 ```
+
+---
+
+## Hook Script Contracts
+
+Four Node scripts ship in `templates/hooks/` and are scaffolded into
+`.claude/hooks/` during init. Each is invoked from `settings.json` with the
+hook payload on stdin and obeys a strict "never block the user" contract: any
+internal failure is swallowed and the script exits 0.
+
+### pre-compact-save.cjs
+
+|                     |                                                                                                                                                                                                                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Event**           | `PreCompact` (registered with `async: true`)                                                                                                                                                                                                                                                   |
+| **Profile gating**  | None — always fires. Losing context to compaction is unacceptable.                                                                                                                                                                                                                             |
+| **Stdin (JSON)**    | `trigger`, `cwd` (both optional; `cwd` falls back to `process.cwd()`)                                                                                                                                                                                                                          |
+| **Stdout / stderr** | None on the happy path.                                                                                                                                                                                                                                                                        |
+| **Exit code**       | Always `0`.                                                                                                                                                                                                                                                                                    |
+| **Side effects**    | Writes a snapshot to `.claude/sessions/pre-compact-{ISO-timestamp}.md` containing trigger, current branch, `git status --porcelain`, and `git log --oneline -3`. Creates `.claude/sessions/` if missing. Each shelled-out git call has a 5-second timeout and a swallowed-stderr stdio config. |
+
+### correction-detect.cjs
+
+|                     |                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Event**           | `UserPromptSubmit`                                                                                                        |
+| **Profile gating**  | Skipped on `minimal` via shell `case`. Runs on `standard`/`strict`.                                                       |
+| **Stdin (JSON)**    | `input.prompt` (string)                                                                                                   |
+| **Stdout / stderr** | One of two hint lines on stdout when a `learnPatterns` or `correctionPatterns` regex matches the prompt. Otherwise empty. |
+| **Exit code**       | Always `0`.                                                                                                               |
+| **Side effects**    | None. No file I/O, no network.                                                                                            |
+
+### learn-capture.cjs
+
+|                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Event**           | `Stop`                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Profile gating**  | Skipped on `minimal` via shell `case`. Runs on `standard`/`strict`.                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Stdin (JSON)**    | `cwd` (optional; falls back to `process.cwd()`), `transcript_path` (path to JSONL transcript).                                                                                                                                                                                                                                                                                                                                                                |
+| **Stdout / stderr** | None on the happy path.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Exit code**       | Always `0`.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Side effects**    | Scans the last 20 lines of the transcript for `[LEARN] Category: rule` blocks (with optional `Mistake:` / `Correction:` follow-up lines). Each match becomes a markdown entry appended to `.claude/learnings/{slugified-category}.md` and indexed in `.claude/learnings/index.json`. Creates the directory if missing. A `.claude/.stop-hook-active` flag file (30s TTL) prevents re-entrancy when the Stop event fires more than once for the same response. |
+
+### skill-hint.cjs
+
+|                     |                                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Event**           | `UserPromptSubmit`                                                                                                                                                                                     |
+| **Profile gating**  | Skipped on `minimal` via shell `case`. Runs on `standard`/`strict`.                                                                                                                                    |
+| **Stdin (JSON)**    | `input.prompt` (string), `cwd` (optional).                                                                                                                                                             |
+| **Stdout / stderr** | At most one `[Skill hint] Consider loading skill: {slug}/SKILL.md` line on stdout when a token in the prompt overlaps a token in any subdirectory name of `.claude/skills/`. Stops at the first match. |
+| **Exit code**       | Always `0`.                                                                                                                                                                                            |
+| **Side effects**    | None. Read-only directory listing under `.claude/skills/`.                                                                                                                                             |
+
+Tokenization is shared shape across both prompt-submit hooks: lowercase, non-
+alphanumeric split, `length >= 4`, stopword filter (`the`, `and`, `for`, ...).
+Skill-hint matches by skill **directory name** today; an enrichment to also
+match the skill's `description:` frontmatter is tracked as Phase 3 T3.10.
 
 ---
 
@@ -889,6 +955,26 @@ See `.claude/skills/` — load only what's relevant:
 | Windows | `powershell -command "New-BurntToastNotification -Text 'Claude Code','Session needs attention'" 2>/dev/null \|\| true` |
 
 > **Windows note:** Claude Code runs hooks in bash (Git Bash / WSL) on all platforms. All hook commands use Unix shell syntax and require [Git for Windows](https://gitforwindows.org) to be installed.
+
+---
+
+## Background-Agent Concurrency
+
+Multiple background agents on the same branch coexist cleanly. Worktree-isolated
+agents (`isolation: "worktree"`) each create their own sibling worktree off
+`origin/HEAD`, so file/index/ref collisions are impossible by construction.
+Non-isolated agents share the main checkout but are read-only by convention.
+
+A "lock file per branch" guard was rejected after the 2026-04-26 concurrency
+test: it would have blocked the legitimate parallel-agents case without adding
+guarantees beyond what worktree isolation already provides. Worktree locks
+themselves are pid-keyed by Claude Code and survive agent completion; stale
+locks are normal and cleared with `git worktree remove -f -f <path>` or the
+project's worktree-cleanup helper.
+
+The full convention lives in `.claude/skills/agent-routing/SKILL.md` under
+`## Background-Agent Concurrency`. SPEC defers to that skill so the guidance
+stays in the file every session reads.
 
 ---
 

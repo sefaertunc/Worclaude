@@ -13,10 +13,14 @@ export function buildAgentRoutingSkill(selectedAgentNames, _projectTypes) {
   const automaticAgents = [];
   const manualAgents = [];
 
+  const reservedAgents = [];
+
   for (const name of allAgents) {
     const entry = AGENT_REGISTRY[name];
     if (!entry) continue;
-    if (entry.triggerType === 'automatic') {
+    if (entry.status === 'reserved') {
+      reservedAgents.push({ name, ...entry });
+    } else if (entry.triggerType === 'automatic') {
       automaticAgents.push({ name, ...entry });
     } else {
       manualAgents.push({ name, ...entry });
@@ -28,11 +32,12 @@ export function buildAgentRoutingSkill(selectedAgentNames, _projectTypes) {
     buildHowAgentsWork(),
     buildAutomaticTriggers(automaticAgents),
     buildManualTriggers(manualAgents),
-    buildDecisionMatrix(allAgents),
+    buildReserved(reservedAgents),
+    buildDecisionMatrix(allAgents, reservedAgents),
     buildRules(),
   ];
 
-  return sections.join('\n');
+  return sections.filter(Boolean).join('\n');
 }
 
 function buildHeader() {
@@ -49,6 +54,25 @@ function buildHowAgentsWork() {
 - Non-worktree agents share your context — don't edit the same files they're reading.
 - Never spawn more than 3 agents simultaneously.
 - If a task is small enough to do yourself in 2 minutes, don't spawn an agent for it.
+
+## Background-Agent Concurrency
+
+Two background agents on the same branch coexist cleanly:
+
+- **Worktree-isolated agents** (\`isolation: "worktree"\`) each create their own
+  sibling worktree off \`origin/HEAD\`. They never collide on files, refs, or the
+  index — running multiple in parallel is safe by design.
+- **Non-isolated agents** share the main checkout but are read-only by
+  convention. The main session and these agents must avoid editing the same
+  files concurrently; otherwise behavior is up to whoever writes last.
+
+Worktree lock semantics: Claude Code locks each agent worktree with the agent's
+pid; the lock survives agent completion. Stale locks are normal. Clean up with
+\`git worktree remove -f -f <path>\` or the project's worktree-cleanup helper.
+
+The earlier "lock file per branch" plan was rejected after the 2026-04-26
+concurrency test — worktree isolation already provides the guarantee a lock
+file would have, and a lock would block the legitimate parallel-agents case.
 
 ---
 `;
@@ -116,7 +140,31 @@ ${entries}
 `;
 }
 
-function buildDecisionMatrix(allAgents) {
+function buildReserved(reservedAgents) {
+  if (reservedAgents.length === 0) return '';
+
+  const entries = reservedAgents
+    .map(
+      (agent) => `### ${agent.name}
+- **Model:** ${agent.model} | **Isolation:** ${agent.isolation === 'worktree' ? 'Worktree' : 'None'}
+- **Status:** Reserved — no in-session command currently invokes this agent.
+- **Why kept:** ${agent.whenToUse}
+- **Do NOT spawn this agent in regular sessions.** It exists for scheduled
+  automation (CI/Actions) and for future revival; spawning it manually has no
+  defined entry path today.
+`
+    )
+    .join('\n');
+
+  return `## Reserved
+
+${entries}
+---
+`;
+}
+
+function buildDecisionMatrix(allAgents, reservedAgents = []) {
+  const reservedSet = new Set(reservedAgents.map((a) => a.name));
   const header = `## Decision Matrix
 
 | You just... | Spawn this | Auto? |
@@ -126,6 +174,7 @@ function buildDecisionMatrix(allAgents) {
   for (const name of allAgents) {
     const entry = AGENT_REGISTRY[name];
     if (!entry) continue;
+    if (reservedSet.has(name)) continue;
     const auto = entry.triggerType === 'automatic' ? 'Yes' : 'Manual';
     rows.push(`| ${entry.situationLabel} | ${name} | ${auto} |`);
   }

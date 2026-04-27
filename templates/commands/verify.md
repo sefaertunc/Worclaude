@@ -2,6 +2,8 @@
 description: "Run fast read-only verification — tests + lint (and optional prettier --check)"
 ---
 
+<!-- references package.json -->
+
 Run the project's fast read-only verification suite.
 
 When invoked with arguments, use them to scope what to verify. Example: `/verify just the auth module`

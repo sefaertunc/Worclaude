@@ -39,6 +39,9 @@ describe('buildAgentRoutingSkill', () => {
   });
 
   it('has correct number of Decision Matrix rows', () => {
+    const isReserved = (name) => AGENT_REGISTRY[name]?.status === 'reserved';
+    const nonReservedUniversal = UNIVERSAL_AGENTS.filter((n) => !isReserved(n));
+
     const resultUniversal = buildAgentRoutingSkill([], []);
     const universalRows = resultUniversal
       .split('\n')
@@ -46,9 +49,10 @@ describe('buildAgentRoutingSkill', () => {
         (line) =>
           line.startsWith('| ') && !line.startsWith('| You just') && !line.startsWith('|---')
       );
-    expect(universalRows).toHaveLength(UNIVERSAL_AGENTS.length);
+    expect(universalRows).toHaveLength(nonReservedUniversal.length);
 
     const allOptional = Object.keys(AGENT_CATALOG);
+    const nonReservedOptional = allOptional.filter((n) => !isReserved(n));
     const resultAll = buildAgentRoutingSkill(allOptional, []);
     const allRows = resultAll
       .split('\n')
@@ -56,7 +60,7 @@ describe('buildAgentRoutingSkill', () => {
         (line) =>
           line.startsWith('| ') && !line.startsWith('| You just') && !line.startsWith('|---')
       );
-    expect(allRows).toHaveLength(UNIVERSAL_AGENTS.length + allOptional.length);
+    expect(allRows).toHaveLength(nonReservedUniversal.length + nonReservedOptional.length);
   });
 
   it('partitions automatic and manual triggers correctly', () => {
@@ -69,10 +73,14 @@ describe('buildAgentRoutingSkill', () => {
     expect(autoSection).toContain('### build-validator');
 
     // Manual trigger section should contain these agents
-    const manualSection = result.split('## Manual Triggers')[1].split('## Decision Matrix')[0];
+    const manualSection = result.split('## Manual Triggers')[1].split('## Reserved')[0];
     expect(manualSection).toContain('### plan-reviewer');
     expect(manualSection).toContain('### verify-app');
-    expect(manualSection).toContain('### upstream-watcher');
+
+    // upstream-watcher is reserved, not manual
+    expect(manualSection).not.toContain('### upstream-watcher');
+    const reservedSection = result.split('## Reserved')[1].split('## Decision Matrix')[0];
+    expect(reservedSection).toContain('### upstream-watcher');
   });
 
   it('contains all expected section headers', () => {
@@ -80,10 +88,18 @@ describe('buildAgentRoutingSkill', () => {
 
     expect(result).toContain('# Agent Routing Guide');
     expect(result).toContain('## How Agents Work');
+    expect(result).toContain('## Background-Agent Concurrency');
     expect(result).toContain('## Automatic Triggers');
     expect(result).toContain('## Manual Triggers');
+    expect(result).toContain('## Reserved');
     expect(result).toContain('## Decision Matrix');
     expect(result).toContain('## Rules');
+  });
+
+  it('excludes reserved agents from the Decision Matrix', () => {
+    const result = buildAgentRoutingSkill([], []);
+    const matrixSection = result.split('## Decision Matrix')[1].split('## Rules')[0];
+    expect(matrixSection).not.toContain('| upstream-watcher |');
   });
 
   it('includes model and isolation info for each agent', () => {
