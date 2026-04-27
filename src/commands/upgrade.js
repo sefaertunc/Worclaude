@@ -594,6 +594,9 @@ export async function upgradeCommand(options = {}) {
     // Ensure plans directory exists for active work guidance (tracked)
     await writeFile(path.join(projectRoot, '.claude', 'plans', '.gitkeep'), '');
 
+    // Ensure observability directory exists for hook-captured event logs (gitignored)
+    await writeFile(path.join(projectRoot, '.claude', 'observability', '.gitkeep'), '');
+
     // Hash refresh — files we just wrote (repair restored, repair migrated,
     // autoUpdate, templateNewFiles). Modified / conflict / unchanged /
     // userAdded / missingUntracked keep their prior hash; missingUntracked
