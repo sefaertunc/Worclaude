@@ -4,6 +4,8 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 
 ## Tech Stack
 
+<!-- references package.json -->
+
 - Node.js 18+ (pure ESM, no build step)
 - Commander.js, Inquirer.js, Chalk, Ora, fs-extra
 - Vitest (804 tests, 58 files)
@@ -11,6 +13,8 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 - VitePress for docs
 
 ## Build & Test Commands
+
+<!-- references package.json -->
 
 ```bash
 npm test                        # Run tests

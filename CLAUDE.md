@@ -9,6 +9,8 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 
 ## Tech Stack
 
+<!-- references package.json -->
+
 - **Runtime:** Node.js 18+ (pure ESM, no build step, no transpilation)
 - **CLI framework:** Commander.js ^13.1.0
 - **Interactive prompts:** Inquirer.js ^12.5.0 (watch for breaking changes between majors)
@@ -22,6 +24,8 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 - **Package manager:** npm (caret ranges, no lockfile pinning)
 
 ## Commands
+
+<!-- references package.json -->
 
 ```bash
 node src/index.js init          # Test init command locally

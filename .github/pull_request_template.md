@@ -30,6 +30,12 @@ Guidance:
 - [ ] Linting passes (`npm run lint`)
 - [ ] Documentation updated (if applicable)
 - [ ] Tested with `worclaude init` on a fresh project
+- [ ] **VitePress reference docs updated.** When this PR adds, removes,
+      or renames a command, agent, skill, or hook, update the matching
+      page under `docs/reference/{slash-commands,agents,skills,hooks}.md`
+      in the same PR. Stale reference docs are the most common drift
+      source (master architecture audit §3). Tick this even when the
+      answer is "N/A — this PR does not touch any of those surfaces."
 
 ## Related Issues
 
