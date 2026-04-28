@@ -2,6 +2,11 @@ name: OSV Scanner
 
 # PR runs block on vulnerability; scheduled runs warn-only. SARIF uploaded
 # to the repo's Security tab in both cases. See SECURITY.md.
+#
+# Both jobs call Google's reusable workflows directly — `osv-scanner-action`
+# is distributed as workflow_call entries, not a step-level action. The
+# reusable workflows handle checkout, scanner install, scan, and SARIF
+# upload on their own.
 
 on:
   pull_request:
@@ -13,45 +18,22 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-
 jobs:
   scan-pr:
+    # `--lockfile=package-lock.json` scopes the scan to the root lockfile only;
+    # without it, OSV-Scanner auto-discovers every lockfile in the repo
+    # including `tests/fixtures/scanner/**` which intentionally pin vulnerable
+    # versions for detector tests. See SECURITY.md "Test fixture manifests".
     if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: OSV-Scanner (block on vuln)
-        # `--lockfile=package-lock.json` scopes the scan to the root lockfile
-        # only; without it, OSV-Scanner auto-discovers every lockfile in the
-        # repo including `tests/fixtures/scanner/**` which intentionally pin
-        # vulnerable versions for detector tests. See SECURITY.md "Test
-        # fixture manifests" subsection.
-        uses: google/osv-scanner-action@v2.3.5
-        with:
-          scan-args: |-
-            --lockfile=package-lock.json
-          upload-sarif: true
-          fail-on-vuln: true
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v2.3.5
+    with:
+      scan-args: |-
+        --lockfile=package-lock.json
 
   scan-scheduled:
     if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: OSV-Scanner (warn-only sweep)
-        uses: google/osv-scanner-action@v2.3.5
-        with:
-          scan-args: |-
-            --lockfile=package-lock.json
-          upload-sarif: true
-          fail-on-vuln: false
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.5
+    with:
+      scan-args: |-
+        --lockfile=package-lock.json
+      fail-on-vuln: false
