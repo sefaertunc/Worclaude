@@ -4,6 +4,18 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.9.1] — 2026-04-28
+
+Security patch clearing three transitive dev-dep advisories surfaced by Socket.dev and `npm audit` (esbuild dev-server CORS, vite path-traversal in optimized-deps, postcss XSS in CSS stringify). All three were dev-only, gated behind running `npm run docs:dev` and visiting a hostile origin in the same session — neither CI nor end-user installs trigger the conditions — but they kept appearing in scanner output and drowning out signal. Resolved via `npm overrides` in `package.json` (esbuild ^0.25.0, vite ^6.4.2, postcss ^8.5.10) which forces vitepress 1.6.4 onto patched transitives despite its declared `vite ^5.4.14` peer range; `npm run docs:build` verified clean. SECURITY.md rewritten: stale "pending upstream fixes" section replaced with "fixed via overrides", new false-positive subsections for Socket's AI-typosquat alert ("Did you mean: claude") and URL-strings alert (template content, not endpoints), supported-version table bumped to 2.9.x.
+
+### Fixed
+
+- **Three transitive dev-dep CVEs cleared via `npm overrides`** (PR #153) — esbuild 0.21.5 → 0.25.12 ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) / CVE-2026-41305), vite 5.4.21 → 6.4.2 ([GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) / CVE-2026-39365), postcss 8.5.8 → 8.5.12 ([GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)). `npm audit` now reports 0 vulnerabilities; all 947 tests still pass; `npm run docs:build` succeeds against vitepress 1.6.4.
+
+### Docs
+
+- **`SECURITY.md` refresh** (PR #153) — replaces the obsolete "pending upstream fixes" section with a "fixed via overrides" section listing each advisory and resolved version. Adds two new false-positive subsections documenting Socket's AI-typosquat alert ("Did you mean: claude" — permanent, package was published under this name from day one) and URL-strings alert (flagged hostnames/filenames are template prose under `templates/`, not runtime endpoints; only `src/utils/npm.js` makes a network call). Bumps the supported-version table from `2.6.x` to `2.9.x`.
+
 ## [2.9.0] — 2026-04-28
 
 Audit-driven workflow rebuild executing the canonical 7-phase plan derived from the 2026-04 master architecture audit, plus the @claude GitHub Action surface and post-phase polish. Phase 1 cleaned drift and gap-filled hooks. Phase 2 rebuilt the slash-command surface, retired three superseded commands, and split `/start`/`/end` into distinct forward-looking-handoff and backward-looking-session-summary artifacts with `sha:` frontmatter for SHA-based drift detection. Phase 3 made agent files the routing source of truth via a new frontmatter contract (`category`, `triggerType`, `whenToUse`, `whatItDoes`, `expectBack`, `situationLabel`) regenerated on every `/sync` and `worclaude upgrade`. Phase 4 introduced the memory-architecture skill and the `/update-claude-md` promotion algorithm. Phase 5 added the `worclaude doc-lint` subcommand. Phase 6a shipped end-to-end observability — capture, the `worclaude observability` aggregator, and the `/observability` slash command. Phase 7 added an `init` opt-in for the @claude GitHub Action workflow. Post-phase polish required explicit human invocation of `/commit-push-pr` or `/sync` for any git write (no more conversational "yes" authorizations) and extracted multi-line bash from three slash commands into POSIX helper scripts under `templates/scripts/` so each invocation matches a single allow rule. Test surface grew from 804/58 files to 947/69 files.
