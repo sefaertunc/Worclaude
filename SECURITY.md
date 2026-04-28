@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.6.x   | :white_check_mark: |
-| < 2.6   | :x:                |
+| 2.9.x   | :white_check_mark: |
+| < 2.9   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -69,39 +69,33 @@ an opt-in `workflow-meta.json`. The `fs-extra`-based filesystem capability
 flag is a disclosure, not a vulnerability — removing it would delete the
 tool's core function.
 
-### Dev-only transitive advisories pending upstream fixes
+### Dev-only transitive advisories (fixed via overrides)
 
-Two advisories sit deep in the dev-dependency tree and cannot currently be
-resolved without either forking `vitepress` or waiting for its next release:
+Three advisories sat deep in the dev-dependency tree, all pulled through
+`vitepress@1.6.4 → vite@5.x → esbuild@0.21.x`. They are now pinned to
+patched versions via `"overrides"` in `package.json`:
 
-- **[GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9)** —
-  `vite@5.4.21` path traversal in optimized-deps handling. Fixed in
-  `vite@>=6.4.2`.
-- **[GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)** —
-  `esbuild@0.21.5` dev-server CORS misconfiguration. Fixed in
-  `esbuild@>=0.25.0`.
+- **[GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)
+  / CVE-2026-41305** — `esbuild` dev-server CORS misconfiguration.
+  Override: `"esbuild": "^0.25.0"` (resolved 0.25.12).
+- **[GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9)
+  / CVE-2026-39365** — `vite` path traversal in optimized-deps handling
+  (affects vite 6.0.0–6.4.1; Socket's range matcher also flags 5.x).
+  Override: `"vite": "^6.4.2"` (resolved 6.4.2).
+- **[GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)** —
+  `postcss` XSS via unescaped `</style>` in CSS stringify output.
+  Override: `"postcss": "^8.5.10"` (resolved 8.5.12).
 
-Both are pulled through `vitepress@1.6.4` (the current latest on npm),
-which pins `vite` at `^5.0.0`, which in turn pins `esbuild` at `^0.21.3`.
-`npm overrides` cannot force newer major versions without breaking the
-vite peer contract.
+Verified clean: `npm audit` reports 0 vulnerabilities, `npm run docs:build`
+succeeds against `vitepress@1.6.4` despite its declared `vite@^5.4.14`
+peer range, and all 947 tests pass.
 
-Why these do not block a release:
-
-- Both packages are in `devDependencies` only. The `files` whitelist in
-  `package.json` does not include `tests/` or any dev tooling; end users
-  installing `worclaude` via npm do not get these packages.
-- Both advisories require an **active local dev server** to exploit. The
-  vite/vitest attack surface only exists while `npm run docs:dev` is
-  running and the operator browses to a hostile origin in the same
-  session. `npm test`, `npm run lint`, `npm run docs:build`, and CI
-  runs do not start a server.
-- Worclaude's CI does not run `docs:dev`; it runs `test`, `lint`, and
-  `docs:build` only.
-
-Tracking: a GitHub issue is opened to bump `vitepress` once a release
-using `vite@>=6.4.2` lands upstream. Until then the scanner will continue
-to flag these, and we accept the dev-only risk.
+These were not exploitable in worclaude's actual usage — every advisory
+required an active local dev server (`npm run docs:dev`) and the operator
+visiting a hostile origin in the same session. `npm test`, `npm run lint`,
+`npm run docs:build`, and CI never start a server. They are flagged
+nonetheless because Socket and `npm audit` scan the lockfile by version,
+not by exploit reachability.
 
 ### brace-expansion DoS (fixed via override)
 
@@ -109,3 +103,28 @@ to flag these, and we accept the dev-only risk.
 `brace-expansion@<1.1.13` zero-step sequence. Fixed in 1.1.13; enforced
 via `"overrides": { "brace-expansion": "^1.1.13" }` in `package.json`
 since v2.6.2. Pulled by `eslint@9.x → minimatch@3.x`.
+
+### AI-detected typosquat alert (false positive)
+
+Socket's "AI-detected possible typosquat — Did you mean: claude" flag
+triggers because the package name `worclaude` contains the substring
+`claude`. The package was published under this name from day one
+(2026-02), the npm namespace is owned by the original author
+(`sefaertunc`), and the package is the canonical home for the workflow
+described in this README. There is no upstream `claude` workflow
+scaffolder being typosquatted — `claude` on npm is an unrelated
+abandoned package. Renaming a published, indexed package would break
+every existing user's CLI alias and slash-command muscle memory; the
+alert is accepted as a permanent false positive.
+
+### URL-strings supply-chain alert (template content)
+
+Socket's "URL strings" alert lists hostnames and filenames extracted
+from the package's text content (e.g. `gitforwindows.org`, `Fly.io`,
+`Platform.sh`, `CLAUDE.md`, `SKILL.md`). Every match is documentation
+or template prose under `templates/` — instruction text the scaffolder
+writes into the user's project. Worclaude does not make network calls
+at runtime; the only HTTP code path is `src/utils/npm.js`, which
+queries the npm registry for the latest published version during
+`worclaude upgrade` and `worclaude status`. The flagged strings are
+content, not endpoints.
