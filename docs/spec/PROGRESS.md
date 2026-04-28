@@ -588,7 +588,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 947 tests across 69 test files
+- 967 tests across 70 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
