@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.9.3] — 2026-04-29
+
+Security tooling refresh shipped as a paired group: a CI-tooling migration from Snyk (whose free-tier scan limit had blocked the v2.9.2 release PR) to a GitHub-native open-source SCA stack (Dependabot + OSV-Scanner), and the cleanup of the inaugural CodeQL scan after enabling the default setup. CodeQL surfaced 5 findings — 2× High "Incomplete multi-character sanitization" on the project-scanner README detector's HTML-stripping helpers, and 3× Medium "Workflow does not contain permissions" on `ci.yml`'s three jobs — all closed in this release. The sanitization fix extracts a `stripUntilStable(text, regex)` helper for the do-while-until-stable pattern; the permissions fix adds a top-level `permissions: contents: read` block matching the rest of the repo's workflows. SECURITY.md's AI-detected typosquat section also refined with the actual chain context: the `claude` npm package is `bcherny/redirect-claude`, an intentional Boris-Cherny-maintained typosquat-warning redirect, not an abandoned package as previously documented.
+
+### Fixed
+
+- **CodeQL findings — incomplete multi-character sanitization** (PR #158) — `stripHtmlComments` and `stripHtmlTags` in `src/core/project-scanner/detectors/readme.js` rewritten to delegate to a private `stripUntilStable(text, regex)` helper that applies the regex repeatedly until stable. Closes the two High-severity `js/incomplete-multi-character-sanitization` alerts. Defense-in-depth: verified during plan-mode that no input distinguishes single-pass from looped output for these specific regex patterns; the fix satisfies the static analyzer without behavioral change.
+- **CodeQL findings — missing workflow permissions** (PR #158) — top-level `permissions: contents: read` added to `.github/workflows/ci.yml`. Closes the three Medium-severity `Workflow does not contain permissions` alerts (`test` matrix, `format-check`, `plugin-validate` jobs). Brings ci.yml in line with the rest of the repo's workflows, all of which already declared explicit permissions.
+
+### Changed
+
+- **CI scanner stack: Snyk → Dependabot + OSV-Scanner** (PR #157) — Snyk's free-tier monthly scan limit had blocked the v2.9.2 release PR. Replaced with two free, GitHub-native SCA tools: `.github/dependabot.yml` (npm + github-actions ecosystems, weekly Monday 03:00 UTC, minor/patch grouped, `open-pull-requests-limit: 5`) and `.github/workflows/osv-scanner.yml` invoking `google/osv-scanner-action@v2.3.5` as job-level reusable workflows. SARIF upload routes findings to the Security tab. `.snyk` deleted; `SECURITY.md` and `CONTRIBUTING.md` updated to vendor-neutral language.
+- **SECURITY.md typosquat-alert section** (PR #158) — refined to document Socket's chain inference (`worclaude` → `claude` → `@anthropic-ai/claude-code`) with [`bcherny/redirect-claude`](https://github.com/bcherny/redirect-claude) context, replacing the inaccurate "abandoned package" phrasing.
+
+### Docs
+
+- **CONTRIBUTING.md** (PR #157) — replaced "Snyk security score" with vendor-neutral "supply-chain trust signal that SCA tools (OSV-Scanner, Socket, Dependabot) and consumers rely on".
+
 ## [2.9.2] — 2026-04-28
 
 `upstream-check` workflow rebuild: fixes a 5-day silence and migrates to the official client library. Root cause of the silence: the daily workflow committed `.github/upstream-state.json` and pushed to `main`, but `main`'s branch protection (PR-required + 4 required status checks) rejected every push with `GH013`. State never advanced, items were re-evaluated daily, and the `Create issue` step was gated behind state-push success — silent forever. State persistence is now `actions/cache@v4` (key prefix `upstream-state-v3-`); the workflow no longer touches the git tree, `contents: write` permission dropped. Migration to [`@sefaertunc/anthropic-watch-client`](https://www.npmjs.com/package/@sefaertunc/anthropic-watch-client) replaces ~80 lines of hand-rolled fetch/dedup with composite-`uniqueKey` dedup (the `id`-only dedup at `scripts/upstream-precheck.mjs:95` was already silently dropping items where two sources shared an ID — `2.1.114` was the live example), version-gated fetch (`FeedVersionMismatchError`), and typed errors. Claude prompt + `upstream-watcher` agent + `docs/reference/upstream-automation.md` updated for the `community` source category (Reddit, HN, Twitter, GitHub commits — informational only per upstream's contract). Source counts no longer hardcoded — derived from `summary.sourcesChecked`.
