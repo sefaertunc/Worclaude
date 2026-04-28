@@ -50,7 +50,7 @@ jobs:
         run: npm ci --omit=optional --prefer-offline --no-audit --no-fund
 
       - name: Restore state cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .github/upstream-state.json
           key: upstream-state-v3-${{ github.run_id }}
@@ -317,7 +317,7 @@ jobs:
 
       - name: Save state cache
         if: always() && steps.precheck.outcome == 'success'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .github/upstream-state.json
           key: upstream-state-v3-${{ github.run_id }}
