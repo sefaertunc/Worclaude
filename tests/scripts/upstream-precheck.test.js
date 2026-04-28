@@ -11,6 +11,7 @@ import {
   runPrecheck,
   classifyError,
   seenKeyForStateEntry,
+  ERROR_TAGS,
 } from '../../scripts/upstream-precheck.mjs';
 
 async function readOutputs(outputPath) {
@@ -263,13 +264,13 @@ describe('upstream-precheck', () => {
       const fail = new FeedVersionMismatchError('2.0', '1.0');
       const result = await runPrecheck({ client: makeFakeClient({ fail }), statePath });
       expect(result.failed).toBe(true);
-      expect(result.errorTag.startsWith('feed_version_mismatch:got=2.0')).toBe(true);
+      expect(result.errorTag).toBe(`${ERROR_TAGS.VERSION_MISMATCH}2.0`);
       expect(result.consecutiveFailures).toBe(1);
 
       const out = await readOutputs(outputPath);
       expect(out.fetch_failure).toBe('true');
       expect(out.consecutive_failures).toBe('1');
-      expect(out.fetch_error.startsWith('feed_version_mismatch:got=2.0')).toBe(true);
+      expect(out.fetch_error).toBe(`${ERROR_TAGS.VERSION_MISMATCH}2.0`);
 
       const persistedState = JSON.parse(await fs.readFile(statePath, 'utf8'));
       expect(persistedState.consecutiveFetchFailures).toBe(1);
@@ -279,14 +280,14 @@ describe('upstream-precheck', () => {
       const fail = new FeedFetchError('connect ECONNREFUSED', { url: 'http://x', status: null });
       const result = await runPrecheck({ client: makeFakeClient({ fail }), statePath });
       expect(result.failed).toBe(true);
-      expect(result.errorTag.startsWith('feed_fetch:network:')).toBe(true);
+      expect(result.errorTag.startsWith(ERROR_TAGS.FETCH_NETWORK)).toBe(true);
       expect(result.consecutiveFailures).toBe(1);
     });
 
     it('FeedFetchError with HTTP status uses http_NNN tag', async () => {
       const fail = new FeedFetchError('not found', { url: 'http://x', status: 404 });
       const result = await runPrecheck({ client: makeFakeClient({ fail }), statePath });
-      expect(result.errorTag.startsWith('feed_fetch:http_404:')).toBe(true);
+      expect(result.errorTag.startsWith(`${ERROR_TAGS.FETCH_HTTP_PREFIX}404:`)).toBe(true);
     });
 
     it('FeedMalformedError bumps the counter', async () => {
@@ -296,7 +297,7 @@ describe('upstream-precheck', () => {
       });
       const result = await runPrecheck({ client: makeFakeClient({ fail }), statePath });
       expect(result.failed).toBe(true);
-      expect(result.errorTag.startsWith('feed_malformed:missing items array')).toBe(true);
+      expect(result.errorTag).toBe(`${ERROR_TAGS.MALFORMED_PREFIX}missing items array`);
     });
 
     it('classifyError returns null for unknown errors so they propagate', () => {
@@ -314,7 +315,7 @@ describe('upstream-precheck', () => {
       };
       const result = await runPrecheck({ client: evilClient, statePath });
       expect(result.failed).toBe(true);
-      expect(result.errorTag).toBe('feed_malformed:non_array_items');
+      expect(result.errorTag).toBe(ERROR_TAGS.MALFORMED_NON_ARRAY_ITEMS);
     });
 
     it('counter accumulates across consecutive failures', async () => {

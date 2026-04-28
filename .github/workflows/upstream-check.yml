@@ -30,9 +30,10 @@ env:
 jobs:
   upstream-check:
     runs-on: ubuntu-latest
-    # INVARIANT: every step that writes to the repo or to issues is gated on
-    # github.ref == 'refs/heads/main'. Feature-branch runs are read-only
-    # (useful for exercising pre-check / Claude / parser without side effects).
+    # INVARIANT: every step that creates or closes GitHub issues is gated on
+    # github.ref == 'refs/heads/main'. Feature-branch runs exercise pre-check,
+    # Claude, and the parser without side effects. State persistence runs on
+    # every branch but is auto-scoped by `actions/cache`'s per-ref isolation.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -49,7 +50,6 @@ jobs:
         run: npm ci --omit=optional --prefer-offline --no-audit --no-fund
 
       - name: Restore state cache
-        id: state-cache-restore
         uses: actions/cache/restore@v4
         with:
           path: .github/upstream-state.json

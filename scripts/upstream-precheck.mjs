@@ -8,7 +8,6 @@
 // workflow — see docs/reference/upstream-automation.md.
 
 import { readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -19,13 +18,37 @@ import {
   FeedFetchError,
   FeedMalformedError,
 } from '@sefaertunc/anthropic-watch-client';
-import { ensureRunnerTemp, writeOutputs } from './_gha-outputs.mjs';
+import { ensureRunnerTemp, requireRunnerTemp, writeOutputs } from './_gha-outputs.mjs';
 
 export const FETCH_TIMEOUT_MS = 10_000;
 export const SNIPPET_MAX = 500;
 export const PRUNE_DAYS = 90;
 
 const DEFAULT_STATE_PATH = '.github/upstream-state.json';
+
+// Prefixes for `fetch_error` GitHub-Actions output. Tests assert these via
+// startsWith(); keep them in one place so producer + tests can't drift.
+export const ERROR_TAGS = {
+  VERSION_MISMATCH: 'feed_version_mismatch:got=',
+  FETCH_NETWORK: 'feed_fetch:network:',
+  FETCH_HTTP_PREFIX: 'feed_fetch:http_',
+  MALFORMED_PREFIX: 'feed_malformed:',
+  MALFORMED_NON_ARRAY_ITEMS: 'feed_malformed:non_array_items',
+};
+
+// Empty-shaped outputs used by the crash-path writer in `cli()` so downstream
+// workflow gates always see parseable values, even when precheck throws.
+const EMPTY_OUTPUTS = {
+  has_new: 'false',
+  new_count: '0',
+  fetch_failure: 'false',
+  consecutive_failures: '0',
+  fetch_error: '',
+  run_timestamp: '',
+  new_items_path: '',
+  feed_report_path: '',
+  next_state_path: '',
+};
 
 const DEFAULT_STATE = {
   version: 2,
@@ -36,10 +59,13 @@ const DEFAULT_STATE = {
 };
 
 async function loadState(statePath) {
-  if (!existsSync(statePath)) {
-    return { ...DEFAULT_STATE };
+  let raw;
+  try {
+    raw = await readFile(statePath, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return { ...DEFAULT_STATE };
+    throw err;
   }
-  const raw = await readFile(statePath, 'utf8');
   const parsed = JSON.parse(raw);
   if (parsed.version !== 2) {
     throw new Error(`state file schema version ${parsed.version} is not supported (expected 2)`);
@@ -64,15 +90,17 @@ export function seenKeyForStateEntry(entry) {
 
 export function classifyError(err) {
   if (err instanceof FeedVersionMismatchError) {
-    return `feed_version_mismatch:got=${err.actualVersion ?? 'unknown'}`;
+    return `${ERROR_TAGS.VERSION_MISMATCH}${err.actualVersion ?? 'unknown'}`;
   }
   if (err instanceof FeedFetchError) {
-    const status =
-      err.status === null || err.status === undefined ? 'network' : `http_${err.status}`;
-    return `feed_fetch:${status}:${truncate(err.message, 200).replace(/[\r\n]+/g, ' ')}`;
+    const message = truncate(err.message, 200).replace(/[\r\n]+/g, ' ');
+    if (err.status === null || err.status === undefined) {
+      return `${ERROR_TAGS.FETCH_NETWORK}${message}`;
+    }
+    return `${ERROR_TAGS.FETCH_HTTP_PREFIX}${err.status}:${message}`;
   }
   if (err instanceof FeedMalformedError) {
-    return `feed_malformed:${err.reason ?? 'unknown'}`;
+    return `${ERROR_TAGS.MALFORMED_PREFIX}${err.reason ?? 'unknown'}`;
   }
   return null;
 }
@@ -121,7 +149,7 @@ export async function runPrecheck({ client, statePath } = {}) {
   }
 
   if (!Array.isArray(items)) {
-    return handleFetchFailure('feed_malformed:non_array_items', state, resolvedStatePath);
+    return handleFetchFailure(ERROR_TAGS.MALFORMED_NON_ARRAY_ITEMS, state, resolvedStatePath);
   }
 
   const seen = new Set(state.lastSeenItems.map(seenKeyForStateEntry));
@@ -165,9 +193,11 @@ export async function runPrecheck({ client, statePath } = {}) {
   const feedReportPath = path.join(runnerTemp, 'feed-report.json');
   const nextStatePath = path.join(runnerTemp, 'next-state.json');
 
-  await writeFile(newItemsPath, JSON.stringify(slimItems, null, 2));
-  await writeFile(feedReportPath, JSON.stringify(runReport, null, 2));
-  await writeFile(nextStatePath, JSON.stringify(nextState, null, 2) + '\n');
+  await Promise.all([
+    writeFile(newItemsPath, JSON.stringify(slimItems, null, 2)),
+    writeFile(feedReportPath, JSON.stringify(runReport, null, 2)),
+    writeFile(nextStatePath, JSON.stringify(nextState, null, 2) + '\n'),
+  ]);
 
   const hasNew = newItems.length > 0;
   await writeOutputs({
@@ -195,11 +225,25 @@ export async function runPrecheck({ client, statePath } = {}) {
   };
 }
 
+async function cli() {
+  requireRunnerTemp();
+  await runPrecheck();
+}
+
 const isDirectRun =
   process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isDirectRun) {
-  runPrecheck().catch((err) => {
+  cli().catch(async (err) => {
     console.error('FATAL:', err.stack || err.message);
+    try {
+      await writeOutputs({
+        ...EMPTY_OUTPUTS,
+        fetch_failure: 'true',
+        fetch_error: `precheck_crashed:${(err.message ?? 'unknown').replace(/[\r\n]+/g, ' ').slice(0, 300)}`,
+      });
+    } catch {
+      // best-effort
+    }
     process.exit(1);
   });
 }
