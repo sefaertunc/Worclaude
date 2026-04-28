@@ -113,11 +113,26 @@ triggers because the package name `worclaude` contains the substring
 `claude`. The package was published under this name from day one
 (2026-02), the npm namespace is owned by the original author
 (`sefaertunc`), and the package is the canonical home for the workflow
-described in this README. There is no upstream `claude` workflow
-scaffolder being typosquatted — `claude` on npm is an unrelated
-abandoned package. Renaming a published, indexed package would break
-every existing user's CLI alias and slash-command muscle memory; the
-alert is accepted as a permanent false positive.
+described in this README.
+
+Socket's chain inference (`worclaude` → `claude` → `@anthropic-ai/claude-code`)
+produces a false positive at every link:
+
+- **`worclaude`** is a workflow scaffolder for Claude Code, not a redirect
+  or rename of any other package.
+- **`claude`** on npm is itself an intentional typosquat-warning redirect
+  by Boris Cherny ([github.com/bcherny/redirect-claude](https://github.com/bcherny/redirect-claude)),
+  deprecated by design — its README points users to `@anthropic-ai/claude-code`.
+  Socket flags `claude` as a typosquat of `@anthropic-ai/claude-code`,
+  which is exactly the case the redirect was authored to handle.
+- **`@anthropic-ai/claude-code`** is Anthropic's canonical Claude Code
+  product — the destination both `worclaude` (as Boris-Cherny-tips-inspired
+  workflow tooling per the README's Acknowledgments) and `claude` (as a
+  redirect) point readers toward.
+
+Renaming a published, indexed package would break every existing user's
+CLI alias and slash-command muscle memory. The alert is accepted as a
+permanent false positive.
 
 ### URL-strings supply-chain alert (template content)
 
