@@ -3,14 +3,10 @@ name: Upstream Check
 # Runs daily at 09:30 UTC to fetch anthropic-watch feeds and file an issue for
 # Worclaude-relevant upstream changes. See docs/reference/upstream-automation.md.
 #
-# REQUIRED BRANCH PROTECTION SETTINGS for `main`:
-#   - The `github-actions[bot]` user (or the provided GITHUB_TOKEN) must be
-#     allowed to push directly to `main`.
-#   - If `main` has "Require a pull request before merging" enabled, either
-#     (a) exempt github-actions[bot], or (b) convert this workflow to open a PR
-#     for state updates (currently out of scope — see PHASE prompt).
-#   - If `main` has "Require status checks to pass before merging", the
-#     scheduled push will be rejected.
+# State persistence: `.github/upstream-state.json` lives in `actions/cache@v4`
+# under key prefix `upstream-state-v3-`. The workflow does NOT push to `main`
+# for state updates — main can stay fully PR-protected without exemptions.
+# The cache is restored before pre-check and saved at job end.
 
 on:
   schedule:
@@ -18,7 +14,6 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
   issues: write
   id-token: write
 
@@ -48,6 +43,19 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --omit=optional --prefer-offline --no-audit --no-fund
+
+      - name: Restore state cache
+        id: state-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .github/upstream-state.json
+          key: upstream-state-v3-${{ github.run_id }}
+          restore-keys: |
+            upstream-state-v3-
 
       - name: Ensure labels exist
         env:
@@ -66,23 +74,8 @@ jobs:
         id: precheck
         run: node scripts/upstream-precheck.mjs
 
-      - name: Watchdog — commit fetch-failure state
-        id: watchdog-commit
-        if: steps.precheck.outputs.fetch_failure == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          if ! git diff --quiet -- .github/upstream-state.json; then
-            git -c user.name='github-actions[bot]' \
-                -c user.email='github-actions[bot]@users.noreply.github.com' \
-                add .github/upstream-state.json
-            git -c user.name='github-actions[bot]' \
-                -c user.email='github-actions[bot]@users.noreply.github.com' \
-                commit -m "chore(upstream): bump fetch-failure counter (${{ steps.precheck.outputs.consecutive_failures }} consecutive)"
-            for i in 1 2 3; do
-              git fetch origin main
-              git rebase origin/main && git push origin HEAD:main && break
-              sleep $((i * 5))
-            done
-          fi
+      # The pre-check writes `.github/upstream-state.json` directly when fetch
+      # fails. The cache save step at job end persists it; no commit/push needed.
 
       - name: Watchdog — open feed-unreachable issue on 3rd strike
         id: watchdog-open
@@ -128,7 +121,8 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "num=$NUM" >> "$GITHUB_OUTPUT"
 
-          # Amend state with the watchdog issue number and push.
+          # Amend state with the watchdog issue number. The cache save step at
+          # job end persists the file; no git commit/push needed.
           node -e "
             const fs = require('node:fs');
             const p = '.github/upstream-state.json';
@@ -136,17 +130,6 @@ jobs:
             s.openWatchdogIssueNumber = ${NUM};
             fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
           "
-          git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              add .github/upstream-state.json
-          git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m "chore(upstream): link watchdog issue #${NUM}"
-          for i in 1 2 3; do
-            git fetch origin main
-            git rebase origin/main && git push origin HEAD:main && break
-            sleep $((i * 5))
-          done
 
       - name: Claude cross-reference
         id: claude
@@ -172,9 +155,11 @@ jobs:
 
             Read the input files with the Read tool. Do NOT use Bash, Edit, Write, or NotebookEdit — those tools are disallowed by the workflow for security reasons.
 
-            Pre-baked facts (verified 2026-04-18, do not re-check):
+            Pre-baked facts (verified 2026-04-28, do not re-check):
             - Worclaude does NOT depend on `@anthropic-ai/sdk` or `anthropic`. Treat API/SDK docs items as informational unless this phase re-verifies that fact.
             - Agent model fields in Worclaude use short aliases (`sonnet`, `opus`, `haiku`) — never fully-qualified IDs. Model-ID bumps in changelogs do NOT affect the agent catalog.
+            - The anthropic-watch feed is now at v1.0 schema with three `sourceCategory` values: `core`, `extended`, `community`. Per upstream's contract (anthropic-watch/docs/WORCLAUDE-INTEGRATION.md), `community` items (Reddit, Hacker News, Twitter/X, GitHub commits on Anthropic-owned repos that ship via direct commits rather than tagged releases) are **informational signal only** — never autonomous-action triggers. Treat them as Informational unless a community item explicitly names a Worclaude file or contradicts a known convention.
+            - Source count is dynamic — read `summary.sourcesChecked` from FEED_REPORT_PATH for the current count. Do not assume a specific number.
 
             Do all of the following:
 
@@ -187,7 +172,7 @@ jobs:
                - Agent SDK TS/Py changelog — always worth mentioning
                - Engineering blog with a new pattern, skill idea, or convention — worth mentioning
                - Any item that you can tie to a specific Worclaude file or backlog entry — worth mentioning
-               Items that are NOT worth an issue: status page incidents, marketing blog posts unrelated to developer workflow, API/SDK docs (per pre-baked fact above).
+               Items that are NOT worth an issue: status page incidents, marketing blog posts unrelated to developer workflow, API/SDK docs (per pre-baked fact above), `sourceCategory: community` items unless they explicitly name a Worclaude file.
 
             4. Your final assistant response is the output. Print it directly with no preamble and no commentary after. Do not use Write, Bash, or any other tool to emit output — just type your response. The action captures the full transcript; the parser reads the final assistant message from that transcript.
 
@@ -232,9 +217,9 @@ jobs:
       # on every subsequent run until something is eventually deemed worth an
       # issue, which is wasteful when upstream is quiet relative to Worclaude.
       # Parse errors still skip this step so the items get re-evaluated after
-      # a fix.
-      - name: State push
-        id: state-push
+      # a fix. The cache save step at job end persists the file.
+      - name: State write
+        id: state-write
         if: >-
           github.ref == 'refs/heads/main'
           && steps.precheck.outputs.has_new == 'true'
@@ -243,26 +228,8 @@ jobs:
           && steps.parse.outputs.parse_error == ''
         env:
           NEXT_STATE_PATH: ${{ steps.precheck.outputs.next_state_path }}
-          NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
-          PARSE_SKIP: ${{ steps.parse.outputs.skip }}
         run: |
-          if [ "$PARSE_SKIP" = "true" ]; then
-            MSG="chore(upstream): advance state past ${NEW_COUNT} items (none worth issue)"
-          else
-            MSG="chore(upstream): advance state past ${NEW_COUNT} items"
-          fi
           cp "$NEXT_STATE_PATH" .github/upstream-state.json
-          git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              add .github/upstream-state.json
-          git -c user.name='github-actions[bot]' \
-              -c user.email='github-actions[bot]@users.noreply.github.com' \
-              commit -m "$MSG"
-          for i in 1 2 3; do
-            git fetch origin main
-            git rebase origin/main && git push origin HEAD:main && break
-            sleep $((i * 5))
-          done
 
       - name: Create issue
         id: create-issue
@@ -271,7 +238,7 @@ jobs:
           && steps.parse.outcome == 'success'
           && steps.parse.outputs.skip == 'false'
           && steps.parse.outputs.parse_error == ''
-          && steps.state-push.outcome == 'success'
+          && steps.state-write.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -321,6 +288,7 @@ jobs:
           fi
           gh issue close "$OPEN_WATCHDOG" \
             --comment "Feeds recovered at ${RUN_TIMESTAMP}."
+          # Clear the watchdog flag locally; cache save at job end persists it.
           node -e "
             const fs = require('node:fs');
             const p = '.github/upstream-state.json';
@@ -330,19 +298,6 @@ jobs:
               fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
             }
           "
-          if ! git diff --quiet -- .github/upstream-state.json; then
-            git -c user.name='github-actions[bot]' \
-                -c user.email='github-actions[bot]@users.noreply.github.com' \
-                add .github/upstream-state.json
-            git -c user.name='github-actions[bot]' \
-                -c user.email='github-actions[bot]@users.noreply.github.com' \
-                commit -m "chore(upstream): clear watchdog after recovery"
-            for i in 1 2 3; do
-              git fetch origin main
-              git rebase origin/main && git push origin HEAD:main && break
-              sleep $((i * 5))
-            done
-          fi
 
       - name: Parse-error fallback issue
         if: >-
@@ -359,6 +314,13 @@ jobs:
             --title "upstream: parse error on ${TODAY}" \
             --body-file "$RAW_PATH" \
             --label "$LABEL_UPSTREAM" --label "$LABEL_AUTOMATED" --label "$LABEL_PARSE_ERROR"
+
+      - name: Save state cache
+        if: always() && steps.precheck.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: .github/upstream-state.json
+          key: upstream-state-v3-${{ github.run_id }}
 
       - name: Step summary
         if: always()
