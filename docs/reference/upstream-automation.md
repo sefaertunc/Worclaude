@@ -8,21 +8,21 @@ The on-demand `/upstream-check` slash command (Phase 2 retirement, 2026-04) has 
 
 ## Overview
 
-- **What it does:** fetches the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds, diffs them against a committed state file, invokes Claude via [`anthropics/claude-code-action`](https://github.com/anthropics/claude-code-action) to decide which new items matter, and opens a GitHub issue when the decision is non-empty.
+- **What it does:** fetches the [anthropic-watch](https://github.com/sefaertunc/anthropic-watch) feeds via the official [`@sefaertunc/anthropic-watch-client`](https://www.npmjs.com/package/@sefaertunc/anthropic-watch-client) library, diffs them against a cached state file, invokes Claude via [`anthropics/claude-code-action`](https://github.com/anthropics/claude-code-action) to decide which new items matter, and opens a GitHub issue when the decision is non-empty.
 - **Why it exists:** v2.4.0 shipped only the pull-based `/upstream-check` slash command. The scheduled issue-filing half completes the original integration goal — a passive inbox for upstream-driven maintenance work.
-- **Where the feeds come from:** `https://sefaertunc.github.io/anthropic-watch/feeds/` — `run-report.json` (source health) and `all.json` (items).
+- **Where the feeds come from:** the client library wraps `https://sefaertunc.github.io/anthropic-watch/feeds/` — `run-report.json` (source health) and `all.json` (items). The library version-gates the feed envelope (`version: "1.0"`), enforces composite-key dedup with the documented `${id}|${source}` fallback, and surfaces typed errors (`FeedFetchError`, `FeedMalformedError`, `FeedVersionMismatchError`).
 
 ## How It Runs
 
-| Field             | Value                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------- |
-| Trigger           | `schedule: '30 9 * * *'` (09:30 UTC daily) + `workflow_dispatch`                                  |
-| Concurrency       | Group `upstream-check`, queued (no cancellation)                                                  |
-| Permissions       | `contents: write`, `issues: write`, `id-token: write` (required by `claude-code-action` for OIDC) |
-| Runner            | `ubuntu-latest`                                                                                   |
-| Model             | `claude-sonnet-4-6` (pinned)                                                                      |
-| Auth              | Repo secret `CLAUDE_CODE_OAUTH_TOKEN` (uses the maintainer's Max plan quota)                      |
-| Tool restrictions | `--disallowedTools Edit Write Bash NotebookEdit` — feed content is untrusted; Claude is read-only |
+| Field             | Value                                                                                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trigger           | `schedule: '30 9 * * *'` (09:30 UTC daily) + `workflow_dispatch`                                                                                                                       |
+| Concurrency       | Group `upstream-check`, queued (no cancellation)                                                                                                                                       |
+| Permissions       | `issues: write`, `id-token: write` (required by `claude-code-action` for OIDC). `contents: write` is **not** required since v2.9.2 — state lives in `actions/cache`, not the git tree. |
+| Runner            | `ubuntu-latest`                                                                                                                                                                        |
+| Model             | `claude-sonnet-4-6` (pinned)                                                                                                                                                           |
+| Auth              | Repo secret `CLAUDE_CODE_OAUTH_TOKEN` (uses the maintainer's Max plan quota)                                                                                                           |
+| Tool restrictions | `--disallowedTools Edit Write Bash NotebookEdit` — feed content is untrusted; Claude is read-only                                                                                      |
 
 **Action pinning:** `anthropics/claude-code-action` is pinned to a specific commit SHA rather than the floating `@v1` tag. Feed content is untrusted user input, so every action upgrade would otherwise run unreviewed against the maintainer's `CLAUDE_CODE_OAUTH_TOKEN`. Bumping the pin is a deliberate maintainer step — review the [upstream release notes](https://github.com/anthropics/claude-code-action/releases), then update the SHA (and the trailing `# vX.Y.Z` annotation) in `.github/workflows/upstream-check.yml`.
 
@@ -30,30 +30,37 @@ The cron runs at a fixed UTC time; DST drift (±1h local) is accepted.
 
 ## State File
 
-`.github/upstream-state.json` (schema version `2`) is the durable memory:
+`.github/upstream-state.json` (schema version `2`) is the durable memory. **As of v2.9.2 it lives in `actions/cache@v4`, not in the git tree** — the workflow restores it before pre-check, writes it via the precheck script, and saves it at job end. Cache key prefix: `upstream-state-v3-`. Eviction policy: GitHub deletes caches not accessed for 7 days; the daily cron keeps it warm.
 
 ```json
 {
   "version": 2,
-  "lastRun": "2026-04-18T09:08:21.145Z",
+  "lastRun": "2026-04-28T09:30:00.000Z",
   "consecutiveFetchFailures": 0,
   "openWatchdogIssueNumber": null,
-  "lastSeenItems": [{ "id": "2.1.114", "firstSeen": "2026-04-18T09:08:21.145Z" }]
+  "lastSeenItems": [
+    {
+      "id": "2.1.114",
+      "uniqueKey": "2.1.114|claude-code-releases",
+      "source": "claude-code-releases",
+      "firstSeen": "2026-04-28T09:30:00.000Z"
+    }
+  ]
 }
 ```
 
-- `lastSeenItems` — items that have already been surfaced. Pruned by `firstSeen > 90 days` on every successful run.
+- `lastSeenItems` — items that have already been surfaced. Each entry carries `id`, `uniqueKey` (composite `${id}|${source}` per anthropic-watch's v1.2.0+ schema), `source`, and `firstSeen`. Pruned by `firstSeen > 90 days` on every successful run. Pre-2.9.2 entries with only `{id, firstSeen}` are tolerated on read via the `${id}|unknown` fallback and self-heal as they age out.
 - `consecutiveFetchFailures` — reset to `0` on any successful fetch.
 - `openWatchdogIssueNumber` — link to the currently-open feed-unreachable watchdog issue (see below). The workflow uses `gh issue list --label fetch-error --state open` as the authoritative dedupe, not this field alone.
 
-The pre-check script (`scripts/upstream-precheck.mjs`) supports a `STATE_PATH` environment override for local testing without mutating the committed seed.
+The pre-check script (`scripts/upstream-precheck.mjs`) supports a `STATE_PATH` environment override for local testing without mutating the cached state.
 
 ## Delivery
 
 - Issues are labelled `upstream` and `automated`. Titles match `upstream: {N} new items to review ({YYYY-MM-DD})`.
 - **Silent skip** when the delta is empty or Claude replies `SKIP_ISSUE`. Actions run history is the liveness signal.
-- **State advances on SKIP.** When Claude replies `SKIP_ISSUE`, `.github/upstream-state.json` is still pushed so the same items are not re-evaluated on the next cron run. Only parse errors (or a failed fetch) leave state un-advanced, so the items get a fresh look after a fix.
-- **Ordering guarantee:** `.github/upstream-state.json` is committed and pushed to `main` **before** `gh issue create`. A push failure aborts issue creation, so retries never duplicate.
+- **State advances on SKIP.** When Claude replies `SKIP_ISSUE`, `.github/upstream-state.json` is still updated (and saved to cache at job end) so the same items are not re-evaluated on the next cron run. Only parse errors (or a failed fetch) leave state un-advanced, so the items get a fresh look after a fix.
+- **Ordering guarantee:** the `state-write` step writes `.github/upstream-state.json` **before** `gh issue create`. The cache save runs at job end so a successful issue creation always corresponds to a persisted state advance.
 
 ## Watchdog
 
@@ -87,15 +94,11 @@ claude setup-token           # regenerate locally
 gh secret set CLAUDE_CODE_OAUTH_TOKEN  # paste the new token
 ```
 
-### Required branch protection for `main`
+### Branch protection on `main`
 
-The workflow pushes state updates directly to `main`:
+Since v2.9.2 the workflow no longer pushes to `main` — state lives in `actions/cache@v4`. Any branch-protection ruleset on `main` (PR-required, required status checks, signed commits, etc.) is fully compatible with this workflow. The only repo write the workflow performs is `gh issue create` / `gh issue close`, which uses the `issues: write` permission and does not touch the git tree.
 
-- The `github-actions[bot]` user (or the provided `GITHUB_TOKEN`) must be allowed to push to `main`.
-- If `main` has **Require a pull request before merging**, either exempt `github-actions[bot]` or convert this workflow to a PR-based state update (out of scope for now).
-- If `main` has **Require status checks to pass before merging**, the scheduled push will be rejected — adjust or exempt.
-
-The workflow fails loudly on a rejected push; it does not attempt to retry around protection rules.
+If you previously configured a `github-actions[bot]` push-bypass for this workflow on a worclaude-scaffolded repo, you can remove it.
 
 ## Classification Rules
 
@@ -141,9 +144,13 @@ For each cross-reference, produce one of:
 - **No impact detected:** the change does not touch any file listed above
 - **Needs investigation:** ambiguous; name the file and the uncertainty
 
+### Community-source policy
+
+`sourceCategory: "community"` items (Reddit, Hacker News, Twitter/X, GitHub commits on Anthropic-owned repos that ship via direct commits rather than tagged releases) are informational signal per anthropic-watch's contract. Treat them as Informational unless the item explicitly names a Worclaude file. They are **not** suitable for autonomous-action triggers — never classify a community item as "Action needed" without a direct file reference.
+
 ### Operational rules for the classifier
 
-- Use only `curl` and shell builtins. Do not invoke `node` or `npm`.
+- The classifier runs inside `claude-code-action` with `--disallowedTools Edit Write Bash NotebookEdit`. Use the `Read` tool only, and only for files mentioned in the cross-reference rules above.
 - Do not cache, persist, or diff against prior runs — the classifier is stateless.
 - Reference specific Worclaude files by path. "Check the agents" is not enough; "Check `src/data/agents.js` line 10 — `ui-reviewer` model field" is.
 - If confidence that an item affects Worclaude is low, classify as "Needs investigation" rather than "Action needed".
@@ -155,3 +162,4 @@ For each cross-reference, produce one of:
 - **2.4.1** — `.github/workflows/upstream-check.yml` + `.github/upstream-state.json` (schema v2) + this reference page shipped. Daily cron at 09:30 UTC; classifies via `anthropics/claude-code-action@v1`; opens a labeled GitHub issue; pushes state updates to `main`.
 - **2.4.2** — `anthropics/claude-code-action` pinned to a specific commit SHA (see **Action pinning** above). The floating `@v1` tag was replaced because feed content is untrusted and action upgrades would otherwise run unreviewed against the maintainer's `CLAUDE_CODE_OAUTH_TOKEN`.
 - **2.4.5** — Supporting GitHub-official actions in `.github/workflows/upstream-check.yml` (`actions/checkout`, `actions/setup-node`) bumped past the Node 20 runtime deprecation (force-run on Node 24 on 2026-06-02; removed 2026-09-16). `anthropics/claude-code-action` SHA pin unchanged.
+- **2.9.2** — Migrated to [`@sefaertunc/anthropic-watch-client`](https://www.npmjs.com/package/@sefaertunc/anthropic-watch-client) for fetching, dedup, and version-gated error handling. Switched state persistence from direct-push-to-main to `actions/cache@v4` — fixes a 5-day silence caused by branch-protection rejection of the daily state push, and removes the `contents: write` permission from the workflow. Added `community`-category awareness to the Claude prompt and classification rules per upstream's v1.4.0+ contract.

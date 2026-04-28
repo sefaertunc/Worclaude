@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.9.1
+**Version:** 2.9.2
 **Last Updated:** 2026-04-28
 
 ## Completed
@@ -572,6 +572,10 @@
   - [x] **PR #153** (`Version bump: patch`) — three `npm overrides` entries clear all open Socket.dev and `npm audit` flags on the `vitepress → vite → esbuild` chain: `esbuild ^0.25.0` (was 0.21.5, [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) / CVE-2026-41305 dev-server CORS), `vite ^6.4.2` (was 5.4.21, [GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) / CVE-2026-39365 path traversal in optimized-deps), `postcss ^8.5.10` (was 8.5.8, [GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93) XSS via unescaped `</style>`). vitepress 1.6.4 declares `vite ^5.4.14` but `npm run docs:build` succeeds against vite 6 via the override; all 947 tests still pass; `npm audit` reports 0 vulnerabilities. SECURITY.md rewritten: stale "pending upstream fixes" section replaced with "fixed via overrides", new false-positive subsections for Socket's AI-typosquat alert ("Did you mean: claude" — package was published under this name from day one) and URL-strings alert (template content, not endpoints), supported-version table bumped to 2.9.x.
   - [x] Release group: **PR #153** (`Version bump: patch`). Only PR since v2.9.0. v2.9.0 → v2.9.1. No missing declarations.
 
+- [x] v2.9.2 — upstream-check rebuild: client-library migration + cache-based state (2026-04-28)
+  - [x] **PR (follows)** (`Version bump: patch`) — fixes a 5-day silence in `.github/workflows/upstream-check.yml` and migrates fetch/dedup to the upstream-recommended client library. Two problems shipped together: (1) Branch-protection rejection of the daily state-push (`GH013` on `main`) had stalled state at `2026-04-18T09:08:21Z`; the `Create issue` step was gated behind state-push success, blocking every potential issue. State now lives in `actions/cache@v4` (key prefix `upstream-state-v3-`); workflow no longer touches the git tree; `contents: write` permission dropped. (2) `scripts/upstream-precheck.mjs` rolled its own fetch with an `id`-only dedup that silently dropped items where two sources shared an ID — `id: "2.1.114"` from both `claude-code-releases` and `npm-claude-code` was already in the live state file, the bug in the wild. Now uses [`@sefaertunc/anthropic-watch-client@^1.0.2`](https://www.npmjs.com/package/@sefaertunc/anthropic-watch-client) for composite-`uniqueKey` dedup, version-gated fetch (`FeedVersionMismatchError`), and typed errors (`FeedFetchError`, `FeedMalformedError`). Workflow Claude prompt + `upstream-watcher` agent (template + dogfood) + `docs/reference/upstream-automation.md` updated for the v1.4.0+ `community` source category (Reddit, HN, Twitter/X, GitHub commits — informational only per upstream's contract); source counts no longer hardcoded. New `tests/scripts/upstream-precheck.test.js` (20 cases) covers the dedup-bug regression case, all four typed-error paths, legacy state-entry fallback, 90-day prune, schema-version refusal, and the full GH-output contract.
+  - [x] Release group: 1 PR. v2.9.1 → v2.9.2. No missing declarations.
+
 ## Stats
 
 - 14 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state, doc-lint, observability, regenerate-routing, worktrees
@@ -584,7 +588,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 947 tests across 69 test files
+- 967 tests across 70 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

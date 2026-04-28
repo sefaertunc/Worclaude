@@ -4,6 +4,30 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.9.2] — 2026-04-28
+
+`upstream-check` workflow rebuild: fixes a 5-day silence and migrates to the official client library. Root cause of the silence: the daily workflow committed `.github/upstream-state.json` and pushed to `main`, but `main`'s branch protection (PR-required + 4 required status checks) rejected every push with `GH013`. State never advanced, items were re-evaluated daily, and the `Create issue` step was gated behind state-push success — silent forever. State persistence is now `actions/cache@v4` (key prefix `upstream-state-v3-`); the workflow no longer touches the git tree, `contents: write` permission dropped. Migration to [`@sefaertunc/anthropic-watch-client`](https://www.npmjs.com/package/@sefaertunc/anthropic-watch-client) replaces ~80 lines of hand-rolled fetch/dedup with composite-`uniqueKey` dedup (the `id`-only dedup at `scripts/upstream-precheck.mjs:95` was already silently dropping items where two sources shared an ID — `2.1.114` was the live example), version-gated fetch (`FeedVersionMismatchError`), and typed errors. Claude prompt + `upstream-watcher` agent + `docs/reference/upstream-automation.md` updated for the `community` source category (Reddit, HN, Twitter, GitHub commits — informational only per upstream's contract). Source counts no longer hardcoded — derived from `summary.sourcesChecked`.
+
+### Fixed
+
+- **5-day upstream-check silence** (PR follows) — replaces direct-push-to-`main` state persistence with `actions/cache@v4`. Fixes `GH013` rejection that blocked state advance and issue creation since `2026-04-18T09:08:21Z`. `contents: write` permission dropped.
+- **Composite-key dedup bug** in `scripts/upstream-precheck.mjs` (PR follows) — was deduping by `id` alone, silently dropping items where two sources shared an ID. Now uses `@sefaertunc/anthropic-watch-client`'s `filterNew` with the spec'd `${id}|${source}` fallback for legacy state entries.
+
+### Changed
+
+- **Migrated upstream fetch to `@sefaertunc/anthropic-watch-client@^1.0.2`** (PR follows) — version-gated feed envelope (`FeedVersionMismatchError`), typed `FeedFetchError` / `FeedMalformedError`, composite `uniqueKey` dedup. Three minor versions overdue per upstream's `WORCLAUDE-INTEGRATION.md` tracking note.
+- **Workflow Claude prompt** (PR follows) — added `community` source category (Reddit, HN, Twitter/X, GitHub commits) treated as informational-only per anthropic-watch's contract; removed hardcoded "16 sources" wording in favor of `summary.sourcesChecked`.
+- **`upstream-watcher` agent prompt** (template + dogfood, byte-identical) — updated to describe client-library usage and the `community` impact-classification row.
+
+### Tests
+
+- **`tests/scripts/upstream-precheck.test.js`** (new, 20 cases) — covers happy path, dedup correctness (including the cross-source-same-id regression case), legacy `${id}|unknown` fallback, all four typed-error paths, schema-version refusal, 90-day prune, watchdog-issue-number preservation, and the full output-key contract for downstream workflow steps.
+
+### Docs
+
+- **`docs/reference/upstream-automation.md`** — rewrote State File section for cache-based persistence, replaced "Required branch protection" with "Branch protection on `main` — fully compatible", added Community-source policy subsection, added v2.9.2 to version history.
+- **`docs/reference/agents.md`** — `upstream-watcher` description: source count now described as dynamic; switched from "via `curl` (no npm dependencies)" to client-library usage.
+
 ## [2.9.1] — 2026-04-28
 
 Security patch clearing three transitive dev-dep advisories surfaced by Socket.dev and `npm audit` (esbuild dev-server CORS, vite path-traversal in optimized-deps, postcss XSS in CSS stringify). All three were dev-only, gated behind running `npm run docs:dev` and visiting a hostile origin in the same session — neither CI nor end-user installs trigger the conditions — but they kept appearing in scanner output and drowning out signal. Resolved via `npm overrides` in `package.json` (esbuild ^0.25.0, vite ^6.4.2, postcss ^8.5.10) which forces vitepress 1.6.4 onto patched transitives despite its declared `vite ^5.4.14` peer range; `npm run docs:build` verified clean. SECURITY.md rewritten: stale "pending upstream fixes" section replaced with "fixed via overrides", new false-positive subsections for Socket's AI-typosquat alert ("Did you mean: claude") and URL-strings alert (template content, not endpoints), supported-version table bumped to 2.9.x.
