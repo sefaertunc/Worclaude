@@ -22,8 +22,9 @@ If the vulnerability is accepted, a fix will be prioritized and released as a pa
 
 ## Supply Chain Scanner Findings
 
-Automated SCA tools (Socket, Snyk, GitHub Dependabot) sometimes surface
-alerts that are not real exposures for worclaude. The most common cases:
+Automated SCA tools (Socket, OSV-Scanner, GitHub Dependabot) sometimes
+surface alerts that are not real exposures for worclaude. The most common
+cases:
 
 ### Test fixture manifests are not real dependencies
 
@@ -42,9 +43,10 @@ These fixtures are:
   dependency lists; it never imports or runs the packages named inside.
 
 Worclaude's repo includes `socket.yml` to stop Socket from scanning this
-directory, and a `.snyk` policy file with an equivalent `exclude.global`
-entry for Snyk Open Source. Other SCA tools may need an equivalent
-`ignore` directive.
+directory. The OSV-Scanner workflow scopes itself to the root
+`package-lock.json` (via `--lockfile=`), which inherently skips fixture
+lockfiles without a separate config. Other SCA tools may need an
+equivalent `ignore` directive.
 
 ### Real runtime dependencies
 
@@ -111,11 +113,26 @@ triggers because the package name `worclaude` contains the substring
 `claude`. The package was published under this name from day one
 (2026-02), the npm namespace is owned by the original author
 (`sefaertunc`), and the package is the canonical home for the workflow
-described in this README. There is no upstream `claude` workflow
-scaffolder being typosquatted — `claude` on npm is an unrelated
-abandoned package. Renaming a published, indexed package would break
-every existing user's CLI alias and slash-command muscle memory; the
-alert is accepted as a permanent false positive.
+described in this README.
+
+Socket's chain inference (`worclaude` → `claude` → `@anthropic-ai/claude-code`)
+produces a false positive at every link:
+
+- **`worclaude`** is a workflow scaffolder for Claude Code, not a redirect
+  or rename of any other package.
+- **`claude`** on npm is itself an intentional typosquat-warning redirect
+  by Boris Cherny ([github.com/bcherny/redirect-claude](https://github.com/bcherny/redirect-claude)),
+  deprecated by design — its README points users to `@anthropic-ai/claude-code`.
+  Socket flags `claude` as a typosquat of `@anthropic-ai/claude-code`,
+  which is exactly the case the redirect was authored to handle.
+- **`@anthropic-ai/claude-code`** is Anthropic's canonical Claude Code
+  product — the destination both `worclaude` (as Boris-Cherny-tips-inspired
+  workflow tooling per the README's Acknowledgments) and `claude` (as a
+  redirect) point readers toward.
+
+Renaming a published, indexed package would break every existing user's
+CLI alias and slash-command muscle memory. The alert is accepted as a
+permanent false positive.
 
 ### URL-strings supply-chain alert (template content)
 
@@ -128,3 +145,19 @@ at runtime; the only HTTP code path is `src/utils/npm.js`, which
 queries the npm registry for the latest published version during
 `worclaude upgrade` and `worclaude status`. The flagged strings are
 content, not endpoints.
+
+### CI scanner stack
+
+Worclaude's CI runs two free, open-source SCA tools:
+
+- **OSV-Scanner** (`.github/workflows/osv-scanner.yml`) — scans
+  `package-lock.json` against the [OSV.dev](https://osv.dev) database
+  on every PR (fails on vulnerability) and sweeps `main` weekly
+  (warn-only). Findings upload as SARIF to the repo's Security tab.
+- **Dependabot** (`.github/dependabot.yml` + Settings → Code security →
+  Dependabot security updates) — auto-opens fix PRs when a CVE lands
+  affecting a tracked dep, plus weekly version-update PRs grouped by
+  minor/patch.
+
+Snyk was retired on 2026-04-28 (post-v2.9.2). Both replacements run
+unconditionally — no scan-quota limits.
