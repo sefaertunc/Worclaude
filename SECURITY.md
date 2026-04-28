@@ -22,8 +22,9 @@ If the vulnerability is accepted, a fix will be prioritized and released as a pa
 
 ## Supply Chain Scanner Findings
 
-Automated SCA tools (Socket, Snyk, GitHub Dependabot) sometimes surface
-alerts that are not real exposures for worclaude. The most common cases:
+Automated SCA tools (Socket, OSV-Scanner, GitHub Dependabot) sometimes
+surface alerts that are not real exposures for worclaude. The most common
+cases:
 
 ### Test fixture manifests are not real dependencies
 
@@ -42,9 +43,10 @@ These fixtures are:
   dependency lists; it never imports or runs the packages named inside.
 
 Worclaude's repo includes `socket.yml` to stop Socket from scanning this
-directory, and a `.snyk` policy file with an equivalent `exclude.global`
-entry for Snyk Open Source. Other SCA tools may need an equivalent
-`ignore` directive.
+directory. The OSV-Scanner workflow scopes itself to the root
+`package-lock.json` (via `--lockfile=`), which inherently skips fixture
+lockfiles without a separate config. Other SCA tools may need an
+equivalent `ignore` directive.
 
 ### Real runtime dependencies
 
@@ -128,3 +130,19 @@ at runtime; the only HTTP code path is `src/utils/npm.js`, which
 queries the npm registry for the latest published version during
 `worclaude upgrade` and `worclaude status`. The flagged strings are
 content, not endpoints.
+
+### CI scanner stack
+
+Worclaude's CI runs two free, open-source SCA tools:
+
+- **OSV-Scanner** (`.github/workflows/osv-scanner.yml`) — scans
+  `package-lock.json` against the [OSV.dev](https://osv.dev) database
+  on every PR (fails on vulnerability) and sweeps `main` weekly
+  (warn-only). Findings upload as SARIF to the repo's Security tab.
+- **Dependabot** (`.github/dependabot.yml` + Settings → Code security →
+  Dependabot security updates) — auto-opens fix PRs when a CVE lands
+  affecting a tracked dep, plus weekly version-update PRs grouped by
+  minor/patch.
+
+Snyk was retired on 2026-04-28 (post-v2.9.2). Both replacements run
+unconditionally — no scan-quota limits.

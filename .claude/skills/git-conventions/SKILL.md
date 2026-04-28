@@ -129,7 +129,7 @@ Follow [semver](https://semver.org/) when the project publishes releases. **Ever
 
 **How to publish:**
 1. Merge the release PR into `main`
-2. Create a GitHub Release against `main` with tag `vX.Y.Z` — the `release.yml` workflow publishes to npm with provenance (SLSA attestations). Do not run `npm publish` locally; local publishes omit provenance and weaken the Snyk security score.
+2. Create a GitHub Release against `main` with tag `vX.Y.Z` — the `release.yml` workflow publishes to npm with provenance (SLSA attestations). Do not run `npm publish` locally; local publishes omit provenance and weaken the supply-chain trust signal that consumers and SCA tools (OSV-Scanner, Socket, Dependabot) rely on.
 3. Sync develop: `git checkout develop && git merge main && git push origin develop`
 
 If CI is unavailable and a release must ship urgently, local `npm publish` is a fallback — but follow up by re-publishing from CI on the next patch.
