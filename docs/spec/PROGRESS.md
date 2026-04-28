@@ -4,7 +4,7 @@
 
 **Phase:** All phases complete — published on npm as `worclaude`
 **Version:** 2.9.2
-**Last Updated:** 2026-04-28
+**Last Updated:** 2026-04-29
 
 ## Completed
 
@@ -575,6 +575,10 @@
 - [x] v2.9.2 — upstream-check rebuild: client-library migration + cache-based state (2026-04-28)
   - [x] **PR (follows)** (`Version bump: patch`) — fixes a 5-day silence in `.github/workflows/upstream-check.yml` and migrates fetch/dedup to the upstream-recommended client library. Two problems shipped together: (1) Branch-protection rejection of the daily state-push (`GH013` on `main`) had stalled state at `2026-04-18T09:08:21Z`; the `Create issue` step was gated behind state-push success, blocking every potential issue. State now lives in `actions/cache@v4` (key prefix `upstream-state-v3-`); workflow no longer touches the git tree; `contents: write` permission dropped. (2) `scripts/upstream-precheck.mjs` rolled its own fetch with an `id`-only dedup that silently dropped items where two sources shared an ID — `id: "2.1.114"` from both `claude-code-releases` and `npm-claude-code` was already in the live state file, the bug in the wild. Now uses [`@sefaertunc/anthropic-watch-client@^1.0.2`](https://www.npmjs.com/package/@sefaertunc/anthropic-watch-client) for composite-`uniqueKey` dedup, version-gated fetch (`FeedVersionMismatchError`), and typed errors (`FeedFetchError`, `FeedMalformedError`). Workflow Claude prompt + `upstream-watcher` agent (template + dogfood) + `docs/reference/upstream-automation.md` updated for the v1.4.0+ `community` source category (Reddit, HN, Twitter/X, GitHub commits — informational only per upstream's contract); source counts no longer hardcoded. New `tests/scripts/upstream-precheck.test.js` (20 cases) covers the dedup-bug regression case, all four typed-error paths, legacy state-entry fallback, 90-day prune, schema-version refusal, and the full GH-output contract.
   - [x] Release group: 1 PR. v2.9.1 → v2.9.2. No missing declarations.
+
+- [x] CI tooling: Snyk → Dependabot + OSV-Scanner (2026-04-29, unreleased on develop)
+  - [x] **PR #157** (`Version bump: none`) — Snyk's free-tier monthly scan limit blocked the v2.9.2 release PR (#156). Replaced with two GitHub-native, free, open-source SCA tools that cover the same dep-CVE surface with no scan-quota limits. New `.github/dependabot.yml` (npm + github-actions ecosystems, weekly Monday 03:00 UTC, minor/patch grouped, `open-pull-requests-limit: 5`, labels `dependencies` + `automated`). New `.github/workflows/osv-scanner.yml` invokes `google/osv-scanner-action@v2.3.5` as job-level reusable workflows: `scan-pr` (`pull_request` + `merge_group`, blocking) and `scan-scheduled` (Monday 06:00 UTC + push-to-main + workflow_dispatch, non-blocking sweep). SARIF upload routes findings to the Security tab. `.snyk` deleted; `SECURITY.md` and `CONTRIBUTING.md` updated to vendor-neutral language. Reusable-workflow form is canonical for OSV-Scanner — switched after the initial step-action call errored at action-load time. Required UI follow-ups documented in the PR body (uninstall Snyk GitHub App, update `main`'s required-status-checks, enable Dependabot security/version-update toggles).
+  - [x] Release group: **PR #157** (`Version bump: none`). No release — shared state updated only; will fold into the next versioned release group.
 
 ## Stats
 
