@@ -3,7 +3,7 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.9.0
+**Version:** 2.9.1
 **Last Updated:** 2026-04-28
 
 ## Completed
@@ -567,6 +567,10 @@
     - **PR #150** (`Version bump: minor`) — scaffolded rule: commit/push/PR only on explicit human invocation of `/commit-push-pr` or `/sync`. CLAUDE.md template Critical Rule #16 added; conversational "yes" no longer authorizes git writes.
     - **PR #151** (`Version bump: minor`) — three POSIX helper scripts in `templates/scripts/` (`start-drift.sh`, `sync-release-scope.sh`, `test-coverage-changed-files.sh`) extract multi-line bash from `/start`, `/sync`, `/test-coverage` so each invocation matches a single allow rule. New `scaffoldScripts` function wired into Scenarios A/B/C. Expanded `base.json` allow list (`Bash(test:*)`, `Bash([:*)`, `Bash(bash:*)`, `WebFetch(...)`, `WebSearch`, `Skill(update-config)`, `Skill(fewer-permission-prompts)`). New "Why prompts still fire" section in `docs/reference/permissions.md`.
   - [x] Release group: 27 PRs since v2.8.0. Highest declared bump: **minor** (11 PRs: #128/130/131/132/133/137/139/142/144/150/151). Patch declarations: #126, #147. None declarations: 13 (#127/129/134/135/136/138/140/141/143/145/146/148/149). ⚠ Missing declaration: **#125** (treated as `none`; surfaced permanently in CHANGELOG). v2.8.0 → v2.9.0.
+
+- [x] v2.9.1 — Security patch: clear Socket/npm-audit advisories on dev transitives (2026-04-28)
+  - [x] **PR #153** (`Version bump: patch`) — three `npm overrides` entries clear all open Socket.dev and `npm audit` flags on the `vitepress → vite → esbuild` chain: `esbuild ^0.25.0` (was 0.21.5, [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) / CVE-2026-41305 dev-server CORS), `vite ^6.4.2` (was 5.4.21, [GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) / CVE-2026-39365 path traversal in optimized-deps), `postcss ^8.5.10` (was 8.5.8, [GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93) XSS via unescaped `</style>`). vitepress 1.6.4 declares `vite ^5.4.14` but `npm run docs:build` succeeds against vite 6 via the override; all 947 tests still pass; `npm audit` reports 0 vulnerabilities. SECURITY.md rewritten: stale "pending upstream fixes" section replaced with "fixed via overrides", new false-positive subsections for Socket's AI-typosquat alert ("Did you mean: claude" — package was published under this name from day one) and URL-strings alert (template content, not endpoints), supported-version table bumped to 2.9.x.
+  - [x] Release group: **PR #153** (`Version bump: patch`). Only PR since v2.9.0. v2.9.0 → v2.9.1. No missing declarations.
 
 ## Stats
 
