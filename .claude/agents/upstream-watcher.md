@@ -27,24 +27,39 @@ You are read-only. Report findings and recommend actions — do not implement th
 
 ## 1. Fetch Upstream Feeds
 
-Feed base: `https://sefaertunc.github.io/anthropic-watch/feeds/`
+Use the official client library `@sefaertunc/anthropic-watch-client` (zero
+runtime deps, version-gated, composite-key dedup, typed errors). Add it to the
+project's `package.json` if not already present, then:
 
-Fetch both feeds in parallel to keep the worst-case wait bounded by a single
-`--max-time`:
+```js
+import {
+  AnthropicWatchClient,
+  FeedFetchError,
+  FeedMalformedError,
+  FeedVersionMismatchError,
+} from '@sefaertunc/anthropic-watch-client';
 
-```bash
-curl -s --max-time 10 https://sefaertunc.github.io/anthropic-watch/feeds/run-report.json &
-curl -s --max-time 10 https://sefaertunc.github.io/anthropic-watch/feeds/all.json &
-wait
+const client = new AnthropicWatchClient({ timeout: 10_000 });
+const [report, items] = await Promise.all([
+  client.fetchRunReport(),
+  client.fetchAllItems(),
+]);
 ```
 
-If either fetch fails (non-zero exit, empty body, or non-JSON), report
-"Could not reach anthropic-watch feeds" and stop — no impact analysis is
-possible without the feed data.
+If any fetch throws `FeedFetchError` (network/HTTP), `FeedMalformedError`
+(bad JSON), or `FeedVersionMismatchError` (feed schema bump), report
+"Could not reach anthropic-watch feeds: {error.message}" and stop — no
+impact analysis is possible without the feed data.
 
-`run-report.json` gives per-source health and `newItemCount`. `all.json` gives
-the full list of items across all 16 sources, sorted newest-first. Each item
-carries `source`, `sourceCategory`, `title`, `date`, `url`, `snippet`.
+`report` gives per-source health, `summary.sourcesChecked` (the live source
+count — do not hardcode a number), and `newItemCount` per source. `items`
+gives every item across all sources, sorted newest-first. Each item carries
+`id`, `uniqueKey`, `source`, `sourceCategory`, `sourceName`, `title`, `date`,
+`url`, `snippet`.
+
+The client lib's `filterNew(items, seenSet)` and `uniqueKey(item)` helpers
+handle composite-key dedup with the documented `${id}|${source}` fallback for
+items missing the `uniqueKey` field.
 
 ## 2. Read Project Infrastructure
 
@@ -74,6 +89,7 @@ For each new upstream item, classify it into one of these buckets:
 | Anthropic API SDK / docs | Relevant **only** if the project imports the SDK directly — skip otherwise |
 | Engineering blog | New patterns or best practices worth adopting; never blocking |
 | Status page | Informational only; no action required |
+| `sourceCategory: community` (Reddit, HN, Twitter/X, GitHub commits) | **Informational only — never direct-impact** unless an item explicitly names a project file. Per anthropic-watch's contract, community items are not suitable for autonomous-action triggers. |
 | Other sources | Classify by content — prefer informational unless it names something the project uses |
 
 ## 4. Report Format
