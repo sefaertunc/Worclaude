@@ -10,12 +10,21 @@ const MIN_DESCRIPTION_LENGTH = 20;
 const MAX_README_BYTES = 512 * 1024;
 const BADGE_PATTERNS = [/^\s*\[!\[.*?\]\(.*?\)\]\(.*?\)\s*$/, /^\s*!\[.*?\]\(.*?\)\s*$/];
 
+function stripUntilStable(text, regex) {
+  let prev;
+  do {
+    prev = text;
+    text = text.replace(regex, '');
+  } while (text !== prev);
+  return text;
+}
+
 function stripHtmlComments(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, '');
+  return stripUntilStable(text, /<!--[\s\S]*?-->/g);
 }
 
 function stripHtmlTags(text) {
-  return text.replace(/<[^>]+>/g, '');
+  return stripUntilStable(text, /<[^>]+>/g);
 }
 
 function isSkippable(line) {
