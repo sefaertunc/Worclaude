@@ -1,0 +1,57 @@
+name: OSV Scanner
+
+# PR runs block on vulnerability; scheduled runs warn-only. SARIF uploaded
+# to the repo's Security tab in both cases. See SECURITY.md.
+
+on:
+  pull_request:
+    branches: [main, develop]
+  merge_group:
+  schedule:
+    - cron: '0 6 * * 1' # Monday 06:00 UTC — staggered against upstream-check.yml
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  scan-pr:
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: OSV-Scanner (block on vuln)
+        # `--lockfile=package-lock.json` scopes the scan to the root lockfile
+        # only; without it, OSV-Scanner auto-discovers every lockfile in the
+        # repo including `tests/fixtures/scanner/**` which intentionally pin
+        # vulnerable versions for detector tests. See SECURITY.md "Test
+        # fixture manifests" subsection.
+        uses: google/osv-scanner-action@v2.3.5
+        with:
+          scan-args: |-
+            --lockfile=package-lock.json
+          upload-sarif: true
+          fail-on-vuln: true
+
+  scan-scheduled:
+    if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: OSV-Scanner (warn-only sweep)
+        uses: google/osv-scanner-action@v2.3.5
+        with:
+          scan-args: |-
+            --lockfile=package-lock.json
+          upload-sarif: true
+          fail-on-vuln: false

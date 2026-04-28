@@ -78,7 +78,8 @@ npm provenance (SLSA attestations).
 4. Verify the "Provenance" badge on `https://www.npmjs.com/package/worclaude`.
 
 Do not run `npm publish` from a local machine — manual publishes omit provenance
-and weaken the Snyk security score.
+and weaken the supply-chain trust signal that SCA tools (OSV-Scanner, Socket,
+Dependabot) and consumers rely on.
 
 ## Reporting Bugs
 
