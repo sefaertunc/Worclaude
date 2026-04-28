@@ -18,6 +18,14 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+# Ceiling permissions for the reusable workflows below. Google's canonical
+# example sets these at the workflow level; without them, GitHub rejects the
+# reusable-workflow call at validation time (startup_failure).
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
   scan-pr:
     # `--lockfile=package-lock.json` scopes the scan to the root lockfile only;
