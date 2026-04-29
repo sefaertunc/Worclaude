@@ -12,16 +12,6 @@ decision docs under `docs/archive/decisions/`.
 
 ## Pending follow-ups
 
-### `claude --worktree` command visibility
-
-Claude Code's `--worktree` flag creates a minimal `.claude/` inside the
-worktree that may override git-tracked commands/skills/agents. This causes
-commands like `/review-plan` to be missing in worktree sessions. Investigate
-whether this is fixable from Worclaude's side (symlinks, documentation,
-workaround) or is a Claude Code behavior to document as a limitation.
-
-**Priority:** investigation only — implementation depends on findings.
-
 ### `.claude/rules/` adoption — deferred
 
 Claude Code's official docs recommend `.claude/rules/` for topic-organized,

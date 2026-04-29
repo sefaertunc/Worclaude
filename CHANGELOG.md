@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.10.2] — 2026-04-30
+
+Bundles a dogfood catch-up of this repo's own `.claude/` (skipping from v2.8.0 to v2.10.1 in one upgrade run) with a real scaffold bug fix surfaced during that upgrade — `.claude/workflow-ref/` (transient upgrade-time conflict references) was missing from the scaffolder's `updateGitignore` entries, so every user running `worclaude upgrade` had those files pollute their git status. Also closes the BACKLOG "claude --worktree command visibility" item via a docs-only fix: investigation confirmed Claude Code does not create a "minimal `.claude/`" (the worktree's `.claude/` is a normal git checkout from `origin/HEAD`); the perceived missing-commands symptom was caused by main lagging develop, and the existing `subagent-usage` skill already documented the mechanism. The gap was direct `claude --worktree` users with no agent-mediated freshness preamble — filled with a one-paragraph copy-paste reset block.
+
+### Fixed
+
+- **`.claude/workflow-ref/` now scaffolded into `.gitignore`** (PR #174) — `src/core/scaffolder.js` `updateGitignore` entries list now includes `.claude/workflow-ref/`. Existing users pick up the fix on the next scaffold or upgrade pass that runs `updateGitignore`. Two existing tests updated (`is idempotent` seed input + `writes exactly N entries` count 10 → 11 + expected array).
+
+### Docs
+
+- **Manual freshness reset for direct `claude --worktree`** (PR #175) — added a copy-paste workaround block (`cd .claude/worktrees/<name> && git fetch origin && git reset --hard origin/<your-branch>`) to the existing "Base-branch gotcha" section of the `subagent-usage` skill, in both `templates/skills/universal/subagent-usage.md` and the dogfood mirror. Closes BACKLOG "claude --worktree command visibility" (the entry's "minimal `.claude/`" framing was wrong; investigation captured in the session summary).
+
+### Internal
+
+- **Dogfood catch-up v2.8.0 → v2.10.1** (PR #174) — applied 3 release groups' worth of template evolution to this repo's own `.claude/`: sandbox.network block in settings.json (self-testing the v2.10.1 feature), observability hooks for UserPromptSubmit / InstructionsLoaded / SubagentStart / SubagentStop, 3 obs-\*.cjs hook scripts, 3 helper scripts under `.claude/scripts/`, and template-current versions of 5 slash commands plus the git-conventions skill that had drifted behind their templates.
+
+Release group: 2 PRs (1 patch, 1 none). v2.10.1 → v2.10.2.
+
 ## [2.10.1] — 2026-04-29
 
 Adds opt-in scaffolding for Claude Code 2.1.113's `sandbox.network` deny/allow lists. Worclaude is a scaffolder, so the new `templates/settings/base.json` ships empty `deniedDomains` and `allowedDomains` stubs rather than an opinionated default list — project owners decide their own network policy. The merge paths for both fresh init (Scenario A) and existing-project init/upgrade (Scenarios B/C) union-merge the new arrays preserving any user-added domains, and a new `worclaude doctor` check warns when the block is missing or malformed (with `worclaude upgrade` as the remediation hint). Also bundles a Dependabot major bump to `commander` 14, which is now Node-20+-only and was unblocked by the v2.10.0 Node 18 drop.
