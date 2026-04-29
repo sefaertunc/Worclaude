@@ -4,6 +4,26 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.10.0] — 2026-04-29
+
+Drops support for Node 18, which reached LTS end-of-life on 2025-04-30 (12 months before this release). The drop unblocks two Dependabot PRs stuck on Node-20-only features (`inquirer 13`'s `util.styleText` and `ora 9`'s regex `v` flag) and ships those bumps in the same release. Also recovers from a Dependabot routing misconfiguration: `.github/dependabot.yml` now declares `target-branch: develop` for both ecosystems, fixing a config gap that caused 5 PRs in the v2.9.3 → v2.10.0 window to be opened against main instead of develop. Their content is preserved across both branches via a recovery sync.
+
+### Breaking
+
+- **Node 18 no longer supported** (PR #167) — `engines.node` is now `>=20.0.0`. Running `npm install -g worclaude` on Node 18 will print an `EBADENGINE` warning (npm doesn't block by default but the warning is visible). CI test matrix dropped from `[18, 20, 22]` to `[20, 22]`. Required-status-checks on the `develop-protection` and `main-protection` rulesets updated accordingly. Tech-stack mentions refreshed in CLAUDE.md, AGENTS.md, README.md, `docs/guide/getting-started.md`, and `templates/specs/spec-md-library.md`.
+
+### Changed
+
+- **`ora` 8.2.0 → 9.4.0** (PR #169) — major bump. ora 9 uses regex `v` flag (Node 20+); previously blocked by the v2.9.x Node 18 matrix.
+- **`inquirer` 12.11.1 → 13.4.2** (PR #169) — major bump. inquirer 13 uses `util.styleText` (Node 20.12+); previously blocked by the v2.9.x Node 18 matrix.
+- **Dependabot routing fixed** (PR #168) — added `target-branch: develop` to both `npm` and `github-actions` ecosystems in `.github/dependabot.yml`. Previously, Dependabot defaulted to the repo's default branch (main), causing PRs to misroute. Future Dependabot Monday runs will correctly target develop.
+
+### Internal
+
+- **Recovery sync develop ← main** (PR #168) — brings 5 misrouted Dependabot squash commits from main onto develop (prettier 3.8.3, claude-code-action 1.0.109, actions/cache 5, vitest 4, eslint 10). All updates were legitimate; merge made via `git merge origin/main --no-ff` with auto-resolution.
+
+Release group: 3 PRs (1 minor, 1 patch, 1 none). No missing Version bump declarations.
+
 ## [2.9.3] — 2026-04-29
 
 Security tooling refresh shipped as a paired group: a CI-tooling migration from Snyk (whose free-tier scan limit had blocked the v2.9.2 release PR) to a GitHub-native open-source SCA stack (Dependabot + OSV-Scanner), and the cleanup of the inaugural CodeQL scan after enabling the default setup. CodeQL surfaced 5 findings — 2× High "Incomplete multi-character sanitization" on the project-scanner README detector's HTML-stripping helpers, and 3× Medium "Workflow does not contain permissions" on `ci.yml`'s three jobs — all closed in this release. The sanitization fix extracts a `stripUntilStable(text, regex)` helper for the do-while-until-stable pattern; the permissions fix adds a top-level `permissions: contents: read` block matching the rest of the repo's workflows. SECURITY.md's AI-detected typosquat section also refined with the actual chain context: the `claude` npm package is `bcherny/redirect-claude`, an intentional Boris-Cherny-maintained typosquat-warning redirect, not an abandoned package as previously documented.
