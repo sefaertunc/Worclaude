@@ -12,31 +12,6 @@ decision docs under `docs/archive/decisions/`.
 
 ## Pending follow-ups
 
-### Sandbox defaults in scaffolded settings
-
-Claude Code 2.1.113 added `sandbox.network.deniedDomains` — a per-project
-deny-list that takes precedence over `sandbox.network.allowedDomains`
-wildcards. Worclaude's `templates/settings/base.json` and language templates
-do not scaffold a `sandbox` block today.
-
-Open questions before shipping:
-
-- Default deny-list contents: ship with an opinionated list (common telemetry
-  endpoints) or empty stub?
-- Per-language overrides: should node/python/docker add their own deny
-  entries, or is `base.json` sufficient?
-- Merger semantics: `mergeSettings` in `src/core/scaffolder.js` only
-  union-merges `permissions.allow` today. Sandbox would need a new
-  union-merge path for `sandbox.network.deniedDomains` (and `allowedDomains`).
-- Doctor check: add `checkSandboxBlock` that warns if the scaffolded
-  deny-list has drifted from the template.
-
-Test surface estimate: ~8 new tests (3 in `tests/core/merger.test.js`, 3 in
-`tests/e2e/settings-matrix.test.js`, 1 in `tests/commands/doctor.test.js`,
-1 backward-compat for user settings without a `sandbox` key).
-
-**Priority:** low — opt-in feature; users can add it manually today.
-
 ### `claude --worktree` command visibility
 
 Claude Code's `--worktree` flag creates a minimal `.claude/` inside the
