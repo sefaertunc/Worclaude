@@ -54,3 +54,9 @@ docs/.vitepress/cache
 
 # Worclaude (scheduled-task harness lock — runtime state)
 .claude/scheduled_tasks.lock
+
+# Worclaude (generated workflow files)
+.claude/observability/
+
+# Worclaude (upgrade-time conflict references — review and discard)
+.claude/workflow-ref/

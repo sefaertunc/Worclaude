@@ -20,27 +20,15 @@ Present raw signals only — do NOT interpret or warn.
 Prefer **SHA-based drift** when the most recent session summary records
 a HEAD SHA in its frontmatter. Otherwise fall back to date-based drift.
 
-```bash
-LAST_SESSION=$(ls -t .claude/sessions/*.md 2>/dev/null | head -1)
-LAST_SHA=""
-if [ -n "$LAST_SESSION" ]; then
-  LAST_SHA=$(grep -oP '^sha:\s*\K[a-f0-9]+' "$LAST_SESSION" 2>/dev/null | head -1)
-fi
+Run the helper script as a single command — do not unpack the script body.
+Bundling avoids per-line permission prompts on multi-line bash with
+`X=$(...)` assignments and `if`/`elif` blocks.
 
-if [ -n "$LAST_SHA" ] && git rev-parse --verify --quiet "$LAST_SHA" >/dev/null; then
-  echo "Commits since last session SHA ($LAST_SHA):"
-  git log --oneline "$LAST_SHA"..HEAD 2>/dev/null | head -15
-elif [ -n "$LAST_SESSION" ]; then
-  SESSION_DATE=$(echo "$LAST_SESSION" | grep -oP '\d{4}-\d{2}-\d{2}')
-  echo "Commits since last session ($SESSION_DATE):"
-  git log --oneline --since="$SESSION_DATE" 2>/dev/null | head -15
-else
-  echo "No previous session found. Recent commits:"
-  git log --oneline -10 2>/dev/null
-fi
+```bash
+bash .claude/scripts/start-drift.sh
 ```
 
-Report as:
+The script outputs the drift list and the current branch name. Report as:
 
 ```
 ## Drift Since Last Session

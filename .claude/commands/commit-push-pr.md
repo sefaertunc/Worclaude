@@ -5,6 +5,10 @@ description: "Commit, push, and create PR — branch-aware with session summary"
 Determine which branch you're on, then follow the appropriate flow.
 Do not add Co-Authored-By trailers or AI-generated footers to commits or PR descriptions.
 
+## Invocation Contract
+
+Run this command only when the human explicitly invokes it (typed `/commit-push-pr` or one of the Trigger Phrases at the bottom of this file). Do not auto-launch from a "we're done" inference. The `Version bump:` AskUserQuestion at step 6 is mandatory and never auto-answerable — refuse to proceed without an explicit human selection. See CLAUDE.md Critical Rule 13.
+
 ## Worktree Awareness
 
 If you are in a git worktree session:
