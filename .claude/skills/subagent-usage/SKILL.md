@@ -88,6 +88,14 @@ Run `worclaude doctor` to diagnose. Fix locally with `git remote set-head origin
 their worktree to match the parent's current branch automatically; other worktree
 agents do not.
 
+If you invoke `claude --worktree` directly (not via an agent), no preamble runs
+— sync the worktree manually before doing real work:
+
+```bash
+cd .claude/worktrees/<name>
+git fetch origin && git reset --hard origin/<your-working-branch>
+```
+
 Benefits:
 - Agent's changes don't conflict with your uncommitted work
 - You can review agent changes before merging
