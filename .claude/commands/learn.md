@@ -23,7 +23,7 @@ Write to `.claude/learnings/{category-slug}.md` with YAML frontmatter:
 
 ```yaml
 ---
-created: 2026-04-27   # today's date (YYYY-MM-DD)
+created: <today's date YYYY-MM-DD>
 category: <from the [LEARN] block>
 project: <package.json name, or directory name as fallback>
 ---

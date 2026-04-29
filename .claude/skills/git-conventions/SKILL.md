@@ -6,6 +6,16 @@ version: "1.0.0"
 
 # Git Conventions
 
+## Invocation Boundary
+
+`git commit`, `git push`, and `gh pr create` are invoked only when the human
+explicitly types `/commit-push-pr` or `/sync` (or one of their listed Trigger
+Phrases). The slash commands themselves are not invoked autonomously — wait for
+the human trigger. The `Version bump:` AskUserQuestion in `/commit-push-pr` is
+non-skippable; refuse to proceed without an explicit human selection.
+
+See CLAUDE.md Critical Rule 13.
+
 ## Branch Naming
 
 Pattern: `{type}/{short-description}`
@@ -114,27 +124,26 @@ This prevents merge conflicts when running parallel feature branches.
 
 ## Versioning Policy
 
-Follow [semver](https://semver.org/) when the project publishes releases. **Every merge to `main` is a user-visible release and carries a version bump** (`patch`, `minor`, or `major`). Internal-only work (docs, CI, tests) accumulates on `develop` and does not reach `main` until at least one user-visible change is ready to ship with it — see `Per-PR bump declarations` below.
+Follow [semver](https://semver.org/) when the project publishes releases:
 
 | What changed | Bump | Example |
 |---|---|---|
-| Breaking change to public API or CLI | **major** | Renamed config key, removed flag |
-| New feature, command, or API surface | **minor** | Added CSV export option |
 | Bug fix, patch to existing behavior | **patch** | Fixed edge case in date parser |
-| Docs, CI, tests, internal refactor | **none** (no release) | Updated README, added test |
+| New feature, command, or API surface | **minor** | Added CSV export option |
+| Breaking change to public API or CLI | **major** | Renamed config key, removed flag |
+| Only docs, CI, tests, internal refactor | **no bump** | Updated README, added test |
 
 **Publish from the primary branch (usually `main`),** not from feature or development branches. What is published must always match what is on the release branch.
 
-**When to bump:** Include the version change in the same PR as the work — no separate "bump version" commits after the fact. The `/sync` command handles this during the develop → main promotion.
+**When to bump:** Include the version change in the same PR as the work — no separate "bump version" commits after the fact.
 
 **How to publish:**
 1. Merge the release PR into `main`
-2. Create a GitHub Release against `main` with tag `vX.Y.Z` — the `release.yml` workflow publishes to npm with provenance (SLSA attestations). Do not run `npm publish` locally; local publishes omit provenance and weaken the supply-chain trust signal that consumers and SCA tools (OSV-Scanner, Socket, Dependabot) rely on.
-3. Sync develop: `git checkout develop && git merge main && git push origin develop`
+2. Pull locally: `git checkout main && git pull`
+3. Publish using your ecosystem's tool (`npm publish`, `cargo publish`, `twine upload`, etc.)
+4. Sync develop: `git checkout develop && git merge main && git push origin develop`
 
-If CI is unavailable and a release must ship urgently, local `npm publish` is a fallback — but follow up by re-publishing from CI on the next patch.
-
-**Rule of thumb:** If something landed on `main`, it needs a version. The only question is which semver level — patch by default, minor if it's a new feature, major if it breaks backward compatibility.
+**Rule of thumb:** If the change affects what users see, install, or depend on, it needs a version bump. If it only affects the project's internal development workflow, it does not.
 
 ### Per-PR bump declarations
 
