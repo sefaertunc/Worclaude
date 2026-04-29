@@ -11,7 +11,7 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 
 <!-- references package.json -->
 
-- **Runtime:** Node.js 18+ (pure ESM, no build step, no transpilation)
+- **Runtime:** Node.js 20+ (pure ESM, no build step, no transpilation)
 - **CLI framework:** Commander.js ^13.1.0
 - **Interactive prompts:** Inquirer.js ^12.5.0 (watch for breaking changes between majors)
 - **Terminal styling:** Chalk ^5.4.1 (via `display.*` namespace — never use `console.log` directly)

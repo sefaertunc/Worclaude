@@ -7,7 +7,7 @@
   <a href="https://www.npmjs.com/package/worclaude"><img src="https://img.shields.io/npm/dm/worclaude" alt="downloads" /></a>
   <a href="https://github.com/sefaertunc/Worclaude/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/sefaertunc/Worclaude/ci.yml?label=tests" alt="tests" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/sefaertunc/Worclaude" alt="license" /></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="node >= 18" />
+  <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen" alt="node >= 20" />
   <img src="https://img.shields.io/badge/built%20for-Claude%20Code-cc785c" alt="Built for Claude Code" />
 </p>
 

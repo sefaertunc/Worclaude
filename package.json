@@ -1,6 +1,6 @@
 {
   "name": "worclaude",
-  "version": "2.9.3",
+  "version": "2.10.0",
   "description": "The Workflow Layer for Claude Code — scaffold agents, commands, skills, hooks, and memory into any project",
   "type": "module",
   "bin": {
@@ -28,7 +28,7 @@
   "funding": "https://github.com/sponsors/sefaertunc",
   "author": "Sefa Ertunç",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "test": "vitest run",
@@ -68,8 +68,8 @@
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "fs-extra": "^11.3.0",
-    "inquirer": "^12.5.0",
-    "ora": "^8.2.0",
+    "inquirer": "^13.4.2",
+    "ora": "^9.4.0",
     "smol-toml": "^1.6.1",
     "yaml": "^2.8.3"
   },
