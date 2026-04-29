@@ -38,21 +38,18 @@ Delegates to the test-writer agent for test creation.
    - Error handling paths
    - Integration points (DB, API, filesystem)
    - **Recently changed code, anchored to the last release tag** (not an
-     arbitrary `HEAD~10`):
+     arbitrary `HEAD~10`). Run the helper as a single command — do not
+     unpack the script body:
 
      ```bash
-     LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
-     if [ -n "$LAST_TAG" ]; then
-       git log "$LAST_TAG"..HEAD --name-only --pretty=format: | sort -u
-     else
-       # No tags yet — fall back to last 10 commits
-       git diff --name-only HEAD~10
-     fi
+     bash .claude/scripts/test-coverage-changed-files.sh
      ```
 
-     This makes "recently changed" mean "since the last release," not
-     "since some arbitrary cutoff," so coverage gaps reflect what actually
-     ships next.
+     The helper prints one filename per line — files changed since the
+     last release tag, or the last 10 commits when no tag exists. This
+     makes "recently changed" mean "since the last release," not "since
+     some arbitrary cutoff," so coverage gaps reflect what actually ships
+     next.
 
 4. **Prioritize by risk**
 
