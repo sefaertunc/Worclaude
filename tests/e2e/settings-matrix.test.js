@@ -103,4 +103,28 @@ describe('Settings validation matrix', () => {
       expect(perms.length).toBe(unique.length);
     });
   });
+
+  describe('sandbox block', () => {
+    it('scaffolds sandbox.network with empty domain stubs by default', async () => {
+      const { settingsObject } = await buildSettingsJson(['node'], false);
+      expect(settingsObject.sandbox?.network).toBeDefined();
+      expect(settingsObject.sandbox.network.deniedDomains).toEqual([]);
+      expect(settingsObject.sandbox.network.allowedDomains).toEqual([]);
+    });
+
+    for (const stack of STACK_VALUES) {
+      it(`preserves sandbox arrays as arrays for ${stack}`, async () => {
+        const { settingsObject } = await buildSettingsJson([stack], false);
+        expect(Array.isArray(settingsObject.sandbox?.network?.deniedDomains)).toBe(true);
+        expect(Array.isArray(settingsObject.sandbox?.network?.allowedDomains)).toBe(true);
+      });
+    }
+
+    it('preserves sandbox block under multi-stack + docker merge', async () => {
+      const { settingsObject } = await buildSettingsJson(['python', 'node', 'go'], true);
+      expect(settingsObject.sandbox?.network).toBeDefined();
+      expect(Array.isArray(settingsObject.sandbox.network.deniedDomains)).toBe(true);
+      expect(Array.isArray(settingsObject.sandbox.network.allowedDomains)).toBe(true);
+    });
+  });
 });

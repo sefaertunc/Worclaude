@@ -241,20 +241,28 @@ export async function mergeSettingsPermissionsAndHooks(
   const existing = parseUserJson(existingRaw, '.claude/settings.json');
 
   // Merge permissions (Tier 1) — union-merge both allow and deny
-  const existingAllow = existing.permissions?.allow || [];
-  const workflowAllow = workflowSettings.permissions?.allow || [];
-  const newAllow = workflowAllow.filter((p) => !existingAllow.includes(p));
   if (!existing.permissions) existing.permissions = {};
-  existing.permissions.allow = [...existingAllow, ...newAllow];
+  const newAllow = appendUnique(existing.permissions, 'allow', workflowSettings.permissions?.allow);
 
-  const existingDeny = existing.permissions?.deny || [];
-  const workflowDeny = workflowSettings.permissions?.deny || [];
-  const newDeny = workflowDeny.filter((p) => !existingDeny.includes(p));
-  if (newDeny.length > 0 || existingDeny.length > 0) {
-    existing.permissions.deny = [...existingDeny, ...newDeny];
+  const existingDenyLen = (existing.permissions.deny ?? []).length;
+  const newDeny = appendUnique(existing.permissions, 'deny', workflowSettings.permissions?.deny);
+  if (existingDenyLen === 0 && newDeny === 0) {
+    delete existing.permissions.deny;
   }
 
-  report.added.permissions = newAllow.length + newDeny.length;
+  report.added.permissions = newAllow + newDeny;
+
+  // Merge sandbox block (Tier 1 — additive, preserves user customizations)
+  const workflowSandbox = workflowSettings.sandbox?.network;
+  if (workflowSandbox) {
+    if (!existing.sandbox) existing.sandbox = {};
+    if (!existing.sandbox.network || typeof existing.sandbox.network !== 'object') {
+      existing.sandbox.network = {};
+    }
+    for (const key of ['deniedDomains', 'allowedDomains']) {
+      appendUnique(existing.sandbox.network, key, workflowSandbox[key]);
+    }
+  }
 
   // Merge hooks (Tier 1 + Tier 3)
   if (!existing.hooks) existing.hooks = {};
@@ -358,6 +366,13 @@ async function mergeSettingsJson(projectRoot, existingScan, selections, report) 
       (workflowSettings.permissions?.deny?.length || 0);
     report.added.hooks = countHooks(workflowSettings.hooks);
   }
+}
+
+function appendUnique(target, key, source) {
+  const existing = Array.isArray(target[key]) ? target[key] : [];
+  const additions = Array.isArray(source) ? source.filter((d) => !existing.includes(d)) : [];
+  target[key] = [...existing, ...additions];
+  return additions.length;
 }
 
 function countHooks(hooks) {
