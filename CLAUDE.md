@@ -18,7 +18,7 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 - **Spinners:** Ora ^8.2.0
 - **File operations:** fs-extra ^11.3.0
 - **Hashing:** Node.js crypto (built-in, CRLF-normalized)
-- **Testing:** Vitest (967 tests, 70 files)
+- **Testing:** Vitest (992 tests, 70 files)
 - **Linting:** ESLint flat config (eslint.config.js) + Prettier (single quotes, trailing commas ES5, 100 char width)
 - **Docs:** VitePress (GitHub Pages via GitHub Actions)
 - **Package manager:** npm (caret ranges, no lockfile pinning)
@@ -42,7 +42,7 @@ node src/index.js regenerate-routing  # Rebuild .claude/skills/agent-routing/SKI
 node src/index.js scan                # Detect project type/stack via project-scanner detectors
 node src/index.js setup-state show    # Inspect /setup interview persistence
 node src/index.js worktrees clean     # Remove stale agent worktrees
-npm test                              # Run tests (967 tests, 70 files)
+npm test                              # Run tests (992 tests, 70 files)
 npm run lint                          # Lint
 npm run format                        # Format
 npm run docs:dev                      # VitePress dev server

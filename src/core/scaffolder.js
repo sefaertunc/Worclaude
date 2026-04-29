@@ -204,16 +204,31 @@ export async function scaffoldMemoryDocs(projectRoot) {
 
 export function mergeSettings(base, ...stacks) {
   const merged = JSON.parse(JSON.stringify(base));
-  const baseAllow = merged.permissions?.allow || [];
+  const inputs = [base, ...stacks].filter(Boolean);
 
-  for (const stack of stacks) {
-    if (!stack) continue;
-    const stackAllow = stack.permissions?.allow || [];
-    if (stackAllow.length > 0) {
-      baseAllow.push(...stackAllow);
-    }
+  merged.permissions.allow = unionStringList(inputs, (i) => i.permissions?.allow);
+
+  if (merged.sandbox?.network) {
+    merged.sandbox.network.deniedDomains = unionStringList(
+      inputs,
+      (i) => i.sandbox?.network?.deniedDomains
+    );
+    merged.sandbox.network.allowedDomains = unionStringList(
+      inputs,
+      (i) => i.sandbox?.network?.allowedDomains
+    );
   }
 
-  merged.permissions.allow = [...new Set(baseAllow)];
   return merged;
+}
+
+function unionStringList(inputs, accessor) {
+  const set = new Set();
+  for (const input of inputs) {
+    const list = accessor(input);
+    if (Array.isArray(list)) {
+      for (const item of list) set.add(item);
+    }
+  }
+  return [...set];
 }

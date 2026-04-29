@@ -4,7 +4,7 @@
 
 **Phase:** All phases complete — published on npm as `worclaude`
 **Version:** 2.9.2
-**Last Updated:** 2026-04-29 (v2.10.0)
+**Last Updated:** 2026-04-29 (v2.10.1)
 
 ## Completed
 
@@ -588,6 +588,11 @@
   - [x] Post-release back-merge: `42d6e59 chore: back-merge main into develop after v2.9.3 release` brought the v2.9.3 tag into develop's reachable ancestry (matches the `b9610b2` post-release back-merge pattern for v2.9.2). Used `-X ours` strategy since develop's content already included main's via PR #168.
   - [x] Release group: 3 PRs (1 minor, 1 patch, 1 none). v2.9.3 → v2.10.0. No missing declarations.
 
+- [x] v2.10.1 — Sandbox network deny/allow scaffolding + commander 14 (2026-04-29)
+  - [x] **PR #171** (⚠ no `Version bump:` declaration — under-documented). Dependabot bump of `commander` from `^13.1.0` to `^14.0.3`. Major version of the dep but no breaking surface change for worclaude's CLI consumers; treated as `none` for release-aggregation purposes per the workflow's "missing → none" rule, surfaced permanently in CHANGELOG. Commander 14 requires Node 20+, already satisfied by `engines.node` after the v2.10.0 Node 18 drop.
+  - [x] **PR #172** (`Version bump: patch`) — closes the BACKLOG "Sandbox defaults in scaffolded settings" item. Adds empty `sandbox.network.deniedDomains` and `allowedDomains` stubs to `templates/settings/base.json` so scaffolded projects can opt into Claude Code 2.1.113's per-project network deny-list. Empty stubs (rather than an opinionated default list) — Worclaude is a scaffolder; the deny/allow policy is the project owner's choice. Extends `mergeSettings` (scaffolder, Scenario A) with a generic `unionStringList(inputs, accessor)` helper that handles `permissions.allow` and the new sandbox arrays uniformly. Extends `mergeSettingsPermissionsAndHooks` (merger, Scenarios B/C) with a Tier 1 sandbox merge block that adds the structure to legacy settings.json on init/upgrade and union-merges arrays preserving any user-added domains. Extracts `appendUnique(target, key, source)` helper in `merger.js` during `/simplify` pass, folding three previously-duplicated union-merge call sites (allow / deny / sandbox-arrays) into one-liners. New `checkSandboxBlock` doctor check warns if the `sandbox` block is missing (with `worclaude upgrade` remediation pointer) or malformed. Tests: 967 → 992 (+25 net: 16 per-stack settings-matrix sandbox assertions replacing 1 all-stacks loop test for individual failure attribution, 3 scaffolder unit tests for union-merge/dedup/legacy-passthrough, 2 doctor checks for missing/malformed sandbox, 2 Scenario B regressions for legacy-install upgrade and user-domain preservation, plus 1 from /simplify per-stack expansion that became 16). `/review-changes` flagged a speculative test-helper option that `/refactor-clean` removed; `/simplify`'s three parallel review agents (code-reuse, code-quality, efficiency) flagged a triple-pattern union-merge in `merger.js` that became the `appendUnique` extraction.
+  - [x] Release group: 2 PRs (1 patch, 1 missing-declaration treated as `none`). v2.10.0 → v2.10.1. ⚠ Missing declaration: **PR #171** (Dependabot-generated; surfaced permanently in CHANGELOG).
+
 ## Stats
 
 - 14 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state, doc-lint, observability, regenerate-routing, worktrees
@@ -600,7 +605,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 967 tests across 70 test files
+- 992 tests across 70 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes

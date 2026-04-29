@@ -985,6 +985,12 @@ See `.claude/skills/` — load only what's relevant:
       // Per-language permissions appended from settings/{lang}.json (16 languages supported)
     ]
   },
+  "sandbox": {
+    "network": {
+      "deniedDomains": [],
+      "allowedDomains": []
+    }
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -1691,6 +1697,19 @@ Default: Concise. User switches to explanatory when exploring unfamiliar territo
 ### Sandbox Mode
 
 Default: Sandbox with auto-allow. Structural safety via file and network isolation.
+
+`worclaude init` scaffolds an empty `sandbox.network` block in `.claude/settings.json`:
+
+```json
+"sandbox": {
+  "network": {
+    "deniedDomains": [],
+    "allowedDomains": []
+  }
+}
+```
+
+The block is intentionally empty — Worclaude is a scaffolder, so the deny/allow policy is the project owner's choice. `deniedDomains` takes precedence over `allowedDomains` wildcards (Claude Code 2.1.113+ semantics). `worclaude upgrade` adds the block to legacy installs and union-merges arrays preserving any user-added domains. `worclaude doctor` warns when the block is missing or malformed.
 
 ---
 

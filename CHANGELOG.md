@@ -4,6 +4,27 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.10.1] — 2026-04-29
+
+Adds opt-in scaffolding for Claude Code 2.1.113's `sandbox.network` deny/allow lists. Worclaude is a scaffolder, so the new `templates/settings/base.json` ships empty `deniedDomains` and `allowedDomains` stubs rather than an opinionated default list — project owners decide their own network policy. The merge paths for both fresh init (Scenario A) and existing-project init/upgrade (Scenarios B/C) union-merge the new arrays preserving any user-added domains, and a new `worclaude doctor` check warns when the block is missing or malformed (with `worclaude upgrade` as the remediation hint). Also bundles a Dependabot major bump to `commander` 14, which is now Node-20+-only and was unblocked by the v2.10.0 Node 18 drop.
+
+### Added
+
+- **Sandbox network scaffolding** (PR #172) — `templates/settings/base.json` now scaffolds `sandbox.network.deniedDomains: []` and `allowedDomains: []` between the existing `permissions` and `hooks` blocks. New `mergeSettings` helper `unionStringList(inputs, accessor)` in `src/core/scaffolder.js` handles both `permissions.allow` and the new sandbox arrays uniformly. Backward compatible: a base without `sandbox` produces output without `sandbox`, so legacy callers in tests or downstream consumers don't surface the key spuriously.
+- **`appendUnique(target, key, source)` helper** in `src/core/merger.js` (PR #172) — folds three previously-duplicated union-merge call sites in `mergeSettingsPermissionsAndHooks` (allow / deny / sandbox-arrays) into one-liners. Extracted during a `/simplify` pass after three parallel review agents flagged the duplication.
+- **`checkSandboxBlock` doctor check** (PR #172) — warns when `settings.json` is missing the `sandbox` block (with a `worclaude upgrade` remediation pointer for legacy installs), when `sandbox.network` is malformed, or when either array isn't actually an array.
+
+### Changed
+
+- **`commander` 13.1.0 → 14.0.3** (PR #171) — Dependabot major bump. Commander 14 requires Node 20+ (already satisfied after v2.10.0's Node 18 drop) and adds `helpGroup`/`optionsGroup`/`commandsGroup` APIs plus unescaped negative-number support. Worclaude's CLI surface is unaffected.
+- ⚠ **PR #171 shipped without a `Version bump:` declaration** — Dependabot-generated body, no manual annotation. Treated as `none` per `/sync`'s "missing → none" rule and surfaced here permanently. PR #172's `patch` declaration drove the release.
+
+### Tests
+
+- 967 → 992 (+25 net). Per-stack sandbox-array assertions across all 16 supported language templates (replaced one all-stacks loop test for individual failure attribution); 3 scaffolder unit tests covering union-merge, dedup, and legacy-passthrough; 2 Scenario B regressions for legacy-install upgrade and user-domain preservation through subsequent merges; 2 doctor checks for missing-block (legacy install) and malformed-block scenarios.
+
+Release group: 2 PRs (1 patch, 1 missing-declaration treated as none). v2.10.0 → v2.10.1.
+
 ## [2.10.0] — 2026-04-29
 
 Drops support for Node 18, which reached LTS end-of-life on 2025-04-30 (12 months before this release). The drop unblocks two Dependabot PRs stuck on Node-20-only features (`inquirer 13`'s `util.styleText` and `ora 9`'s regex `v` flag) and ships those bumps in the same release. Also recovers from a Dependabot routing misconfiguration: `.github/dependabot.yml` now declares `target-branch: develop` for both ecosystems, fixing a config gap that caused 5 PRs in the v2.9.3 → v2.10.0 window to be opened against main instead of develop. Their content is preserved across both branches via a recovery sync.

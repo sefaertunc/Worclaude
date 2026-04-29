@@ -81,6 +81,12 @@
       "Bash(rm -rf $HOME)", "Bash(rm -rf $HOME/*)"
     ]
   },
+  "sandbox": {
+    "network": {
+      "deniedDomains": [],
+      "allowedDomains": []
+    }
+  },
   "hooks": {
     "PostToolUse": [
       {

@@ -297,6 +297,77 @@ describe('merger', () => {
       expect(settings.permissions.allow).toContain('Bash(npm:*)');
     });
 
+    it('adds sandbox block to legacy settings.json missing the key (Tier 1)', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify({
+          permissions: { allow: ['Bash(my-tool:*)'] },
+          hooks: {},
+        })
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingSkillDirs: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      const settings = JSON.parse(
+        await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      expect(settings.sandbox?.network).toBeDefined();
+      expect(Array.isArray(settings.sandbox.network.deniedDomains)).toBe(true);
+      expect(Array.isArray(settings.sandbox.network.allowedDomains)).toBe(true);
+    });
+
+    it('preserves user-added sandbox domains during merge', async () => {
+      await fs.ensureDir(path.join(tmpDir, '.claude'));
+      await fs.writeFile(
+        path.join(tmpDir, '.claude', 'settings.json'),
+        JSON.stringify({
+          permissions: { allow: [] },
+          sandbox: {
+            network: {
+              deniedDomains: ['user-blocked.example'],
+              allowedDomains: ['user-allowed.example'],
+            },
+          },
+          hooks: {},
+        })
+      );
+
+      const scan = {
+        hasClaudeDir: true,
+        hasClaudeMd: false,
+        claudeMdLineCount: 0,
+        hasSettingsJson: true,
+        hasMcpJson: false,
+        existingSkills: [],
+        existingSkillDirs: [],
+        existingAgents: [],
+        existingCommands: [],
+        hasProgressMd: false,
+        hasSpecMd: false,
+      };
+
+      await performMerge(tmpDir, scan, baseSelections, baseVariables);
+      const settings = JSON.parse(
+        await fs.readFile(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      expect(settings.sandbox.network.deniedDomains).toContain('user-blocked.example');
+      expect(settings.sandbox.network.allowedDomains).toContain('user-allowed.example');
+    });
+
     it('appends workflow deny rules without dropping user denies', async () => {
       // Pre-create settings with a custom deny rule
       await fs.ensureDir(path.join(tmpDir, '.claude'));
