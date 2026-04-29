@@ -98,13 +98,16 @@ async function scaffoldProject(tmpDir, opts = {}) {
     if (opts.extraHooks) {
       Object.assign(hooks, opts.extraHooks);
     }
-    await fs.writeFile(
-      path.join(claudeDir, 'settings.json'),
-      JSON.stringify({
-        permissions: { allow: ['Bash(npm test)', 'Bash(git:*)'] },
-        hooks,
-      })
-    );
+    const settingsBody = {
+      permissions: { allow: ['Bash(npm test)', 'Bash(git:*)'] },
+      hooks,
+    };
+    if (!opts.skipSandbox) {
+      settingsBody.sandbox = opts.malformedSandbox
+        ? { network: 'not-an-object' }
+        : { network: { deniedDomains: [], allowedDomains: [] } };
+    }
+    await fs.writeFile(path.join(claudeDir, 'settings.json'), JSON.stringify(settingsBody));
   }
 
   // AGENTS.md at project root
@@ -280,6 +283,23 @@ describe('doctor command', () => {
     await doctorCommand();
     const output = getOutput();
     expect(output).toContain('sessions');
+  });
+
+  // Sandbox block checks
+  it('warns when sandbox block is missing from settings.json (legacy install)', async () => {
+    await scaffoldProject(tmpDir, { skipSandbox: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Sandbox block');
+    expect(output).toContain('worclaude upgrade');
+  });
+
+  it('warns when sandbox.network is malformed', async () => {
+    await scaffoldProject(tmpDir, { malformedSandbox: true });
+    await doctorCommand();
+    const output = getOutput();
+    expect(output).toContain('Sandbox block');
+    expect(output).toContain('malformed');
   });
 
   // CLAUDE.md size checks

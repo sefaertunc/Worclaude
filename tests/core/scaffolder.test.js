@@ -78,6 +78,48 @@ describe('mergeSettings', () => {
     const merged = mergeSettings(base, null, undefined);
     expect(merged.permissions.allow).toEqual(['A']);
   });
+
+  it('union-merges sandbox.network.deniedDomains across base and stacks', () => {
+    const base = {
+      permissions: { allow: [] },
+      sandbox: { network: { deniedDomains: ['evil.example'], allowedDomains: [] } },
+      hooks: {},
+    };
+    const stack = {
+      permissions: { allow: [] },
+      sandbox: { network: { deniedDomains: ['tracker.example'] } },
+    };
+    const merged = mergeSettings(base, stack);
+    expect(merged.sandbox.network.deniedDomains).toEqual(['evil.example', 'tracker.example']);
+  });
+
+  it('deduplicates sandbox domain entries across inputs', () => {
+    const base = {
+      permissions: { allow: [] },
+      sandbox: { network: { deniedDomains: ['dup.example'], allowedDomains: ['ok.example'] } },
+      hooks: {},
+    };
+    const stack = {
+      permissions: { allow: [] },
+      sandbox: {
+        network: {
+          deniedDomains: ['dup.example'],
+          allowedDomains: ['ok.example', 'extra.example'],
+        },
+      },
+    };
+    const merged = mergeSettings(base, stack);
+    expect(merged.sandbox.network.deniedDomains).toEqual(['dup.example']);
+    expect(merged.sandbox.network.allowedDomains).toEqual(['ok.example', 'extra.example']);
+  });
+
+  it('preserves legacy callers: base without sandbox produces output without sandbox', () => {
+    const base = { permissions: { allow: ['A'] }, hooks: {} };
+    const stack = { permissions: { allow: ['B'] } };
+    const merged = mergeSettings(base, stack);
+    expect(merged.sandbox).toBeUndefined();
+    expect(merged.permissions.allow).toEqual(['A', 'B']);
+  });
 });
 
 describe('readTemplate', () => {

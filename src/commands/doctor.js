@@ -286,6 +286,36 @@ async function readSettingsJson(projectRoot) {
   }
 }
 
+async function checkSandboxBlock(projectRoot) {
+  const settings = await readSettingsJson(projectRoot);
+  if (!settings) return null;
+
+  if (!settings.sandbox) {
+    return result(
+      WARN,
+      'Sandbox block',
+      'settings.json missing `sandbox` block. Run `worclaude upgrade` to scaffold network deny/allow lists.'
+    );
+  }
+
+  const network = settings.sandbox.network;
+  if (!network || typeof network !== 'object') {
+    return result(WARN, 'Sandbox block', '`sandbox.network` block missing or malformed');
+  }
+
+  const issues = [];
+  if (!Array.isArray(network.deniedDomains)) {
+    issues.push('`deniedDomains` not an array');
+  }
+  if (!Array.isArray(network.allowedDomains)) {
+    issues.push('`allowedDomains` not an array');
+  }
+  if (issues.length > 0) {
+    return result(WARN, 'Sandbox block', issues.join('; '));
+  }
+  return result(PASS, 'Sandbox block', null);
+}
+
 async function checkHookEventNames(projectRoot) {
   const settings = await readSettingsJson(projectRoot);
   if (!settings) {
@@ -1047,6 +1077,7 @@ export async function doctorCommand(options = {}) {
   record('core', await checkClaudeMdMemoryGuidance(projectRoot));
   record('core', await checkAgentsMd(projectRoot));
   record('core', await checkSettingsJson(projectRoot));
+  record('core', await checkSandboxBlock(projectRoot));
   record('core', await checkSessions(projectRoot));
   spacer();
 
