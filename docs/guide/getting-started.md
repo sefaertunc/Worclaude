@@ -6,7 +6,7 @@ This guide walks you through installing Worclaude and scaffolding a complete Cla
 
 Before you begin, make sure you have:
 
-- **Node.js 18 or later** -- Worclaude is a Node.js CLI tool. Check your version with `node --version`.
+- **Node.js 20 or later** -- Worclaude is a Node.js CLI tool. Check your version with `node --version`.
 - **Claude Code installed** -- Worclaude generates configuration files for Claude Code. You will need Claude Code to actually use the workflow. See [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) for installation.
 
 ## Installation

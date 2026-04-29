@@ -52,7 +52,7 @@ catch (error) { /* [ErrorType]: [message] */ }
 ## Compatibility Matrix
 | Runtime/Version        | Supported | Notes                      |
 |------------------------|-----------|----------------------------|
-| [Node.js >= 18]       | Yes       | [ESM and CJS]             |
+| [Node.js >= 20]       | Yes       | [ESM and CJS]             |
 | [Node.js 16]          | No        | [Reason]                   |
 | [Python >= 3.10]      | Yes       | [Type hints required]      |
 | [Browser (ESM)]       | Yes       | [Bundle size: ~N kB gzip]  |
