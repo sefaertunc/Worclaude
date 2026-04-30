@@ -107,7 +107,7 @@ export async function promptClaudeMdMerge(existingContent, missingSections) {
 
   const { choice } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'choice',
       message: 'How would you like to handle CLAUDE.md?',
       choices: [
@@ -139,7 +139,7 @@ export async function interactiveSectionMerge(existingContent, renderedTemplate,
 
     const { addSection } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'addSection',
         message: `Add "${sectionName}" to your CLAUDE.md?`,
         choices: [

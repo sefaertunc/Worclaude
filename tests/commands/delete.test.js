@@ -27,6 +27,7 @@ vi.spyOn(console, 'log').mockImplementation(() => {});
 
 import inquirer from 'inquirer';
 import { deleteCommand } from '../../src/commands/delete.js';
+import { expectAllValidPromptTypes } from '../utils/prompt-types.js';
 import {
   classifyClaudeFiles,
   detectRootFiles,
@@ -181,6 +182,8 @@ describe('delete command', () => {
       expect(await fs.pathExists(path.join(tmpDir, '.claude', 'agents', 'plan-reviewer.md'))).toBe(
         true
       );
+
+      expectAllValidPromptTypes(inquirer, 'delete full flow (declined)');
     });
   });
 

@@ -27,6 +27,7 @@ vi.spyOn(console, 'log').mockImplementation(() => {});
 import inquirer from 'inquirer';
 import { restoreCommand } from '../../src/commands/restore.js';
 import { createBackup } from '../../src/core/backup.js';
+import { expectAllValidPromptTypes } from '../utils/prompt-types.js';
 
 describe('restore command', () => {
   let tmpDir;
@@ -72,6 +73,8 @@ describe('restore command', () => {
 
     const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     expect(content).toBe('# Original');
+
+    expectAllValidPromptTypes(inquirer, 'restore confirm flow');
   });
 
   it('cancels when user selects cancel option', async () => {

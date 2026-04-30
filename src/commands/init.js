@@ -83,14 +83,14 @@ async function runAgents(selections) {
 async function runOptionalExtras(selections) {
   const previouslySelected = new Set(selections.optionalFeatures || []);
   const questions = OPTIONAL_FEATURES.map((feature) => ({
-    type: 'list',
+    type: 'select',
     name: feature.id,
     message: feature.label,
     choices: [
       { name: 'Yes', value: true },
       { name: 'No', value: false },
     ],
-    default: previouslySelected.has(feature.id) ? 0 : 1,
+    default: previouslySelected.has(feature.id),
   }));
   const answers = await inquirer.prompt(questions);
   const optionalFeatures = OPTIONAL_FEATURES.filter((f) => answers[f.id]).map((f) => f.id);
@@ -100,7 +100,7 @@ async function runOptionalExtras(selections) {
   // at it. Phase 7 T7.3.
   const { installGithubAction } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'installGithubAction',
       message:
         'Install Claude Code\'s GitHub Action for the @claude "compounding engineering" workflow?',
@@ -108,7 +108,7 @@ async function runOptionalExtras(selections) {
         { name: 'Yes — show me the install instructions now', value: true },
         { name: "No — I'll do it later", value: false },
       ],
-      default: 1,
+      default: false,
     },
   ]);
 
@@ -179,7 +179,7 @@ async function showConfirmation(selections) {
 
   const { confirmation } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'confirmation',
       message: 'Everything look right?',
       choices: [
@@ -241,7 +241,7 @@ async function runInteractivePrompts(projectRoot) {
     } else if (confirmation === 'adjust') {
       const { step } = await inquirer.prompt([
         {
-          type: 'list',
+          type: 'select',
           name: 'step',
           message: 'Which step do you want to adjust?',
           choices: CONFIRMATION_STEPS,
@@ -772,7 +772,7 @@ export async function initCommand() {
 
     const { proceed } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'proceed',
         message: 'Proceed with workflow installation?',
         choices: [
