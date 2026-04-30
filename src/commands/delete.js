@@ -32,7 +32,7 @@ export async function deleteCommand() {
   // Step 1: Mode selection
   const { mode } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'mode',
       message: 'What would you like to do?',
       choices: [
@@ -82,7 +82,7 @@ export async function deleteCommand() {
     display.newline();
     const { modifiedAction } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'modifiedAction',
         message: `${classification.modified.length} file(s) have been customized. What should we do?`,
         choices: [
@@ -110,7 +110,7 @@ export async function deleteCommand() {
 
     const { rootAction } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'rootAction',
         message: 'What would you like to do with these files?',
         choices: [
@@ -118,7 +118,7 @@ export async function deleteCommand() {
           { name: 'Let me choose which to remove', value: 'choose' },
           { name: 'Remove all', value: 'remove' },
         ],
-        default: 0,
+        default: 'keep',
       },
     ]);
 
@@ -153,14 +153,14 @@ export async function deleteCommand() {
 
   const { confirm } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'confirm',
       message: 'Confirm deletion?',
       choices: [
         { name: 'Yes, delete', value: true },
         { name: 'No, cancel', value: false },
       ],
-      default: 1,
+      default: false,
     },
   ]);
 

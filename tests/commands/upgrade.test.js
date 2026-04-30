@@ -48,6 +48,7 @@ import inquirer from 'inquirer';
 import { execSync } from 'node:child_process';
 import { getLatestNpmVersion } from '../../src/utils/npm.js';
 import { upgradeCommand } from '../../src/commands/upgrade.js';
+import { expectAllValidPromptTypes } from '../utils/prompt-types.js';
 import { buildTemplateHashMap } from '../../src/core/file-categorizer.js';
 import { substituteVariables } from '../../src/core/scaffolder.js';
 import { buildAgentsMdVariables } from '../../src/core/variables.js';
@@ -156,6 +157,8 @@ describe('upgrade command', () => {
     );
     expect(updatedMeta.version).toBe(currentVersion);
     expect(updatedMeta.fileHashes['hooks/learn-capture.cjs']).toBeDefined();
+
+    expectAllValidPromptTypes(inquirer, 'upgrade repair-only flow');
   });
 
   it('writes CLAUDE.md memory-guidance sidecar under .claude/workflow-ref/ when missing', async () => {

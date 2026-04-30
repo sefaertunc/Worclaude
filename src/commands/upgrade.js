@@ -233,7 +233,7 @@ async function applyRepairPass(projectRoot, plan, variables) {
 async function promptProceed(message) {
   const { proceed } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'proceed',
       message,
       choices: [
@@ -357,7 +357,7 @@ async function promptAndScaffoldOptionalFeatures(projectRoot, meta, { yes, dryRu
   for (const feature of available) {
     const { accept } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'accept',
         message: feature.label,
         choices: [
@@ -397,7 +397,7 @@ export async function upgradeCommand(options = {}) {
     );
     const { doUpdate } = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'doUpdate',
         message: 'Update worclaude CLI?',
         choices: [
@@ -533,7 +533,7 @@ export async function upgradeCommand(options = {}) {
       agentReport = await patchAgentDescriptions(projectRoot, meta, async (agentName) => {
         const { patch } = await inquirer.prompt([
           {
-            type: 'list',
+            type: 'select',
             name: 'patch',
             message: `Agent "${agentName}" has been customized. Add missing description field?`,
             choices: [

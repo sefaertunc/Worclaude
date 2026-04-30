@@ -27,7 +27,7 @@ export async function restoreCommand() {
 
   const { selected } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'selected',
       message: 'Select backup to restore:',
       choices,
@@ -48,14 +48,14 @@ export async function restoreCommand() {
 
   const { confirm } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'confirm',
       message: 'Confirm restore?',
       choices: [
         { name: 'Yes', value: true },
         { name: 'No', value: false },
       ],
-      default: 1,
+      default: false,
     },
   ]);
 
