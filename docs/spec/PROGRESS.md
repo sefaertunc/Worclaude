@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.9.2
-**Last Updated:** 2026-04-30 (v2.10.2)
+**Version:** 2.10.3
+**Last Updated:** 2026-04-30 (v2.10.3)
 
 ## Completed
 
@@ -598,6 +598,10 @@
   - [x] **PR #175** (`Version bump: none`) — closes BACKLOG "claude --worktree command visibility" via documentation. Investigation showed Claude Code does NOT create a "minimal `.claude/`" as the BACKLOG claimed; the worktree's `.claude/` is a normal `git checkout` from `origin/HEAD`, plus Claude Code copies `settings.local.json` + writes `.stop-hook-active`. The "missing /review-plan" symptom was caused by `git worktree add origin/main` lagging develop, not by Claude Code overriding files. The `subagent-usage` skill's "Base-branch gotcha" already documented the mechanism, and 3 agents (bug-fixer/verify-app/test-writer) already auto-reset via a freshness preamble. Gap was direct `claude --worktree` users (no agent in the loop). Added a one-paragraph copy-paste workaround block (`cd .claude/worktrees/<name> && git fetch origin && git reset --hard origin/<your-branch>`) to both the template skill file and the dogfood mirror. Rejected three more invasive options: auto-reset SessionStart hook (destroys uncommitted work), `worclaude worktree-fresh` wrapper subcommand (cosmetic), bigger doc overhaul (negligible gain).
   - [x] Release group: 2 PRs (1 patch, 1 none). v2.10.1 → v2.10.2. No missing declarations.
 
+- [x] v2.10.3 — Inquirer 13 prompt-type regression fix (2026-04-30)
+  - [x] **PR #177** (`Version bump: patch`) — fixes user-reported breakage where every arrow-selectable prompt across `init` / `upgrade` / `restore` / `delete` accepted typed text instead of arrow-key navigation, surfaced after PR #169 (v2.10.0) bumped `inquirer` 12 → 13 with no code changes. Inquirer 13 renamed the legacy `list` prompt type to `select` and ships a runner that silently falls back to `type: 'input'` (free-text) for unknown types — every `type: 'list'` site degraded silently, and the typed `y`/`yes` for "Everything look right?" never matched the strict choice value `'yes'`, looping the prompt. Renamed all 20 sites to `type: 'select'` across 8 source files, migrated 4 index-based `default:` values to value-based (init.js, restore.js, delete.js — `select` matches by value, not index). Added `tests/utils/prompt-types.js` helper exposing `VALID_INQUIRER_TYPES` and `expectAllValidPromptTypes()`, new `tests/prompts/prompt-types.test.js` covering the 4 standalone prompt modules + agent-selection, plus single-line assertions added to init/upgrade/restore/delete test files so the ~30 sites in command files are also covered. Updated 3 stale `toBe('list')` assertions in init.test.js. CLAUDE.md tech-stack versions aligned with package.json reality (Inquirer ^13.4.2, Ora ^9.4.0, Commander ^14.0.3 — all three were drifted), two new Gotchas added: silent-fallback-to-`input` and value-based default semantics. Tests: 992 → 999. Root cause of the test-suite blind spot: `vi.mock('inquirer')` returned canned responses without inspecting `spec.type`; only 3 of 992 tests ever asserted on type, and none on `'checkbox'`.
+  - [x] Release group: 1 PR (patch). v2.10.2 → v2.10.3. No missing declarations.
+
 ## Stats
 
 - 14 CLI commands: init, upgrade, status, backup, restore, diff, delete, doctor, scan, setup-state, doc-lint, observability, regenerate-routing, worktrees
@@ -610,7 +614,7 @@
 - 8 SPEC.md template variants (1 default + 7 project-type-specific)
 - 16 tech stack language options with per-language settings templates
 - 14 Tier 1 project-scanner detectors
-- 992 tests across 70 test files
+- 999 tests across 71 test files
 - 3 scenarios: fresh, existing, upgrade
 
 ## Notes
