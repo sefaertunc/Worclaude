@@ -27,6 +27,7 @@ vi.spyOn(console, 'log').mockImplementation(() => {});
 
 import inquirer from 'inquirer';
 import { initCommand } from '../../src/commands/init.js';
+import { expectAllValidPromptTypes } from '../utils/prompt-types.js';
 
 // Helper: build standard mock sequence for CLI tool + Node.js
 function setupDefaultMocks() {
@@ -102,6 +103,11 @@ describe('init command', () => {
       const exists = await fs.pathExists(path.join(tmpDir, '.claude', 'agents', `${agent}.md`));
       expect(exists, `${agent}.md should exist`).toBe(true);
     }
+  });
+
+  it('every prompt uses a v13 built-in inquirer type', async () => {
+    await initCommand();
+    expectAllValidPromptTypes(inquirer, 'init');
   });
 
   it('creates selected optional agents', async () => {
@@ -261,7 +267,7 @@ describe('init command', () => {
     });
     expect(ghPrompt).toBeDefined();
     const spec = ghPrompt[0].find((s) => s.name === 'installGithubAction');
-    expect(spec.type).toBe('list');
+    expect(spec.type).toBe('select');
     expect(spec.message).toMatch(/GitHub Action/);
     expect(spec.choices.map((c) => c.value).sort()).toEqual([false, true]);
   });
@@ -460,9 +466,9 @@ describe('init command', () => {
 
     expect(optionalExtrasCall).toBeDefined();
     const [pluginPrompt, gtdPrompt] = optionalExtrasCall[0];
-    // Both must be `list` type (arrow-key) — matches every other yes/no prompt in init.
-    expect(pluginPrompt.type).toBe('list');
-    expect(gtdPrompt.type).toBe('list');
+    // Both must be `select` type (arrow-key) — matches every other yes/no prompt in init.
+    expect(pluginPrompt.type).toBe('select');
+    expect(gtdPrompt.type).toBe('select');
     // Each must offer exactly Yes/No with boolean values.
     for (const prompt of [pluginPrompt, gtdPrompt]) {
       const values = prompt.choices.map((c) => c.value);

@@ -12,13 +12,13 @@ worclaude — CLI tool that scaffolds a comprehensive Claude Code workflow into 
 <!-- references package.json -->
 
 - **Runtime:** Node.js 20+ (pure ESM, no build step, no transpilation)
-- **CLI framework:** Commander.js ^13.1.0
-- **Interactive prompts:** Inquirer.js ^12.5.0 (watch for breaking changes between majors)
+- **CLI framework:** Commander.js ^14.0.3
+- **Interactive prompts:** Inquirer.js ^13.4.2 (the `list` type was renamed to `select` in v13 — see Gotchas)
 - **Terminal styling:** Chalk ^5.4.1 (via `display.*` namespace — never use `console.log` directly)
-- **Spinners:** Ora ^8.2.0
+- **Spinners:** Ora ^9.4.0
 - **File operations:** fs-extra ^11.3.0
 - **Hashing:** Node.js crypto (built-in, CRLF-normalized)
-- **Testing:** Vitest (992 tests, 70 files)
+- **Testing:** Vitest (999 tests, 71 files)
 - **Linting:** ESLint flat config (eslint.config.js) + Prettier (single quotes, trailing commas ES5, 100 char width)
 - **Docs:** VitePress (GitHub Pages via GitHub Actions)
 - **Package manager:** npm (caret ranges, no lockfile pinning)
@@ -42,7 +42,7 @@ node src/index.js regenerate-routing  # Rebuild .claude/skills/agent-routing/SKI
 node src/index.js scan                # Detect project type/stack via project-scanner detectors
 node src/index.js setup-state show    # Inspect /setup interview persistence
 node src/index.js worktrees clean     # Remove stale agent worktrees
-npm test                              # Run tests (992 tests, 70 files)
+npm test                              # Run tests (999 tests, 71 files)
 npm run lint                          # Lint
 npm run format                        # Format
 npm run docs:dev                      # VitePress dev server
@@ -155,3 +155,5 @@ cd /tmp/test-fresh && node ~/SEFA/GIT/Claude-Workflow/src/index.js init
 - `merger.js` is the one exception to "core/ never prompts" — it calls `promptHookConflict()` directly
 - Use `Bash(git:*)` wildcard for git permissions, never list subcommands individually — new subcommands will trigger approval prompts
 - Commands with pipes (`|`) and redirects (`2>&1`) trigger security prompts even in auto-accept mode. This is a Claude Code safety feature for compound shell commands — cannot be fully eliminated via permissions. Use "Yes, and don't ask again" when prompted.
+- Inquirer 13's legacy runner silently falls back to `type: 'input'` for unknown prompt types (`node_modules/inquirer/dist/ui/prompt.js`). A typo or an outdated type name (e.g. `list` after the v13 rename to `select`) renders as a free-text input — no error thrown. Mocked tests don't catch it. After any inquirer major bump, run Manual Scenario A or rely on `tests/utils/prompt-types.js` assertions.
+- Inquirer 13 `select` defaults take the choice **value**, not its **index**. Migrating from v12: `default: 1` (second choice) becomes `default: <that-choice's-value>`.

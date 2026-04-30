@@ -20,7 +20,7 @@ export async function promptTechStack(_projectTypes) {
 
   const { useDocker } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'useDocker',
       message: 'Do you use Docker currently?',
       choices: [

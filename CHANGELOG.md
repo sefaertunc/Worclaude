@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.10.3] — 2026-04-30
+
+Fixes a user-reported breakage where every arrow-selectable prompt across `worclaude init` / `upgrade` / `restore` / `delete` accepted typed text instead of arrow-key navigation. Root cause: PR #169 (v2.10.0) bumped `inquirer` 12 → 13 with no code changes, but inquirer 13 renamed its legacy `list` prompt type to `select` and ships a runner that silently falls back to `type: 'input'` (free-text) for unknown types — so every `type: 'list'` site degraded silently. The "Everything look right?" prompt looped because typed `y`/`yes` did not strictly equal the choice value `'yes'`. Renames all 20 sites, migrates 4 index-based defaults to value-based (inquirer 13's `select` matches by value, not index), aligns the CLAUDE.md tech-stack metadata that had drifted behind `package.json` for three deps (Inquirer / Ora / Commander), and closes the test-suite blind spot — the prior `vi.mock('inquirer')` setup never inspected `spec.type`.
+
+### Fixed
+
+- **Arrow-selectable prompts work again across init / upgrade / restore / delete** (PR #177) — renamed all 20 `type: 'list'` sites to `type: 'select'` across `src/commands/{init,upgrade,restore,delete}.js` and `src/prompts/{claude-md-merge,conflict-resolution,project-type,tech-stack}.js`. Migrated 4 index-based `default:` values to value-based: `init.js:93,111`, `restore.js:51`, `delete.js:113,156`. Without this, "Generate plugin.json?", "Scaffold memory files?", "Install GitHub Action?", "Everything look right?", "Which step do you want to adjust?", restore and delete confirmations, and the standalone hook-conflict / project-type / claude-md-merge prompts all rendered as silent free-text inputs.
+
+### Tests
+
+- **Structural regression coverage for prompt types** (PR #177) — new `tests/utils/prompt-types.js` exposes `VALID_INQUIRER_TYPES` (the 10 v13 built-in prompt names) plus `expectAllValidPromptTypes(inquirer, label)` which inspects every captured `inquirer.prompt.mock.calls` spec and fails when any `type` is not a v13 built-in. New `tests/prompts/prompt-types.test.js` exercises the four standalone prompt modules + agent-selection. Single-line assertions added to `tests/commands/{init,upgrade,restore,delete}.test.js` so the ~30 sites in command files are also covered. Three stale `expect(spec.type).toBe('list')` assertions in `init.test.js` updated to `'select'`. Test counts: 992 → 999.
+
+### Docs
+
+- **CLAUDE.md tech-stack metadata aligned with package.json** (PR #177) — Inquirer ^12.5.0 → ^13.4.2, Ora ^8.2.0 → ^9.4.0, Commander ^13.1.0 → ^14.0.3 (all three were drifted; CLAUDE.md's own "watch for breaking changes between majors" warning had not been acted on at the time of PR #169's bump). Two new Gotchas added: (1) the silent `type` → `input` fallback in inquirer 13's legacy runner (`node_modules/inquirer/dist/ui/prompt.js`), and (2) inquirer 13 `select` defaults take the choice value, not its index — `default: 1` (second choice) becomes `default: <that-choice's-value>`.
+
+Release group: 1 PR (patch). v2.10.2 → v2.10.3. No missing declarations.
+
 ## [2.10.2] — 2026-04-30
 
 Bundles a dogfood catch-up of this repo's own `.claude/` (skipping from v2.8.0 to v2.10.1 in one upgrade run) with a real scaffold bug fix surfaced during that upgrade — `.claude/workflow-ref/` (transient upgrade-time conflict references) was missing from the scaffolder's `updateGitignore` entries, so every user running `worclaude upgrade` had those files pollute their git status. Also closes the BACKLOG "claude --worktree command visibility" item via a docs-only fix: investigation confirmed Claude Code does not create a "minimal `.claude/`" (the worktree's `.claude/` is a normal git checkout from `origin/HEAD`); the perceived missing-commands symptom was caused by main lagging develop, and the existing `subagent-usage` skill already documented the mechanism. The gap was direct `claude --worktree` users with no agent-mediated freshness preamble — filled with a one-paragraph copy-paste reset block.

@@ -16,7 +16,7 @@ export async function promptHookConflict(hookCategory, existingHook, workflowHoo
 
   const { resolution } = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'resolution',
       message: 'How would you like to resolve this?',
       choices: [
