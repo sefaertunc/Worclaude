@@ -60,3 +60,9 @@ docs/.vitepress/cache
 
 # Worclaude (upgrade-time conflict references — review and discard)
 .claude/workflow-ref/
+
+# Worclaude (forward-looking handoff notes — keep private to the working copy)
+docs/handoffs/
+
+# MCP server config — may hold tokens. Track .mcp.example.json instead.
+/.mcp.json
