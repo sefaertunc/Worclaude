@@ -137,14 +137,14 @@ jobs:
         # default (documented in its README). Feed-derived content is untrusted,
         # so --disallowedTools narrows the default toolset to Read-only.
         if: steps.precheck.outputs.has_new == 'true' && steps.precheck.outputs.fetch_failure != 'true'
-        uses: anthropics/claude-code-action@b3c0320e7e8228fcafe773fda5bfd427aa8d1c34 # v1.0.109
+        uses: anthropics/claude-code-action@86eb26bf0139bdd75acd15ea5f00f45ee0a284c2 # v1.0.122
         env:
           NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
           FEED_REPORT_PATH: ${{ steps.precheck.outputs.feed_report_path }}
           RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--model claude-sonnet-4-6 --max-turns 25 --disallowedTools Edit Write Bash NotebookEdit'
+          claude_args: '--model claude-sonnet-4-6 --max-turns 40 --disallowedTools Edit Write Bash NotebookEdit'
           prompt: |
             You are auditing new Anthropic upstream items to decide whether the Worclaude maintainer should open a GitHub issue about them.
 
