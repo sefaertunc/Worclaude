@@ -52,6 +52,8 @@
       "Read(*.md)",
       "Read(*.json)",
       "Read(*.js)",
+      "// -- GitHub Actions runner temp (upstream-check precheck writes new-items.json here) --",
+      "Read(/home/runner/work/_temp/**)",
       "// -- Edit Permissions --",
       "Edit(.claude/**)",
       "Edit(docs/**)",
