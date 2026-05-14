@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.10.3
-**Last Updated:** 2026-04-30 (v2.10.3)
+**Version:** 2.10.4
+**Last Updated:** 2026-05-14 (v2.10.4)
 
 ## Completed
 
@@ -601,6 +601,14 @@
 - [x] v2.10.3 — Inquirer 13 prompt-type regression fix (2026-04-30)
   - [x] **PR #177** (`Version bump: patch`) — fixes user-reported breakage where every arrow-selectable prompt across `init` / `upgrade` / `restore` / `delete` accepted typed text instead of arrow-key navigation, surfaced after PR #169 (v2.10.0) bumped `inquirer` 12 → 13 with no code changes. Inquirer 13 renamed the legacy `list` prompt type to `select` and ships a runner that silently falls back to `type: 'input'` (free-text) for unknown types — every `type: 'list'` site degraded silently, and the typed `y`/`yes` for "Everything look right?" never matched the strict choice value `'yes'`, looping the prompt. Renamed all 20 sites to `type: 'select'` across 8 source files, migrated 4 index-based `default:` values to value-based (init.js, restore.js, delete.js — `select` matches by value, not index). Added `tests/utils/prompt-types.js` helper exposing `VALID_INQUIRER_TYPES` and `expectAllValidPromptTypes()`, new `tests/prompts/prompt-types.test.js` covering the 4 standalone prompt modules + agent-selection, plus single-line assertions added to init/upgrade/restore/delete test files so the ~30 sites in command files are also covered. Updated 3 stale `toBe('list')` assertions in init.test.js. CLAUDE.md tech-stack versions aligned with package.json reality (Inquirer ^13.4.2, Ora ^9.4.0, Commander ^14.0.3 — all three were drifted), two new Gotchas added: silent-fallback-to-`input` and value-based default semantics. Tests: 992 → 999. Root cause of the test-suite blind spot: `vi.mock('inquirer')` returned canned responses without inspecting `spec.type`; only 3 of 992 tests ever asserted on type, and none on `'checkbox'`.
   - [x] Release group: 1 PR (patch). v2.10.2 → v2.10.3. No missing declarations.
+
+- [x] v2.10.4 — Upstream-check Read-on-RUNNER_TEMP fix + banner refresh + dependabot roll-up (2026-05-14)
+  - [x] **PR #187** (`Version bump: patch`) — fixes the root cause of upstream-check failures #31 (2026-05-11), #32 (2026-05-12), and parse-error issue #184 (2026-05-10). The `.github/workflows/upstream-check.yml` Claude session writes precheck output to `RUNNER_TEMP` (`/home/runner/work/_temp/new-items.json`, `feed-report.json`, `next-state.json`) via `scripts/upstream-precheck.mjs:192-194`, but `.claude/settings.json` only granted `Read(*.json)` — a workspace-relative glob that does not match absolute `RUNNER_TEMP` paths. Claude was burning turns hitting permission walls (6 denials per run in #31's log) and either timed out at `max_turns` (#31, #32) or emitted a parse-error envelope that auto-opened tracking issues (#184, earlier #91). Added `Read(/home/runner/work/_temp/**)` to the allow list and bumped the SHA pin for `anthropics/claude-code-action` v1.0.111 → v1.0.122 (11 patch versions current) along the way. Together with the already-deployed `--max-turns 40` cap from #181, this eliminates the failure mode end-to-end. Issue #184 closed with a comment linking back to this PR.
+  - [x] **PR #188** (`Version bump: none`) — second README banner refresh. New right-side background art (sun-burst → blurred floral focal point that better matches the existing logo motif). Logo, wordmark, tagline, and 2048×682 dimensions unchanged → no README layout impact. Lossless-compressed with `oxipng -o 6 --strip safe` (974 KB raw → 818 KB final, also 34 KB smaller than the previous 852 KB banner). Previous banner archived to `assets/old/banner2.png` per the existing tracked-archive convention from #182.
+  - [x] **PR #183** (`Version bump: none`) — gitignored `.mcp.json` and `docs/handoffs/` because both can carry credentials or forward-looking work-in-progress notes that should not ship in the repo. Tracks `.mcp.example.json` as the public template instead.
+  - [x] **PR #182** (`Version bump: none`) — first banner refresh (3 versions ago) — replaced the original 2.55 MB banner with a 852 KB version, established `assets/old/` as a tracked archive directory, and added logo variants.
+  - [x] **PR #181** (`Version bump: none`) — preemptive headroom: bumped the upstream-check workflow's `--max-turns` 25 → 40. This was the partial mitigation that allowed run #33 to succeed before #187 fixed the actual root cause; runs #31 and #32 had already failed under the 25-turn cap because the workflow on `main` still ran at 25 until the bump propagated.
+  - [x] Release group: 9 PRs (1 patch, 4 none, 4 missing declarations on dependabot PRs #186, #185, #180, #179). v2.10.3 → v2.10.4. ⚠ Under-documented: 4 dependabot PRs treated as `none`.
 
 ## Stats
 

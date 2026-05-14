@@ -4,6 +4,24 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.10.4] — 2026-05-14
+
+Patch release fixing the silent failure mode of the daily `upstream-check` workflow. The Claude session writes precheck output to `RUNNER_TEMP` (an absolute path outside the workspace), but `.claude/settings.json` only granted `Read(*.json)` for workspace-relative paths. Claude was burning turns hitting permission walls — 6 denials per run in failed-run logs — and either timed out at `max_turns` (runs #31, #32) or emitted a parse-error envelope that auto-opened a tracking issue (#184). This release adds an explicit `Read(/home/runner/work/_temp/**)` grant, bumps `anthropics/claude-code-action` 11 patch versions to current, refreshes the README banner with new background art, and rolls up two weeks of routine Dependabot bumps.
+
+### Fixed
+
+- **upstream-check: grant Claude Read on RUNNER_TEMP + bump claude-code-action to v1.0.122** (PR #187) — adds `Read(/home/runner/work/_temp/**)` to `.claude/settings.json` so the Claude action can read `new-items.json` / `feed-report.json` / `next-state.json` from `scripts/upstream-precheck.mjs:192-194`. Bumps the SHA pin from v1.0.111 → v1.0.122 to pick up upstream's own bug fixes. Together with the `--max-turns 40` cap from #181, this eliminates the failure mode that produced runs #31, #32, and parse-error issue #184. Issue #184 closed with a back-link to the fix.
+
+### Changed
+
+- **Banner refresh + archive previous variant** (PR #188) — second refresh of the README banner; new right-side background art (sun-burst → blurred floral focal point) better matches the existing logo motif. Logo, wordmark, tagline, and 2048×682 dimensions unchanged → no README layout impact. Lossless-compressed with `oxipng -o 6 --strip safe` (974 KB raw → 818 KB final, also 34 KB smaller than the previous banner). Previous banner archived to `assets/old/banner2.png` per the convention established in #182.
+- **gitignore `.mcp.json` and `docs/handoffs/`, ship `.mcp.example.json`** (PR #183) — MCP server config may carry tokens; tracking is now opt-in via the example file. Forward-looking session handoffs in `docs/handoffs/` are kept private to the working copy.
+- **Banner refresh and add logo variants** (PR #182) — earlier asset refresh that established `assets/old/` as a tracked archive directory and added logo variants alongside the banner.
+- **upstream-check: bump claude max-turns 25 → 40** (PR #181) — preemptive headroom; this was the partial mitigation that allowed run #33 to succeed before #187 fixed the actual root cause.
+- ⚠ **No `Version bump:` declaration — under-documented:** dependabot PRs **#186** (`bump the minor-and-patch group with 2 updates`), **#185** (`bump the actions-minor-and-patch group with 3 updates` — included the v1.0.111 → v1.0.119 claude-code-action bump that #187 subsumed via the v1.0.122 resolution), **#180** (`bump the minor-and-patch group with 2 updates`), and **#179** (`bump anthropics/claude-code-action from 1.0.109 to 1.0.111`) were merged without `Version bump:` lines and treated as `none`.
+
+Release group: 9 PRs (1 patch, 4 none, 4 missing declarations). v2.10.3 → v2.10.4.
+
 ## [2.10.3] — 2026-04-30
 
 Fixes a user-reported breakage where every arrow-selectable prompt across `worclaude init` / `upgrade` / `restore` / `delete` accepted typed text instead of arrow-key navigation. Root cause: PR #169 (v2.10.0) bumped `inquirer` 12 → 13 with no code changes, but inquirer 13 renamed its legacy `list` prompt type to `select` and ships a runner that silently falls back to `type: 'input'` (free-text) for unknown types — so every `type: 'list'` site degraded silently. The "Everything look right?" prompt looped because typed `y`/`yes` did not strictly equal the choice value `'yes'`. Renames all 20 sites, migrates 4 index-based defaults to value-based (inquirer 13's `select` matches by value, not index), aligns the CLAUDE.md tech-stack metadata that had drifted behind `package.json` for three deps (Inquirer / Ora / Commander), and closes the test-suite blind spot — the prior `vi.mock('inquirer')` setup never inspected `spec.type`.
