@@ -137,7 +137,7 @@ jobs:
         # default (documented in its README). Feed-derived content is untrusted,
         # so --disallowedTools narrows the default toolset to Read-only.
         if: steps.precheck.outputs.has_new == 'true' && steps.precheck.outputs.fetch_failure != 'true'
-        uses: anthropics/claude-code-action@476e359e6203e73dad705c8b322e333fabbd7416 # v1.0.119
+        uses: anthropics/claude-code-action@86eb26bf0139bdd75acd15ea5f00f45ee0a284c2 # v1.0.122
         env:
           NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
           FEED_REPORT_PATH: ${{ steps.precheck.outputs.feed_report_path }}
