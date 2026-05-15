@@ -11,7 +11,9 @@ import {
   runPrecheck,
   classifyError,
   seenKeyForStateEntry,
+  prioritizeAndCap,
   ERROR_TAGS,
+  MAX_NEW_ITEMS_DEFAULT,
 } from '../../scripts/upstream-precheck.mjs';
 
 async function readOutputs(outputPath) {
@@ -110,6 +112,7 @@ describe('upstream-precheck', () => {
     delete process.env.RUNNER_TEMP;
     delete process.env.GITHUB_OUTPUT;
     delete process.env.STATE_PATH;
+    delete process.env.MAX_NEW_ITEMS;
     await fs.remove(tmpDir);
   });
 
@@ -413,6 +416,8 @@ describe('upstream-precheck', () => {
       const required = [
         'has_new',
         'new_count',
+        'kept_count',
+        'truncated_count',
         'fetch_failure',
         'consecutive_failures',
         'fetch_error',
@@ -424,6 +429,165 @@ describe('upstream-precheck', () => {
       for (const key of required) {
         expect(out, `missing output: ${key}`).toHaveProperty(key);
       }
+    });
+  });
+
+  describe('prioritizeAndCap — tier-priority sort + item cap', () => {
+    const t1 = (id) => makeItem(id, 'claude-code-releases', { sourceCategory: 'core' });
+    const t1b = (id) => makeItem(id, 'agent-sdk-ts-changelog', { sourceCategory: 'core' });
+    const t2 = (id) => makeItem(id, 'engineering-blog', { sourceCategory: 'core' });
+    const t3 = (id) => makeItem(id, 'misc-source', { sourceCategory: 'extended' });
+    const t4 = (id) => makeItem(id, 'reddit-claude', { sourceCategory: 'community' });
+
+    it('sorts critical sources before engineering-blog before other before community', () => {
+      const items = [t4('a'), t3('b'), t2('c'), t1('d'), t1b('e')];
+      const { kept, truncated } = prioritizeAndCap(items, 100);
+      expect(truncated).toBe(0);
+      expect(kept.map((i) => i.source)).toEqual([
+        'claude-code-releases',
+        'agent-sdk-ts-changelog',
+        'engineering-blog',
+        'misc-source',
+        'reddit-claude',
+      ]);
+    });
+
+    it('breaks ties within a tier by date, newest first', () => {
+      const items = [
+        t1('old', { date: '2026-04-01T00:00:00.000Z' }),
+        t1('new', { date: '2026-05-01T00:00:00.000Z' }),
+        t1('mid', { date: '2026-04-15T00:00:00.000Z' }),
+      ].map((i) => i); // makeItem already returns object; overrides via second arg above were a no-op
+      // Rebuild with proper date overrides:
+      const dated = [
+        makeItem('old', 'claude-code-releases', { date: '2026-04-01T00:00:00.000Z' }),
+        makeItem('new', 'claude-code-releases', { date: '2026-05-01T00:00:00.000Z' }),
+        makeItem('mid', 'claude-code-releases', { date: '2026-04-15T00:00:00.000Z' }),
+      ];
+      const { kept } = prioritizeAndCap(dated, 100);
+      expect(kept.map((i) => i.id)).toEqual(['new', 'mid', 'old']);
+      // silence unused-var lint on the malformed helper-call array
+      expect(items.length).toBe(3);
+    });
+
+    it('caps to max and reports truncation count', () => {
+      const items = [t1('a'), t1b('b'), t2('c'), t3('d'), t4('e'), t4('f')];
+      const { kept, truncated } = prioritizeAndCap(items, 3);
+      expect(kept).toHaveLength(3);
+      expect(truncated).toBe(3);
+      // Cap keeps the highest-tier items; the dropped tail is the community pair.
+      expect(kept.map((i) => i.source)).toEqual([
+        'claude-code-releases',
+        'agent-sdk-ts-changelog',
+        'engineering-blog',
+      ]);
+    });
+
+    it('returns the full list unchanged when items <= max', () => {
+      const items = [t1('a'), t2('b')];
+      const { kept, truncated } = prioritizeAndCap(items, 10);
+      expect(kept).toHaveLength(2);
+      expect(truncated).toBe(0);
+    });
+
+    it('treats non-positive or non-finite max as "no cap"', () => {
+      const items = [t1('a'), t2('b'), t3('c')];
+      expect(prioritizeAndCap(items, 0).kept).toHaveLength(3);
+      expect(prioritizeAndCap(items, -5).kept).toHaveLength(3);
+      expect(prioritizeAndCap(items, NaN).kept).toHaveLength(3);
+    });
+
+    it('does not mutate the input array', () => {
+      const items = [t4('a'), t1('b')];
+      const before = items.map((i) => i.id);
+      prioritizeAndCap(items, 10);
+      expect(items.map((i) => i.id)).toEqual(before);
+    });
+
+    it('exports a sensible MAX_NEW_ITEMS_DEFAULT', () => {
+      expect(Number.isInteger(MAX_NEW_ITEMS_DEFAULT)).toBe(true);
+      expect(MAX_NEW_ITEMS_DEFAULT).toBeGreaterThan(0);
+    });
+  });
+
+  describe('runPrecheck wires cap + outputs into the pipeline', () => {
+    it('writes the capped, priority-sorted slice to new-items.json', async () => {
+      process.env.MAX_NEW_ITEMS = '2';
+      const items = [
+        makeItem('com', 'reddit-claude', { sourceCategory: 'community' }),
+        makeItem('eng', 'engineering-blog', { sourceCategory: 'core' }),
+        makeItem('rel', 'claude-code-releases', { sourceCategory: 'core' }),
+      ];
+      const result = await runPrecheck({ client: makeFakeClient({ items }), statePath });
+      expect(result.newCount).toBe(3);
+
+      const out = await readOutputs(outputPath);
+      expect(out.new_count).toBe('3');
+      expect(out.kept_count).toBe('2');
+      expect(out.truncated_count).toBe('1');
+
+      const newItems = JSON.parse(await fs.readFile(out.new_items_path, 'utf8'));
+      expect(newItems).toHaveLength(2);
+      expect(newItems.map((i) => i.source)).toEqual(['claude-code-releases', 'engineering-blog']);
+    });
+
+    it('advances state for ALL new items even when truncated', async () => {
+      // Truncated items are surfaced via the fallback issue (or implicitly dropped
+      // by policy). Re-evaluating them tomorrow defeats the cap's purpose.
+      process.env.MAX_NEW_ITEMS = '1';
+      const items = [
+        makeItem('com', 'reddit-claude', { sourceCategory: 'community' }),
+        makeItem('rel', 'claude-code-releases', { sourceCategory: 'core' }),
+      ];
+      const result = await runPrecheck({ client: makeFakeClient({ items }), statePath });
+      expect(result.nextState.lastSeenItems.map((i) => i.id).sort()).toEqual(['com', 'rel']);
+    });
+
+    it('emits kept_count == new_count when below the cap', async () => {
+      const items = [makeItem('rel', 'claude-code-releases', { sourceCategory: 'core' })];
+      await runPrecheck({ client: makeFakeClient({ items }), statePath });
+      const out = await readOutputs(outputPath);
+      expect(out.new_count).toBe('1');
+      expect(out.kept_count).toBe('1');
+      expect(out.truncated_count).toBe('0');
+    });
+
+    it('reports zeroes for kept_count and truncated_count when no new items', async () => {
+      await fs.writeFile(
+        statePath,
+        JSON.stringify({
+          version: 2,
+          lastRun: '2026-04-27T00:00:00.000Z',
+          consecutiveFetchFailures: 0,
+          openWatchdogIssueNumber: null,
+          lastSeenItems: [
+            {
+              id: 'rel',
+              uniqueKey: 'rel|claude-code-releases',
+              source: 'claude-code-releases',
+              firstSeen: '2026-04-27T00:00:00.000Z',
+            },
+          ],
+        })
+      );
+      const items = [makeItem('rel', 'claude-code-releases', { sourceCategory: 'core' })];
+      await runPrecheck({ client: makeFakeClient({ items }), statePath });
+      const out = await readOutputs(outputPath);
+      expect(out.new_count).toBe('0');
+      expect(out.kept_count).toBe('0');
+      expect(out.truncated_count).toBe('0');
+    });
+
+    it('falls back to MAX_NEW_ITEMS_DEFAULT when env is unset or invalid', async () => {
+      delete process.env.MAX_NEW_ITEMS;
+      const items = Array.from({ length: 5 }, (_, i) =>
+        makeItem(`x${i}`, 'claude-code-releases', { sourceCategory: 'core' })
+      );
+      await runPrecheck({ client: makeFakeClient({ items }), statePath });
+      const out = await readOutputs(outputPath);
+      // Default cap is much larger than 5 — nothing should be truncated.
+      expect(out.kept_count).toBe('5');
+      expect(out.truncated_count).toBe('0');
     });
   });
 });
