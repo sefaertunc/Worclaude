@@ -136,96 +136,165 @@ jobs:
         # claude-code-action@v1 operates on the workflow's current checkout by
         # default (documented in its README). Feed-derived content is untrusted,
         # so --disallowedTools narrows the default toolset to Read-only.
+        #
+        # continue-on-error: max-turns blowups (error_max_turns) are routed to
+        # the "Claude-error fallback issue" step below, which opens a manual-
+        # triage issue and advances state. The job stays green so the daily
+        # cadence is uninterrupted.
         if: steps.precheck.outputs.has_new == 'true' && steps.precheck.outputs.fetch_failure != 'true'
+        continue-on-error: true
         uses: anthropics/claude-code-action@86eb26bf0139bdd75acd15ea5f00f45ee0a284c2 # v1.0.122
         env:
           NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
           FEED_REPORT_PATH: ${{ steps.precheck.outputs.feed_report_path }}
           RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
+          NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
+          KEPT_COUNT: ${{ steps.precheck.outputs.kept_count }}
+          TRUNCATED_COUNT: ${{ steps.precheck.outputs.truncated_count }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--model claude-sonnet-4-6 --max-turns 40 --disallowedTools Edit Write Bash NotebookEdit'
+          claude_args: '--model claude-sonnet-4-6 --max-turns 80 --disallowedTools Edit Write Bash NotebookEdit'
           prompt: |
-            You are auditing new Anthropic upstream items to decide whether the Worclaude maintainer should open a GitHub issue about them.
+            You are classifying new Anthropic upstream items for the Worclaude maintainer. This is a single-pass classification: Read the two input files once, then emit your final response. Do NOT Read any Worclaude project file — all facts you need are inlined below.
 
-            Inputs are provided as files (paths in environment variables):
-            - NEW_ITEMS_PATH: JSON array of new feed items since the last run
-            - FEED_REPORT_PATH: full run-report.json for source health context
-            - RUN_TIMESTAMP: ISO timestamp of when anthropic-watch's scraper last ran
+            Inputs (file paths in env vars):
+            - NEW_ITEMS_PATH: JSON array of new items (already capped + sorted by source priority by the precheck)
+            - FEED_REPORT_PATH: run-report.json with `summary.sourcesChecked` etc.
+            - RUN_TIMESTAMP: ISO timestamp of the scraper run
+            - NEW_COUNT: total new items detected before the cap
+            - KEPT_COUNT: items in NEW_ITEMS_PATH (≤ MAX_NEW_ITEMS, default 40)
+            - TRUNCATED_COUNT: items dropped from the low-priority tail (NEW_COUNT − KEPT_COUNT)
 
-            Read the input files with the Read tool. Do NOT use Bash, Edit, Write, or NotebookEdit — those tools are disallowed by the workflow for security reasons.
+            Tool budget: Read ONLY NEW_ITEMS_PATH and FEED_REPORT_PATH (exactly two Read calls). Bash/Edit/Write/NotebookEdit are disallowed by the action. Do NOT Read any project file — all classification rules are inlined below.
 
             Pre-baked facts (verified 2026-04-28, do not re-check):
-            - Worclaude does NOT depend on `@anthropic-ai/sdk` or `anthropic`. Treat API/SDK docs items as informational unless this phase re-verifies that fact.
-            - Agent model fields in Worclaude use short aliases (`sonnet`, `opus`, `haiku`) — never fully-qualified IDs. Model-ID bumps in changelogs do NOT affect the agent catalog.
-            - The anthropic-watch feed is now at v1.0 schema with three `sourceCategory` values: `core`, `extended`, `community`. Per upstream's contract (anthropic-watch/docs/WORCLAUDE-INTEGRATION.md), `community` items (Reddit, Hacker News, Twitter/X, GitHub commits on Anthropic-owned repos that ship via direct commits rather than tagged releases) are **informational signal only** — never autonomous-action triggers. Treat them as Informational unless a community item explicitly names a Worclaude file or contradicts a known convention.
-            - Source count is dynamic — read `summary.sourcesChecked` from FEED_REPORT_PATH for the current count. Do not assume a specific number.
+            - Worclaude does NOT depend on `@anthropic-ai/sdk` or `anthropic`. API/SDK doc items are informational.
+            - Agent model fields use short aliases (`sonnet`, `opus`, `haiku`) — model-ID changelog bumps do NOT affect the agent catalog.
+            - Feed v1.0 schema has three `sourceCategory` values: `core`, `extended`, `community`. Community items (Reddit, HN, Twitter/X, direct GH commits on Anthropic-owned repos) are informational signal only — never autonomous-action triggers unless they explicitly name a Worclaude file.
 
-            Do all of the following:
+            CLASSIFICATION RULES (mirror of docs/reference/upstream-automation.md "Classification Rules" — keep in sync):
 
-            1. Read NEW_ITEMS_PATH and group items by source.
+            [CRITICAL] sources — always "Worth Action":
+            - `claude-code-releases`        → affects templates/agents/**, templates/commands/*, templates/hooks/*.cjs, src/data/agents.js
+            - `claude-code-changelog`       → same
+            - `npm-claude-code`             → same
+            - `agent-sdk-ts-changelog`      → affects src/data/agent-registry.js (isolation/triggerType/model), src/core/scaffolder.js, src/core/merger.js
+            - `agent-sdk-py-changelog`      → same
 
-            2. For each item, decide if it is "worth a Worclaude issue." Use the cross-reference rules in `docs/reference/upstream-automation.md` — read that file with the Read tool and follow the "Classification Rules" section (the critical-source list, the Worclaude-specific cross-reference rules against templates/agents, templates/commands, templates/hooks, src/data/agents.js, src/data/agent-registry.js, docs/spec/BACKLOG.md, and CLAUDE.md Critical Rules).
+            `engineering-blog`:
+            - "Worth Action" only when the title/snippet describes a new workflow pattern, agent-design recommendation, skill idea, or convention. Cross-reference: docs/spec/BACKLOG.md, templates/skills/universal/*.md, CLAUDE.md Critical Rules.
+            - Otherwise Informational.
 
-            3. An item is worth an issue if it falls into any of these buckets:
-               - Claude Code release / changelog / npm — always worth mentioning
-               - Agent SDK TS/Py changelog — always worth mentioning
-               - Engineering blog with a new pattern, skill idea, or convention — worth mentioning
-               - Any item that you can tie to a specific Worclaude file or backlog entry — worth mentioning
-               Items that are NOT worth an issue: status page incidents, marketing blog posts unrelated to developer workflow, API/SDK docs (per pre-baked fact above), `sourceCategory: community` items unless they explicitly name a Worclaude file.
+            Anything else (API/SDK docs, status pages, marketing posts, community items not naming a Worclaude file) → Informational.
 
-            4. Your final assistant response is the output. Print it directly with no preamble and no commentary after. Do not use Write, Bash, or any other tool to emit output — just type your response. The action captures the full transcript; the parser reads the final assistant message from that transcript.
+            Decision per item:
+            - Worth Action iff source ∈ critical-list OR (source = engineering-blog AND content is a pattern/skill/convention).
+            - Else Informational.
 
-            5. Output format — first non-whitespace line of your final response determines the path:
+            Output: your final assistant response IS the output. Print it directly with no preamble and no trailing commentary. The action captures the transcript; the parser reads the final assistant message.
 
-               If NO items are worth an issue, print exactly one line (and nothing else):
-                 SKIP_ISSUE
+            Format — the first non-whitespace line determines the path:
 
-               If AT LEAST ONE item is worth an issue, print exactly this structure (no preamble, no trailing commentary):
+            If NO items are worth action, print exactly one line (and nothing else):
+              SKIP_ISSUE
 
-                 # Title: upstream: {N} new items to review ({YYYY-MM-DD})
-                 # Body
-                 ## Summary
-                 {one-paragraph overview: how many items, which sources, whether any CRITICAL ones exist}
+            If AT LEAST ONE item is worth action, print exactly this structure:
 
-                 ## Worth Action
-                 {bulleted list of items that map to specific Worclaude files; each bullet: **[Source] Title** ([url]({url})) — one-line why-it-matters — affected file(s)}
+              # Title: upstream: {KEPT_COUNT} new items to review ({YYYY-MM-DD from RUN_TIMESTAMP})
+              # Body
+              ## Summary
+              {1–3 sentences. State counts (NEW_COUNT total, KEPT_COUNT surfaced). If TRUNCATED_COUNT > 0, mention "N additional low-priority items were not surfaced; see workflow logs."}
 
-                 ## Informational
-                 {bulleted list of items worth knowing but not requiring action; each bullet: title, source, one-line reason}
+              ## Worth Action
+              {bullets, each: **[Source] Title** ([url]({url})) — one-line why-it-matters — affected file pattern (from the rules above). Max 8 bullets.}
 
-                 ## Recommended Actions
-                 {numbered list of concrete follow-ups, each naming a specific file and the upstream change that prompts it; at most 5 items, ordered by urgency}
+              ## Informational
+              {bullets, each: title — source — one-line reason. Max 10 bullets. OK to group by source.}
 
-                 ---
-                 _Generated by `.github/workflows/upstream-check.yml` on {RUN_TIMESTAMP}. Close this issue after reviewing._
+              ## Recommended Actions
+              {numbered list, max 5, ordered by urgency. Each: file pattern + the upstream change that prompts it.}
+
+              ---
+              _Generated by `.github/workflows/upstream-check.yml` on {RUN_TIMESTAMP}. Close this issue after reviewing._
 
             Rules:
-            - Be concrete. "Check the agents" is wrong; "Check src/data/agents.js — Sonnet ID field for the ui-reviewer agent" is right.
-            - Keep Summary ≤ 3 sentences, "Worth Action" ≤ 8 bullets, "Informational" ≤ 10 bullets, "Recommended Actions" ≤ 5 items.
-            - If confidence that an item affects Worclaude is low, list it as Informational rather than Worth Action.
-            - Use the Read tool only for files mentioned in the cross-reference rules. Do not wander the repo.
-            - The parser is strict. Do NOT emit any text before the first contract line (`SKIP_ISSUE` or `# Title: `) in your final response. No preamble like "I've analyzed...", no reasoning summary, no closing "hope this helps." Just the contract content.
+            - Be concrete. "Check the agents" is wrong; "Check src/data/agents.js" is right. File-pattern granularity is fine — the maintainer will drill in.
+            - If confidence is low, classify Informational, not Worth Action.
+            - The parser is strict. Do NOT emit any text before the first contract line (`SKIP_ISSUE` or `# Title: `) in your final response. No preamble ("I've analyzed..."), no reasoning summary, no closing remark. Just the contract content.
 
       - name: Parse Claude output
         id: parse
         if: steps.claude.outcome == 'success'
         run: node scripts/upstream-parse.mjs "${{ steps.claude.outputs.execution_file }}"
 
+      # Graceful fallback: Claude step blew its turn budget (error_max_turns)
+      # or otherwise failed. Surface the new items via a manual-triage issue
+      # and advance state so we don't re-evaluate the same items tomorrow.
+      # Without this, recurring error_max_turns on busy backlog days would
+      # leave the workflow red AND keep re-running expensive Claude analysis
+      # on the same items.
+      - name: Claude-error fallback issue
+        id: claude-fallback
+        if: >-
+          github.ref == 'refs/heads/main'
+          && steps.precheck.outputs.has_new == 'true'
+          && steps.precheck.outputs.fetch_failure != 'true'
+          && steps.claude.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
+          KEPT_COUNT: ${{ steps.precheck.outputs.kept_count }}
+          TRUNCATED_COUNT: ${{ steps.precheck.outputs.truncated_count }}
+          NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
+          RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          BODY_FILE="$RUNNER_TEMP/claude-fallback-body.md"
+          {
+            echo "The upstream classifier (Claude) did not complete on \`${RUN_TIMESTAMP}\`."
+            echo
+            echo "**Likely cause:** \`error_max_turns\` — Claude exceeded the per-run turn budget. See workflow logs for the exact error subtype."
+            echo
+            echo "**Item counts:** \`${NEW_COUNT}\` total new items; \`${KEPT_COUNT}\` surfaced to the classifier; \`${TRUNCATED_COUNT}\` truncated by the precheck cap (low-priority tail)."
+            echo
+            echo "State has been advanced for **all** ${NEW_COUNT} new items so the next scheduled run won't re-evaluate them. Triage the list below by hand and decide whether any deserve their own issues."
+            echo
+            echo "## Items needing manual triage"
+            echo
+            echo "Capped, priority-sorted list (critical sources first):"
+            echo
+            echo '```json'
+            cat "$NEW_ITEMS_PATH"
+            echo '```'
+            echo
+            echo "## Workflow run"
+            echo
+            echo "<${RUN_URL}>"
+          } > "$BODY_FILE"
+          gh issue create \
+            --title "upstream: classifier failed on ${TODAY} — manual review needed" \
+            --body-file "$BODY_FILE" \
+            --label "$LABEL_UPSTREAM" --label "$LABEL_AUTOMATED" --label "$LABEL_PARSE_ERROR"
+
       # Advance state on any successful parse — including SKIP. Leaving state
       # un-advanced on SKIP causes Claude to re-evaluate the same feed items
       # on every subsequent run until something is eventually deemed worth an
       # issue, which is wasteful when upstream is quiet relative to Worclaude.
       # Parse errors still skip this step so the items get re-evaluated after
-      # a fix. The cache save step at job end persists the file.
+      # a fix. ALSO advance on a successful claude-fallback issue: the items
+      # have been surfaced via that manual-triage issue, so re-evaluation
+      # tomorrow would be wasteful. The cache save step at job end persists
+      # the file.
       - name: State write
         id: state-write
         if: >-
           github.ref == 'refs/heads/main'
           && steps.precheck.outputs.has_new == 'true'
-          && steps.claude.outcome == 'success'
-          && steps.parse.outcome == 'success'
-          && steps.parse.outputs.parse_error == ''
+          && (
+            (steps.parse.outcome == 'success' && steps.parse.outputs.parse_error == '')
+            || steps.claude-fallback.outcome == 'success'
+          )
         env:
           NEXT_STATE_PATH: ${{ steps.precheck.outputs.next_state_path }}
         run: |
@@ -328,6 +397,8 @@ jobs:
           FETCH_FAILURE: ${{ steps.precheck.outputs.fetch_failure }}
           CONSECUTIVE: ${{ steps.precheck.outputs.consecutive_failures }}
           NEW_COUNT: ${{ steps.precheck.outputs.new_count }}
+          KEPT_COUNT: ${{ steps.precheck.outputs.kept_count }}
+          TRUNCATED_COUNT: ${{ steps.precheck.outputs.truncated_count }}
           RUN_TIMESTAMP: ${{ steps.precheck.outputs.run_timestamp }}
           CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
           PARSE_OUTCOME: ${{ steps.parse.outcome }}
@@ -335,6 +406,7 @@ jobs:
           PARSE_ERROR: ${{ steps.parse.outputs.parse_error }}
           ISSUE_NUM: ${{ steps.create-issue.outputs.num }}
           WATCHDOG_NUM: ${{ steps.watchdog-open.outputs.num }}
+          CLAUDE_FALLBACK_OUTCOME: ${{ steps.claude-fallback.outcome }}
         run: |
           FETCH_STATUS="ok"
           if [ "$FETCH_FAILURE" = "true" ]; then
@@ -346,12 +418,20 @@ jobs:
           elif [ -n "$PARSE_ERROR" ]; then
             PARSE_STATUS="error: $PARSE_ERROR"
           fi
+          ITEMS_LINE="${NEW_COUNT:-0}"
+          if [ -n "$KEPT_COUNT" ] && [ "$KEPT_COUNT" != "$NEW_COUNT" ]; then
+            ITEMS_LINE="${ITEMS_LINE} total (${KEPT_COUNT} surfaced, ${TRUNCATED_COUNT} truncated)"
+          fi
+          CLAUDE_LINE="${CLAUDE_OUTCOME:-skipped}"
+          if [ "$CLAUDE_FALLBACK_OUTCOME" = "success" ]; then
+            CLAUDE_LINE="${CLAUDE_LINE} → fallback issue opened"
+          fi
           {
             echo "## Upstream Check"
             echo "- Run timestamp: ${RUN_TIMESTAMP:-n/a}"
             echo "- Fetch: ${FETCH_STATUS}"
-            echo "- New items: ${NEW_COUNT:-0}"
-            echo "- Claude: ${CLAUDE_OUTCOME:-skipped}"
+            echo "- New items: ${ITEMS_LINE}"
+            echo "- Claude: ${CLAUDE_LINE}"
             echo "- Parse: ${PARSE_STATUS:-skipped}"
             echo "- Issue: ${ISSUE_NUM:-none}"
             echo "- Watchdog: ${WATCHDOG_NUM:-none}"
