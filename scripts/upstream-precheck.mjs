@@ -23,8 +23,51 @@ import { ensureRunnerTemp, requireRunnerTemp, writeOutputs } from './_gha-output
 export const FETCH_TIMEOUT_MS = 10_000;
 export const SNIPPET_MAX = 500;
 export const PRUNE_DAYS = 90;
+export const MAX_NEW_ITEMS_DEFAULT = 40;
 
 const DEFAULT_STATE_PATH = '.github/upstream-state.json';
+
+// Tier ordering for prioritizing items when the per-run cap forces truncation.
+// Lower number = higher priority. Mirrors `docs/reference/upstream-automation.md`
+// "Critical sources" + the "engineering-blog cross-reference" carve-out. If those
+// rules change, update both places (also the inlined prompt in upstream-check.yml).
+const SOURCE_TIER = {
+  'claude-code-releases': 1,
+  'claude-code-changelog': 1,
+  'npm-claude-code': 1,
+  'agent-sdk-ts-changelog': 1,
+  'agent-sdk-py-changelog': 1,
+  'engineering-blog': 2,
+};
+const DEFAULT_TIER = 3;
+const COMMUNITY_TIER = 4;
+
+function tierFor(item) {
+  if (item.sourceCategory === 'community') return COMMUNITY_TIER;
+  return SOURCE_TIER[item.source] ?? DEFAULT_TIER;
+}
+
+export function prioritizeAndCap(items, max) {
+  const sorted = [...items].sort((a, b) => {
+    const ta = tierFor(a);
+    const tb = tierFor(b);
+    if (ta !== tb) return ta - tb;
+    const da = Date.parse(a.date ?? '') || 0;
+    const db = Date.parse(b.date ?? '') || 0;
+    return db - da;
+  });
+  if (!Number.isFinite(max) || max <= 0 || sorted.length <= max) {
+    return { kept: sorted, truncated: 0 };
+  }
+  return { kept: sorted.slice(0, max), truncated: sorted.length - max };
+}
+
+function resolveMaxNewItems() {
+  const raw = process.env.MAX_NEW_ITEMS;
+  if (raw === undefined || raw === '') return MAX_NEW_ITEMS_DEFAULT;
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : MAX_NEW_ITEMS_DEFAULT;
+}
 
 // Prefixes for `fetch_error` GitHub-Actions output. Tests assert these via
 // startsWith(); keep them in one place so producer + tests can't drift.
@@ -41,6 +84,8 @@ export const ERROR_TAGS = {
 const EMPTY_OUTPUTS = {
   has_new: 'false',
   new_count: '0',
+  kept_count: '0',
+  truncated_count: '0',
   fetch_failure: 'false',
   consecutive_failures: '0',
   fetch_error: '',
@@ -117,6 +162,8 @@ async function handleFetchFailure(errorTag, state, statePath) {
   await writeOutputs({
     has_new: 'false',
     new_count: '0',
+    kept_count: '0',
+    truncated_count: '0',
     fetch_failure: 'true',
     consecutive_failures: String(nextFailures),
     fetch_error: errorTag,
@@ -166,6 +213,9 @@ export async function runPrecheck({ client, statePath } = {}) {
     snippet: truncate(i.snippet, SNIPPET_MAX),
   }));
 
+  const maxNewItems = resolveMaxNewItems();
+  const { kept: cappedItems, truncated: truncatedCount } = prioritizeAndCap(slimItems, maxNewItems);
+
   const pruneCutoff = Date.now() - PRUNE_DAYS * 24 * 60 * 60 * 1000;
   const keptExisting = state.lastSeenItems.filter((s) => {
     if (!s.firstSeen) return true;
@@ -194,7 +244,7 @@ export async function runPrecheck({ client, statePath } = {}) {
   const nextStatePath = path.join(runnerTemp, 'next-state.json');
 
   await Promise.all([
-    writeFile(newItemsPath, JSON.stringify(slimItems, null, 2)),
+    writeFile(newItemsPath, JSON.stringify(cappedItems, null, 2)),
     writeFile(feedReportPath, JSON.stringify(runReport, null, 2)),
     writeFile(nextStatePath, JSON.stringify(nextState, null, 2) + '\n'),
   ]);
@@ -203,6 +253,8 @@ export async function runPrecheck({ client, statePath } = {}) {
   await writeOutputs({
     has_new: hasNew ? 'true' : 'false',
     new_count: String(newItems.length),
+    kept_count: String(cappedItems.length),
+    truncated_count: String(truncatedCount),
     fetch_failure: 'false',
     consecutive_failures: '0',
     fetch_error: '',
@@ -214,7 +266,7 @@ export async function runPrecheck({ client, statePath } = {}) {
 
   const sourcesChecked = runReport?.summary?.sourcesChecked ?? '?';
   console.log(
-    `fetched ${items.length} items from ${sourcesChecked} sources; ${newItems.length} new; lastSeen pruned ${state.lastSeenItems.length - keptExisting.length} of ${state.lastSeenItems.length}`
+    `fetched ${items.length} items from ${sourcesChecked} sources; ${newItems.length} new; surfacing ${cappedItems.length} (truncated ${truncatedCount}, max=${maxNewItems}); lastSeen pruned ${state.lastSeenItems.length - keptExisting.length} of ${state.lastSeenItems.length}`
   );
 
   return {

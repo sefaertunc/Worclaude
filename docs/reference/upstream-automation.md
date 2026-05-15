@@ -102,7 +102,9 @@ If you previously configured a `github-actions[bot]` push-bypass for this workfl
 
 ## Classification Rules
 
-The GitHub workflow uses these rules to decide whether an upstream item is worth a Worclaude issue. They previously lived in `.claude/commands/upstream-check.md` (retired in Phase 2). The workflow reads this section directly via the Read tool.
+The GitHub workflow uses these rules to decide whether an upstream item is worth a Worclaude issue. They previously lived in `.claude/commands/upstream-check.md` (retired in Phase 2).
+
+**Inlined copies — keep in sync:** to avoid per-run `Read` calls (each Read costs a Claude turn, and budget exhaustion was the recurring `error_max_turns` failure mode), the workflow now inlines an abbreviated form of these rules directly into the prompt. The tier-priority map used by the pre-check item cap (`scripts/upstream-precheck.mjs` `SOURCE_TIER`) is the same set. If you change the rules below, update those two places too.
 
 ### Critical sources
 
