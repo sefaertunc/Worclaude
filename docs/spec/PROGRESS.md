@@ -3,8 +3,8 @@
 ## Current Status
 
 **Phase:** All phases complete — published on npm as `worclaude`
-**Version:** 2.10.4
-**Last Updated:** 2026-05-14 (v2.10.4)
+**Version:** 2.10.5
+**Last Updated:** 2026-05-15 (v2.10.5)
 
 ## Completed
 
@@ -609,6 +609,15 @@
   - [x] **PR #182** (`Version bump: none`) — first banner refresh (3 versions ago) — replaced the original 2.55 MB banner with a 852 KB version, established `assets/old/` as a tracked archive directory, and added logo variants.
   - [x] **PR #181** (`Version bump: none`) — preemptive headroom: bumped the upstream-check workflow's `--max-turns` 25 → 40. This was the partial mitigation that allowed run #33 to succeed before #187 fixed the actual root cause; runs #31 and #32 had already failed under the 25-turn cap because the workflow on `main` still ran at 25 until the bump propagated.
   - [x] Release group: 9 PRs (1 patch, 4 none, 4 missing declarations on dependabot PRs #186, #185, #180, #179). v2.10.3 → v2.10.4. ⚠ Under-documented: 4 dependabot PRs treated as `none`.
+
+- [x] v2.10.5 — Upstream-check max-turns finalized: cap + slim prompt + graceful fallback (2026-05-15)
+  - [x] **PR #191** (`Version bump: patch`) — finalizes the recurring `error_max_turns` failure mode after #181 (25→40 bump) and #187 (RUNNER_TEMP read perms) both proved insufficient. Today's run #35 (2026-05-15) hit 41 turns on 100 new items despite the 40-turn cap, and Claude's turn use was non-deterministic across runs (18 turns on 100 items 2026-05-13 vs. 41 turns on the same count today). Four-part durable fix that addresses both the per-run budget and the freak-day blowups:
+    1. **Pre-check item cap (`scripts/upstream-precheck.mjs`)** — new `MAX_NEW_ITEMS` env knob (default 40) with tier-priority sort (`SOURCE_TIER` map: critical sources → engineering-blog → other → community, newest-first within tier) before slicing. Exported `prioritizeAndCap()` + `MAX_NEW_ITEMS_DEFAULT`. New GHA outputs `kept_count` + `truncated_count`. State advances for ALL new items (including the truncated tail) so the dropped low-priority items don't queue up forever.
+    2. **Slim single-pass prompt (`.github/workflows/upstream-check.yml`)** — previous prompt invited Claude to Read `docs/reference/upstream-automation.md` which chained into 6+ per-item Reads of project files (each Read = a turn). New prompt inlines the critical-source list and classification rules directly, restricts Reads to exactly two input JSONs (`NEW_ITEMS_PATH` + `FEED_REPORT_PATH`), forbids any Worclaude-file Reads. `--max-turns 40 → 80` as belt-and-braces.
+    3. **Graceful fallback on Claude failure** — `continue-on-error: true` on the Claude step + new "Claude-error fallback issue" step that opens a `parse-error`-labeled triage issue containing the raw priority-sorted item list when the classifier blows its budget. Workflow stays green; state advances on fallback success so re-evaluation doesn't repeat. State-write gate extended to include the fallback success path; existing create-issue and parse-error gates unchanged.
+    4. **Doc sync note (`docs/reference/upstream-automation.md`)** — new "Inlined copies — keep in sync" callout pointing to the workflow prompt and precheck `SOURCE_TIER` map. The Classification Rules section remains the source of truth.
+       Tests: 999 → 1011 (+12 new in `tests/scripts/upstream-precheck.test.js`): tier sort, date tie-break, cap behavior, no-cap edge cases (0/negative/NaN), input immutability, output-contract keys (`kept_count` + `truncated_count` added to required-keys assertion), runPrecheck wiring, state-advances-for-all-new-items invariant, env-default fallback.
+  - [x] Release group: 1 PR (patch). v2.10.4 → v2.10.5. No missing declarations.
 
 ## Stats
 

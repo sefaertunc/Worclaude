@@ -4,6 +4,16 @@ All notable changes to worclaude are documented in this file. Format loosely fol
 
 ## [Unreleased]
 
+## [2.10.5] — 2026-05-15
+
+Patch release that finalizes the recurring `error_max_turns` failure mode in the daily `upstream-check` workflow. Previous attempts — #181's 25→40 turn-cap bump and #187's `RUNNER_TEMP` Read grant — both proved insufficient when today's run #35 (2026-05-15) hit 41 turns on 100 new items and Claude's turn use was non-deterministic across runs (18 turns one day, 41 the next on the same item count). This release replaces the "keep bumping the knob" approach with a four-part durable fix: bound the per-run work via a pre-check item cap, slim the prompt to a single classification pass, route Claude-step failures to a graceful manual-triage fallback issue (workflow stays green), and bump `--max-turns` to 80 as belt-and-braces. The cap surfaces critical-source items first so truncation only ever drops the low-priority community tail.
+
+### Fixed
+
+- **upstream-check: cap items + slim prompt + fallback on max-turns** (PR #191) — fixes the recurring red-CI pattern on busy backlog days. Four coordinated changes: (1) `scripts/upstream-precheck.mjs` now caps surfaced items to `MAX_NEW_ITEMS` (default 40, env-overridable) after sorting by source tier (critical changelogs → engineering-blog → other → community, newest-first within tier); state advances for **all** new items so the truncated tail doesn't queue up forever. New GHA outputs `kept_count` + `truncated_count`. (2) `.github/workflows/upstream-check.yml` prompt rewritten as a single-pass classifier with inlined classification rules and the critical-source list — Claude no longer reads `docs/reference/upstream-automation.md` (which chained into 6+ per-item project-file Reads, each costing a turn); only the two input JSONs are Read. `--max-turns 40 → 80`. (3) `continue-on-error: true` on the Claude step + a new "Claude-error fallback issue" step that opens a `parse-error`-labeled triage issue containing the raw priority-sorted item list when the classifier fails; state advances on fallback success. (4) `docs/reference/upstream-automation.md` gains an "Inlined copies — keep in sync" callout pointing to the workflow prompt and precheck `SOURCE_TIER` map. Tests 999 → 1011 (+12 covering tier sort, date tie-break, cap behavior, no-cap edge cases, immutability, output contract, runPrecheck wiring, state-advance invariant, env-default fallback).
+
+Release group: 1 PR (patch). v2.10.4 → v2.10.5.
+
 ## [2.10.4] — 2026-05-14
 
 Patch release fixing the silent failure mode of the daily `upstream-check` workflow. The Claude session writes precheck output to `RUNNER_TEMP` (an absolute path outside the workspace), but `.claude/settings.json` only granted `Read(*.json)` for workspace-relative paths. Claude was burning turns hitting permission walls — 6 denials per run in failed-run logs — and either timed out at `max_turns` (runs #31, #32) or emitted a parse-error envelope that auto-opened a tracking issue (#184). This release adds an explicit `Read(/home/runner/work/_temp/**)` grant, bumps `anthropics/claude-code-action` 11 patch versions to current, refreshes the README banner with new background art, and rolls up two weeks of routine Dependabot bumps.
