@@ -53,7 +53,7 @@ The cron runs at a fixed UTC time; DST drift (±1h local) is accepted.
 - `consecutiveFetchFailures` — reset to `0` on any successful fetch.
 - `openWatchdogIssueNumber` — link to the currently-open feed-unreachable watchdog issue (see below). The workflow uses `gh issue list --label fetch-error --state open` as the authoritative dedupe, not this field alone.
 
-The pre-check script (`scripts/upstream-precheck.mjs`) supports a `STATE_PATH` environment override for local testing without mutating the cached state.
+The pre-check script (`scripts/upstream-precheck.mjs`) supports a `STATE_PATH` environment override for local testing without mutating the cached state, and a `PRECHECK_OUTPUT_DIR` override for the artifact directory (default `.github/upstream/`; the workflow relies on the default so the Claude step's `Read(.github/**)` permission matches at runtime).
 
 ## Delivery
 

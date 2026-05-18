@@ -66,3 +66,6 @@ docs/handoffs/
 
 # MCP server config — may hold tokens. Track .mcp.example.json instead.
 /.mcp.json
+
+# Upstream-check precheck runtime outputs (ephemeral per-run; written by scripts/upstream-precheck.mjs)
+.github/upstream/
