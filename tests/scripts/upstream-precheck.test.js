@@ -100,7 +100,7 @@ describe('upstream-precheck', () => {
     outputPath = path.join(tmpDir, 'gh-output');
     statePath = path.join(tmpDir, 'upstream-state.json');
     await fs.ensureFile(outputPath);
-    process.env.RUNNER_TEMP = tmpDir;
+    process.env.PRECHECK_OUTPUT_DIR = tmpDir;
     process.env.GITHUB_OUTPUT = outputPath;
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -109,7 +109,7 @@ describe('upstream-precheck', () => {
   afterEach(async () => {
     logSpy.mockRestore();
     errSpy.mockRestore();
-    delete process.env.RUNNER_TEMP;
+    delete process.env.PRECHECK_OUTPUT_DIR;
     delete process.env.GITHUB_OUTPUT;
     delete process.env.STATE_PATH;
     delete process.env.MAX_NEW_ITEMS;

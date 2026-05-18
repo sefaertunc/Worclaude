@@ -7,7 +7,7 @@
 // in place. Persistence between runs is handled by `actions/cache@v4` in the
 // workflow — see docs/reference/upstream-automation.md.
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -18,7 +18,7 @@ import {
   FeedFetchError,
   FeedMalformedError,
 } from '@sefaertunc/anthropic-watch-client';
-import { ensureRunnerTemp, requireRunnerTemp, writeOutputs } from './_gha-outputs.mjs';
+import { writeOutputs } from './_gha-outputs.mjs';
 
 export const FETCH_TIMEOUT_MS = 10_000;
 export const SNIPPET_MAX = 500;
@@ -26,6 +26,11 @@ export const PRUNE_DAYS = 90;
 export const MAX_NEW_ITEMS_DEFAULT = 40;
 
 const DEFAULT_STATE_PATH = '.github/upstream-state.json';
+// Workspace-relative so Claude's Read tool matches against `Read(.github/**)`
+// in `.claude/settings.json`. The earlier `$RUNNER_TEMP/*.json` design lived
+// outside the workspace and PR #187's absolute-path Read rule never fired,
+// which caused recurring parse-error issues (#193, prior #184).
+const DEFAULT_PRECHECK_OUTPUT_DIR = '.github/upstream';
 
 // Tier ordering for prioritizing items when the per-run cap forces truncation.
 // Lower number = higher priority. Mirrors `docs/reference/upstream-automation.md`
@@ -176,8 +181,10 @@ async function handleFetchFailure(errorTag, state, statePath) {
   return { failed: true, errorTag, consecutiveFailures: nextFailures };
 }
 
-export async function runPrecheck({ client, statePath } = {}) {
+export async function runPrecheck({ client, statePath, outputDir } = {}) {
   const resolvedStatePath = statePath ?? process.env.STATE_PATH ?? DEFAULT_STATE_PATH;
+  const resolvedOutputDir =
+    outputDir ?? process.env.PRECHECK_OUTPUT_DIR ?? DEFAULT_PRECHECK_OUTPUT_DIR;
   const resolvedClient = client ?? new AnthropicWatchClient({ timeout: FETCH_TIMEOUT_MS });
 
   const state = await loadState(resolvedStatePath);
@@ -238,10 +245,10 @@ export async function runPrecheck({ client, statePath } = {}) {
     lastSeenItems,
   };
 
-  const runnerTemp = await ensureRunnerTemp();
-  const newItemsPath = path.join(runnerTemp, 'new-items.json');
-  const feedReportPath = path.join(runnerTemp, 'feed-report.json');
-  const nextStatePath = path.join(runnerTemp, 'next-state.json');
+  await mkdir(resolvedOutputDir, { recursive: true });
+  const newItemsPath = path.join(resolvedOutputDir, 'new-items.json');
+  const feedReportPath = path.join(resolvedOutputDir, 'feed-report.json');
+  const nextStatePath = path.join(resolvedOutputDir, 'next-state.json');
 
   await Promise.all([
     writeFile(newItemsPath, JSON.stringify(cappedItems, null, 2)),
@@ -278,7 +285,6 @@ export async function runPrecheck({ client, statePath } = {}) {
 }
 
 async function cli() {
-  requireRunnerTemp();
   await runPrecheck();
 }
 
