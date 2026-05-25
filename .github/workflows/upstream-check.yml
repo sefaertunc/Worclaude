@@ -143,7 +143,7 @@ jobs:
         # cadence is uninterrupted.
         if: steps.precheck.outputs.has_new == 'true' && steps.precheck.outputs.fetch_failure != 'true'
         continue-on-error: true
-        uses: anthropics/claude-code-action@51ea8ea73a139f2a74ff649e3092c25a904aed7e # v1.0.123
+        uses: anthropics/claude-code-action@787c5a0ce96a9a6cfb050ea0c8f4c05f2447c251 # v1.0.133
         env:
           NEW_ITEMS_PATH: ${{ steps.precheck.outputs.new_items_path }}
           FEED_REPORT_PATH: ${{ steps.precheck.outputs.feed_report_path }}
